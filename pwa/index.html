@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AILAB Presença</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b0f1a" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="vendor/face-api.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>AILAB Presença</h1>
+    <a href="enroll.html">Cadastro</a>
+  </header>
+  <main>
+    <div id="video-wrap">
+      <video id="video" autoplay muted playsinline></video>
+      <canvas id="overlay"></canvas>
+    </div>
+    <div id="status">Inicializando…</div>
+  </main>
+  <script type="module" src="js/recognition.js"></script>
+  <script type="module" src="js/sheets-sync.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(console.error);
+    }
+  </script>
+</body>
+</html>

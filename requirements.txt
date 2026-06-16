@@ -1,0 +1,32 @@
+# ---------------------------------------------------------------------------
+# Dependências validadas em Python 3.13.3 / Ubuntu 25.04 / 12-jun-2026
+# Instalação sem sudo: cmake vem via pip e dlib compila sem OpenBLAS
+# (mais lento na inferência, mas funciona). Se tiver sudo, instale também:
+#   sudo apt install libopenblas-dev liblapack-dev   (acelera dlib)
+# ---------------------------------------------------------------------------
+
+# Núcleo de visão computacional
+opencv-python>=4.10,<5
+dlib>=20.0                  # compilado via pip (cmake bundled)
+face-recognition==1.3.0     # wrapper didático em cima do dlib
+numpy==1.26.4
+Pillow>=10.0
+
+# IMPORTANTE: face_recognition_models ainda usa pkg_resources;
+# setuptools 81+ removeu esse módulo. Mantenha pinado <81.
+setuptools<81
+
+# Build helper (dlib precisa)
+cmake>=3.27
+
+# Análise e visualização (Sprint 1: FAR/FRR, t-SNE, PCA)
+pandas>=2.2
+matplotlib>=3.9
+scikit-learn>=1.5
+
+# Notebooks
+jupyterlab>=4.2
+ipykernel>=6.29
+
+# Útil
+tqdm>=4.66

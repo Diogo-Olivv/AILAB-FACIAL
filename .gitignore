@@ -1,0 +1,32 @@
+# Ambientes
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Dados sensíveis (rostos = dado biométrico, LGPD)
+dataset/
+embeddings/database.json
+attendance/*.db
+*.sqlite
+*.sqlite3
+
+# Credenciais Google
+credentials.json
+service-account*.json
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Modelos grandes baixados
+pwa/models/*.bin
+pwa/models/*.json
+!pwa/models/.gitkeep
