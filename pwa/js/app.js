@@ -40,7 +40,15 @@ const btnTestarConfig = document.getElementById("btn-testar-config");
 const btnSalvarConfig = document.getElementById("btn-salvar-config");
 const btnCancelarConfig = document.getElementById("btn-cancelar-config");
 
+const lgpdConsent = document.getElementById("lgpd-consent");
+const pinPanel = document.getElementById("pin-panel");
+const pinInput = document.getElementById("pin-input");
+const pinStatus = document.getElementById("pin-status");
+const btnCancelarPin = document.getElementById("btn-cancelar-pin");
+const btnConfirmarPin = document.getElementById("btn-confirmar-pin");
+
 const EXPORT_FORMAT_VERSION = 1;
+const ADMIN_PIN = "1234";
 
 // --- state ---
 let modo = "recognizing"; // 'recognizing' | 'enrolling'
@@ -240,6 +248,7 @@ async function capturarDescritor() {
 function abrirEnroll() {
   modo = "enrolling";
   nomeInput.value = "";
+  lgpdConsent.checked = false;
   setEnrollStatus("Digite o nome e clique Capturar.");
   btnCapturar.disabled = false;
   enrollPanel.classList.add("active");
@@ -253,6 +262,10 @@ function fecharEnroll() {
 }
 
 async function fluxoCadastro() {
+  if (!lgpdConsent.checked) {
+    setEnrollStatus("Você deve aceitar o Termo de Consentimento LGPD.", "warn");
+    return;
+  }
   const nome = nomeInput.value.trim().toLowerCase().replace(/\s+/g, "_");
   if (!/^[a-z0-9_]+$/.test(nome)) {
     setEnrollStatus("Nome inválido. Use letras/dígitos/underscore.", "warn");
@@ -487,9 +500,29 @@ async function main() {
   btnAbrirEnroll.addEventListener("click", abrirEnroll);
   btnCancelarEnroll.addEventListener("click", fecharEnroll);
   btnCapturar.addEventListener("click", fluxoCadastro);
-  btnGerenciar.addEventListener("click", async () => {
-    gerenciarPanel.classList.toggle("active");
-    if (gerenciarPanel.classList.contains("active")) await atualizarLista();
+
+  btnCancelarPin.addEventListener("click", () => {
+    pinPanel.classList.remove("active");
+  });
+  btnConfirmarPin.addEventListener("click", async () => {
+    if (pinInput.value === ADMIN_PIN) {
+      pinPanel.classList.remove("active");
+      gerenciarPanel.classList.add("active");
+      await atualizarLista();
+    } else {
+      pinStatus.textContent = "PIN incorreto.";
+    }
+  });
+
+  btnGerenciar.addEventListener("click", () => {
+    if (gerenciarPanel.classList.contains("active")) {
+      gerenciarPanel.classList.remove("active");
+    } else {
+      pinInput.value = "";
+      pinStatus.textContent = "";
+      pinPanel.classList.add("active");
+      setTimeout(() => pinInput.focus(), 50);
+    }
   });
   btnExportar.addEventListener("click", exportarCadastros);
   btnImportar.addEventListener("click", () => fileImport.click());

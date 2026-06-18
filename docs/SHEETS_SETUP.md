@@ -43,6 +43,14 @@ function doPost(e) {
     if (data.token !== EXPECTED_TOKEN) {
       return _json({ ok: false, error: "token inválido" });
     }
+    
+    // Rate limit simples via CacheService (max 1 req a cada 2 seg por token)
+    const cache = CacheService.getScriptCache();
+    if (cache.get(data.token)) {
+      return _json({ ok: false, error: "rate limit excedido" });
+    }
+    cache.put(data.token, "1", 2);
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const eventos = _aba(ss, ABA_EVENTOS, HEADERS_EVENTOS);
     eventos.appendRow([data.data, data.nome, data.entrada, data.saida, data.horas]);

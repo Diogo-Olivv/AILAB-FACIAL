@@ -34,10 +34,32 @@
         <label for="nome">Nome (snake_case)</label>
         <input id="nome" type="text" placeholder="ex.: maria_silva" autocomplete="off" />
       </div>
+      <div class="form-row" style="flex-direction: row; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+        <input type="checkbox" id="lgpd-consent" />
+        <label for="lgpd-consent" style="font-size: 0.85rem; font-weight: normal; cursor: pointer;">
+          Confirmo que assinei o Termo de Consentimento (LGPD)
+        </label>
+      </div>
       <div id="enroll-status" style="color: var(--muted); font-size: 0.95rem; min-height: 1.5rem;"></div>
       <div class="row-actions">
         <button id="btn-cancelar-enroll" class="btn-secondary" type="button">Cancelar</button>
         <button id="btn-capturar" type="button">Capturar 8 fotos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de PIN Administrativo -->
+  <div id="pin-panel" role="dialog" aria-modal="true" aria-labelledby="pin-titulo">
+    <div class="panel-card">
+      <h2 id="pin-titulo">Acesso Administrativo</h2>
+      <div class="form-row">
+        <label for="pin-input">PIN</label>
+        <input id="pin-input" type="password" placeholder="Digite o PIN" autocomplete="off" />
+      </div>
+      <div id="pin-status" style="color: var(--warn); font-size: 0.9rem; min-height: 1.5rem;"></div>
+      <div class="row-actions">
+        <button id="btn-cancelar-pin" class="btn-secondary" type="button">Cancelar</button>
+        <button id="btn-confirmar-pin" type="button">Acessar</button>
       </div>
     </div>
   </div>
