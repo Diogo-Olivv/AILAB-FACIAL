@@ -1,0 +1,20 @@
+{
+  "name": "AILAB Python Environment",
+  "build": {
+    "dockerfile": "../python/Dockerfile",
+    "context": ".."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      }
+    }
+  },
+  "postCreateCommand": "pip install -r python/requirements.txt",
+  "remoteUser": "root"
+}
