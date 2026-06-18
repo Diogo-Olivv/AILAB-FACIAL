@@ -43,14 +43,26 @@ ailab.exemplo.edu.br {
 
 ## 3. Cadastrar pessoas
 
-1. No tablet, abrir AILAB → toque em **Cadastro** (canto superior direito).
+1. No tablet, abrir AILAB → toque em **+ Cadastrar** (canto superior direito).
 2. Digite o nome em snake_case (ex.: `maria_silva`).
 3. Pessoa fica na frente, toque **Capturar 8 fotos** — ela varia levemente
-   a pose entre cada captura (sorriso, leve giro).
+   a pose entre cada captura (sorriso, leve giro). Demora ~6-8s.
 4. Repetir para cada participante do lab.
 
 > Antes de cada cadastro, **confirme que o termo (`docs/PRIVACIDADE.md`)
 > está assinado**.
+
+### Backup / migração (reset-proof)
+
+O botão **Gerenciar** mostra os cadastros e dois botões: **↓ Exportar** baixa um
+JSON com todos os embeddings (sem fotos), **↑ Importar** recebe esse JSON e
+recria os cadastros.
+
+- **Antes de qualquer reset/factory wipe do tablet**, exporte e salve fora do
+  tablet (Drive, USB, email). O arquivo contém vetores 128-D — tratar como
+  dado biométrico pseudonimizado (mesmo nível de cuidado das fotos).
+- **Depois do wipe**: instala o PWA → Gerenciar → Importar → seleciona o JSON.
+  Em conflito, pergunta se sobrescreve ou pula.
 
 ## 4. Modo Kiosk (trava no PWA)
 
@@ -83,4 +95,4 @@ Depois de 1 semana de uso:
 - Exportar sessões da planilha para CSV.
 - Calcular FRR real (pessoas que tentaram >1x) e FAR (registros errados).
 - Se FRR > 5%, recadastrar pessoas problemáticas.
-- Ajustar `THRESHOLD` em `pwa/js/recognition.js` se necessário (documentar em `docs/THRESHOLD.md`).
+- Ajustar `THRESHOLD` em `pwa/js/app.js` se necessário (documentar em `docs/THRESHOLD.md`).

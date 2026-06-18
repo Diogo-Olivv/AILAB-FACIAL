@@ -25,8 +25,3 @@ service-account*.json
 # Sistema
 .DS_Store
 Thumbs.db
-
-# Modelos grandes baixados
-pwa/models/*.bin
-pwa/models/*.json
-!pwa/models/.gitkeep

@@ -12,8 +12,12 @@
 <body>
   <header>
     <h1>AILAB Presença</h1>
-    <a href="enroll.html">Cadastro</a>
+    <div style="display: flex; gap: 0.5rem;">
+      <button id="btn-gerenciar" class="btn-secondary" type="button">Gerenciar</button>
+      <button id="btn-abrir-enroll" class="btn-secondary" type="button">+ Cadastrar</button>
+    </div>
   </header>
+
   <main>
     <div id="video-wrap">
       <video id="video" autoplay muted playsinline></video>
@@ -21,8 +25,63 @@
     </div>
     <div id="status">Inicializando…</div>
   </main>
-  <script type="module" src="js/recognition.js"></script>
-  <script type="module" src="js/sheets-sync.js"></script>
+
+  <!-- Painel de cadastro (modal-like, overlay) -->
+  <div id="enroll-panel" role="dialog" aria-modal="true" aria-labelledby="enroll-titulo">
+    <div class="panel-card">
+      <h2 id="enroll-titulo">Cadastrar participante</h2>
+      <div class="form-row">
+        <label for="nome">Nome (snake_case)</label>
+        <input id="nome" type="text" placeholder="ex.: maria_silva" autocomplete="off" />
+      </div>
+      <div id="enroll-status" style="color: var(--muted); font-size: 0.95rem; min-height: 1.5rem;"></div>
+      <div class="row-actions">
+        <button id="btn-cancelar-enroll" class="btn-secondary" type="button">Cancelar</button>
+        <button id="btn-capturar" type="button">Capturar 8 fotos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Painel de gerenciamento (lista de cadastrados) -->
+  <aside id="gerenciar-panel" aria-label="Lista de cadastrados">
+    <h3>Cadastrados</h3>
+    <ul id="lista" class="lista-pessoas"></ul>
+    <div class="row-actions" style="border-top: 1px solid var(--border); padding-top: 0.75rem;">
+      <button id="btn-exportar" class="btn-secondary" type="button">↓ Exportar</button>
+      <button id="btn-importar" class="btn-secondary" type="button">↑ Importar</button>
+      <button id="btn-config-sheets" class="btn-secondary" type="button">⚙ Sheets</button>
+    </div>
+    <input id="file-import" type="file" accept="application/json,.json" hidden />
+  </aside>
+
+  <!-- Modal de configuração do Sheets -->
+  <div id="config-panel" role="dialog" aria-modal="true" aria-labelledby="config-titulo">
+    <div class="panel-card">
+      <h2 id="config-titulo">Configurar Google Sheets</h2>
+      <p style="color: var(--muted); font-size: 0.9rem;">
+        Valores salvos só neste dispositivo (localStorage). Setup do Apps Script: <code>docs/SHEETS_SETUP.md</code>.
+      </p>
+      <div class="form-row">
+        <label for="cfg-webhook">URL do webhook (Apps Script /exec)</label>
+        <input id="cfg-webhook" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" />
+      </div>
+      <div class="form-row">
+        <label for="cfg-token">Token (mesmo valor de EXPECTED_TOKEN no Code.gs)</label>
+        <input id="cfg-token" type="text" placeholder="hex aleatório" autocomplete="off" />
+      </div>
+      <div id="cfg-status" style="color: var(--muted); font-size: 0.9rem; min-height: 1.5rem;"></div>
+      <div class="row-actions">
+        <button id="btn-cancelar-config" class="btn-secondary" type="button">Fechar</button>
+        <button id="btn-testar-config" class="btn-secondary" type="button">Testar</button>
+        <button id="btn-salvar-config" type="button">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de feedback -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("sw.js").catch(console.error);
