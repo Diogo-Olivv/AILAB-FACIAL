@@ -19,7 +19,7 @@ import time
 from pathlib import Path
 
 import cv2
-import face_recognition
+from deepface import DeepFace
 import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -40,12 +40,22 @@ def capturar_foto(cap: cv2.VideoCapture, countdown: int = 3):
 
 
 def detectar_e_embedar(frame_rgb):
-    """CNN para melhor qualidade no cadastro (lento mas vale)."""
-    locs = face_recognition.face_locations(frame_rgb, model="cnn")
-    if len(locs) != 1:
-        return None, None, len(locs)
-    enc = face_recognition.face_encodings(frame_rgb, locs)[0]
-    return locs[0], enc, 1
+    """Usando DeepFace (Facenet) para cadastro."""
+    try:
+        faces = DeepFace.represent(img_path=frame_rgb, model_name="Facenet", detector_backend="opencv", enforce_detection=False)
+    except Exception:
+        return None, None, 0
+    
+    valid_faces = [f for f in faces if f.get("face_confidence", 1.0) >= 0.9]
+    if len(valid_faces) != 1:
+        return None, None, len(valid_faces)
+    
+    face = valid_faces[0]
+    enc = np.array(face["embedding"], dtype=np.float64)
+    box = face["facial_area"]
+    # box is dict: {'x', 'y', 'w', 'h'}
+    loc = (box["y"], box["x"] + box["w"], box["y"] + box["h"], box["x"])
+    return loc, enc, 1
 
 
 def validar_qualidade(enc_novo, encs_anteriores, max_dist=0.5):
@@ -128,10 +138,13 @@ def main():
 
     todos_encs = []
     for f in sorted(pessoa_dir.glob("*.jpg")):
-        img = face_recognition.load_image_file(f)
-        locs = face_recognition.face_locations(img, model="hog")
-        if locs:
-            todos_encs.append(face_recognition.face_encodings(img, locs)[0])
+        try:
+            faces = DeepFace.represent(img_path=str(f), model_name="Facenet", detector_backend="opencv", enforce_detection=False)
+            valid = [fc for fc in faces if fc.get("face_confidence", 1.0) >= 0.9]
+            if len(valid) == 1:
+                todos_encs.append(np.array(valid[0]["embedding"], dtype=np.float64))
+        except Exception:
+            pass
 
     emb_medio = np.mean(todos_encs, axis=0).tolist()
 

@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 
 import cv2
-import face_recognition
+from deepface import DeepFace
 import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -38,17 +38,24 @@ def carregar_base():
 
 
 def identificar(frame_rgb, nomes, matriz, threshold):
-    locs = face_recognition.face_locations(frame_rgb, model="hog")
-    if not locs:
+    try:
+        faces = DeepFace.represent(img_path=frame_rgb, model_name="Facenet", detector_backend="opencv", enforce_detection=False)
+    except Exception:
         return []
-    encs = face_recognition.face_encodings(frame_rgb, locs)
+    
     out = []
-    for box, enc in zip(locs, encs):
+    for face in faces:
+        if face.get("face_confidence", 1.0) < 0.9: continue
+        enc = np.array(face["embedding"], dtype=np.float64)
+        box = face["facial_area"]
+        # convert {'x', 'y', 'w', 'h'} to (top, right, bottom, left)
+        top, right, bottom, left = box["y"], box["x"] + box["w"], box["y"] + box["h"], box["x"]
+        
         dists = np.linalg.norm(matriz - enc, axis=1)
         idx = int(np.argmin(dists))
         d = float(dists[idx])
         nome = nomes[idx] if d < threshold else None
-        out.append((box, nome, d))
+        out.append(((top, right, bottom, left), nome, d))
     return out
 
 
