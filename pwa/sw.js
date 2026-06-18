@@ -35,6 +35,16 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    caches.match(e.request).then((hit) => hit || fetch(e.request).catch(() => hit))
+    caches.match(e.request).then((hit) => {
+      if (hit) return hit;
+      return fetch(e.request).then((res) => {
+        // Cache dinâmico: salva arquivos pesados (.wasm, modelos) que não estavam no array ASSETS inicial
+        if (e.request.url.endsWith(".wasm") || e.request.url.includes("/models/")) {
+          const resClone = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(e.request, resClone));
+        }
+        return res;
+      }).catch(() => hit); // Fallback caso esteja offline e não tenha no cache
+    })
   );
 });
