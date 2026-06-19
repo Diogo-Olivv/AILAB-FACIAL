@@ -35,6 +35,19 @@ async function loadModels() {
 
 loadModels();
 
+function imageDataToTensor(imageData) {
+  const { width, height, data } = imageData;
+  const rgbData = new Uint8Array(width * height * 3);
+  let i = 0, j = 0;
+  while (i < data.length) {
+    rgbData[j++] = data[i++]; // R
+    rgbData[j++] = data[i++]; // G
+    rgbData[j++] = data[i++]; // B
+    i++; // skip A
+  }
+  return faceapi.tf.tensor3d(rgbData, [height, width, 3], 'int32');
+}
+
 self.onmessage = async (e) => {
   if (!modelsLoaded) {
     self.postMessage({ type: `${e.data.type}_error`, error: `Modelos não carregados. Motivo: ${modelsLoadError}` });
@@ -44,7 +57,7 @@ self.onmessage = async (e) => {
   
   if (type === 'recognize') {
     try {
-      const tensor = faceapi.tf.browser.fromPixels(imageData);
+      const tensor = imageDataToTensor(imageData);
       const det = await faceapi
         .detectSingleFace(tensor, new faceapi.TinyFaceDetectorOptions({ inputSize }))
         .withFaceLandmarks()
@@ -79,7 +92,7 @@ self.onmessage = async (e) => {
     }
   } else if (type === 'enroll') {
     try {
-      const tensor = faceapi.tf.browser.fromPixels(imageData);
+      const tensor = imageDataToTensor(imageData);
       const det = await faceapi
         .detectSingleFace(tensor, new faceapi.TinyFaceDetectorOptions({ inputSize }))
         .withFaceLandmarks()
