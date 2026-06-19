@@ -26,7 +26,7 @@ const pinInput = document.getElementById("pin-input");
 const pinStatus = document.getElementById("pin-status");
 const listaEl = document.getElementById("lista");
 
-const worker = new Worker("js/worker.js");
+const worker = new Worker("js/worker.js?v=" + Date.now());
 let modelsLoaded = false;
 
 worker.onmessage = (e) => {

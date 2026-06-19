@@ -1,16 +1,34 @@
+self.window = self;
+self.document = {
+  createElement: (type) => {
+    if (type === 'canvas' && typeof OffscreenCanvas !== 'undefined') {
+      return new OffscreenCanvas(640, 480);
+    }
+    return {};
+  }
+};
 importScripts('../vendor/face-api.min.js');
 
+faceapi.env.monkeyPatch({
+  fetch: self.fetch.bind(self),
+  Canvas: typeof OffscreenCanvas !== 'undefined' ? OffscreenCanvas : class {},
+  createCanvasElement: () => new OffscreenCanvas(640, 480),
+  createImageElement: () => ({})
+});
+
 let modelsLoaded = false;
+let modelsLoadError = "Ainda carregando...";
 
 async function loadModels() {
   try {
-    await faceapi.nets.tinyFaceDetector.loadFromUri('../models');
-    await faceapi.nets.faceLandmark68Net.loadFromUri('../models');
-    await faceapi.nets.faceRecognitionNet.loadFromUri('../models');
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
     modelsLoaded = true;
     self.postMessage({ type: 'models_loaded' });
   } catch (e) {
-    self.postMessage({ type: 'models_error', error: e.message });
+    modelsLoadError = String(e) + (e.stack ? "\n" + e.stack : "");
+    self.postMessage({ type: 'models_error', error: modelsLoadError });
   }
 }
 
@@ -18,7 +36,7 @@ loadModels();
 
 self.onmessage = async (e) => {
   if (!modelsLoaded) {
-    self.postMessage({ type: `${e.data.type}_error`, error: "Modelos não carregados" });
+    self.postMessage({ type: `${e.data.type}_error`, error: `Modelos não carregados. Motivo: ${modelsLoadError}` });
     return;
   }
   const { type, imageData, pessoas, threshold, inputSize } = e.data;

@@ -1,5 +1,5 @@
 // Service Worker para AILAB PWA — cache offline-first.
-const CACHE = "ailab-v2";
+const CACHE = "ailab-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const ASSETS = [
   "./css/style.css",
   "./js/storage.js",
   "./js/app.js",
+  "./js/worker.js",
   "./js/sheets-sync.js",
   "./vendor/face-api.min.js",
   "./models/tiny_face_detector_model-weights_manifest.json",
