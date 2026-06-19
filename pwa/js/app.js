@@ -25,8 +25,22 @@ const pinPanel = document.getElementById("pin-panel");
 const pinInput = document.getElementById("pin-input");
 const pinStatus = document.getElementById("pin-status");
 const listaEl = document.getElementById("lista");
+const fileImport = document.getElementById("file-import");
+
+const configPanel = document.getElementById("config-panel");
+const cfgWebhook = document.getElementById("cfg-webhook");
+const cfgToken = document.getElementById("cfg-token");
+const cfgStatus = document.getElementById("cfg-status");
+const btnTestarConfig = document.getElementById("btn-testar-config");
 
 let modelsLoaded = true;
+
+async function hashSHA256(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 async function registrarPresenca(nome) {
   const ultimo = await Storage.ultimoEvento(nome);
@@ -231,6 +245,128 @@ async function atualizarLista() {
   }
 }
 
+// --- export / import ---
+const EXPORT_FORMAT_VERSION = 1;
+
+async function exportarCadastros() {
+  const pessoas = await Storage.listarPessoas();
+  if (pessoas.length === 0) {
+    UI.mostrarToast("Nada para exportar", "Nenhum cadastro encontrado", "warn");
+    return;
+  }
+  const blob = new Blob(
+    [JSON.stringify(
+      { version: EXPORT_FORMAT_VERSION, exportado_em: new Date().toISOString(), pessoas },
+      null, 2,
+    )],
+    { type: "application/json" },
+  );
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `ailab-cadastros-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  UI.mostrarToast(
+    `${pessoas.length} cadastro(s) exportado(s)`,
+    "Guarde o arquivo em local seguro (dado biométrico)",
+  );
+}
+
+async function importarCadastros(file) {
+  let payload;
+  try {
+    const texto = await file.text();
+    payload = JSON.parse(texto);
+  } catch {
+    UI.mostrarToast("Arquivo inválido", "JSON malformado", "warn");
+    return;
+  }
+  if (!payload || !Array.isArray(payload.pessoas)) {
+    UI.mostrarToast("Formato não reconhecido", "Esperado: { pessoas: [...] }", "warn");
+    return;
+  }
+  const existentes = new Set(
+    (await Storage.listarPessoas()).map((p) => p.nome),
+  );
+  const conflitos = payload.pessoas
+    .filter((p) => p && existentes.has(p.nome))
+    .map((p) => p.nome);
+
+  let sobrescrever = false;
+  if (conflitos.length > 0) {
+    const lista = conflitos.slice(0, 5).join(", ") + (conflitos.length > 5 ? "…" : "");
+    sobrescrever = confirm(
+      `${conflitos.length} cadastro(s) já existem (${lista}).\n\n` +
+      `OK = sobrescrever com os do arquivo\n` +
+      `Cancelar = manter os atuais e pular os duplicados`,
+    );
+  }
+
+  const stats = await Storage.importarPessoas(payload.pessoas, { sobrescrever });
+  await atualizarLista();
+  const partes = [];
+  if (stats.adicionadas) partes.push(`${stats.adicionadas} novo(s)`);
+  if (stats.sobrescritas) partes.push(`${stats.sobrescritas} sobrescrito(s)`);
+  if (stats.ignoradas) partes.push(`${stats.ignoradas} ignorado(s)`);
+  if (stats.invalidas) partes.push(`${stats.invalidas} inválido(s)`);
+  UI.mostrarToast("Importação concluída", partes.join(" · ") || "sem mudanças");
+}
+
+// --- config sheets ---
+
+function abrirConfigSheets() {
+  const atual = getSheetsConfig();
+  cfgWebhook.value = atual.webhook;
+  cfgToken.value = atual.token;
+  cfgStatus.textContent = atual.webhook && atual.token
+    ? "Configurado neste dispositivo."
+    : "Não configurado — sincronização desabilitada.";
+  cfgStatus.style.color = "var(--muted)";
+  configPanel.classList.add("active");
+  setTimeout(() => cfgWebhook.focus(), 50);
+}
+
+function fecharConfigSheets() {
+  configPanel.classList.remove("active");
+}
+
+function _setCfgStatus(msg, classe = "") {
+  cfgStatus.textContent = msg;
+  cfgStatus.style.color = classe === "ok" ? "var(--accent)" :
+                          classe === "warn" ? "var(--warn)" : "var(--muted)";
+}
+
+async function testarConfigSheets() {
+  const webhook = cfgWebhook.value.trim();
+  const token = cfgToken.value.trim();
+  if (!webhook || !token) {
+    _setCfgStatus("Preencha URL e token.", "warn");
+    return;
+  }
+  btnTestarConfig.disabled = true;
+  _setCfgStatus("Testando…");
+  const r = await testarSheetsConfig({ webhook, token });
+  btnTestarConfig.disabled = false;
+  if (r.ok) {
+    _setCfgStatus("✓ Conectado. Apps Script respondeu ok:true.", "ok");
+  } else {
+    _setCfgStatus("✗ " + (r.error || "falha desconhecida"), "warn");
+  }
+}
+
+function salvarConfigSheets() {
+  const webhook = cfgWebhook.value.trim();
+  const token = cfgToken.value.trim();
+  setSheetsConfig({ webhook, token });
+  UI.mostrarToast("Configuração salva", webhook && token ? "Sincronização ativa" : "Sincronização desabilitada (campos vazios)");
+  fecharConfigSheets();
+  if (webhook && token) sincronizar();
+}
+
 // Config e Setup
 async function carregarModelos() {
   await faceapi.nets.tinyFaceDetector.loadFromUri("models");
@@ -269,13 +405,32 @@ async function main() {
   document.getElementById("btn-cancelar-pin").addEventListener("click", () => {
     pinPanel.classList.remove("active");
   });
+  
   document.getElementById("btn-confirmar-pin").addEventListener("click", async () => {
-    if (pinInput.value === ADMIN_PIN) {
+    const pin = pinInput.value.trim();
+    if (!pin) {
+      pinStatus.textContent = "Digite um PIN.";
+      return;
+    }
+    const hash = await hashSHA256(pin);
+    const savedHash = localStorage.getItem("admin_pin_hash");
+
+    if (!savedHash) {
+      // Setup no primeiro acesso
+      localStorage.setItem("admin_pin_hash", hash);
       pinPanel.classList.remove("active");
       gerenciarPanel.classList.add("active");
       await atualizarLista();
+      UI.mostrarToast("Novo PIN configurado", "Este dispositivo está protegido");
     } else {
-      pinStatus.textContent = "PIN incorreto.";
+      // Validação
+      if (hash === savedHash) {
+        pinPanel.classList.remove("active");
+        gerenciarPanel.classList.add("active");
+        await atualizarLista();
+      } else {
+        pinStatus.textContent = "PIN incorreto.";
+      }
     }
   });
 
@@ -285,10 +440,33 @@ async function main() {
     } else {
       pinInput.value = "";
       pinStatus.textContent = "";
+      
+      const savedHash = localStorage.getItem("admin_pin_hash");
+      const titleEl = document.getElementById("pin-titulo");
+      if (titleEl) {
+        titleEl.textContent = savedHash ? "Acesso Administrativo" : "Criar PIN de Admin";
+      }
+      pinInput.placeholder = savedHash ? "Digite o PIN" : "Crie um novo PIN numérico";
+      
       pinPanel.classList.add("active");
       setTimeout(() => pinInput.focus(), 50);
     }
   });
+
+  // Exportar / Importar
+  document.getElementById("btn-exportar").addEventListener("click", exportarCadastros);
+  document.getElementById("btn-importar").addEventListener("click", () => fileImport.click());
+  fileImport.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (file) await importarCadastros(file);
+    fileImport.value = "";
+  });
+
+  // Config Sheets
+  document.getElementById("btn-config-sheets").addEventListener("click", abrirConfigSheets);
+  document.getElementById("btn-cancelar-config").addEventListener("click", fecharConfigSheets);
+  btnTestarConfig.addEventListener("click", testarConfigSheets);
+  document.getElementById("btn-salvar-config").addEventListener("click", salvarConfigSheets);
 
   await atualizarLista();
   loop();
