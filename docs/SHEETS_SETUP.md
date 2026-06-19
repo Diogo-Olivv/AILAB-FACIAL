@@ -31,9 +31,9 @@ const ABA_EVENTOS = "Eventos";
 const ABA_RESUMO = "Resumo Semanal";
 const TZ = "America/Sao_Paulo";
 
-const HEADERS_EVENTOS = ["data", "nome", "entrada", "saida", "horas"];
+const HEADERS_EVENTOS = ["data", "nome", "matricula", "entrada", "saida", "horas"];
 const HEADERS_RESUMO = [
-  "semana_inicio", "semana_fim", "nome",
+  "semana_inicio", "semana_fim", "nome", "matricula",
   "horas_totais", "dias_presentes", "sessoes_abandonadas",
 ];
 
@@ -44,7 +44,6 @@ function doPost(e) {
       return _json({ ok: false, error: "token inválido" });
     }
     
-    // Rate limit simples via CacheService (max 1 req a cada 2 seg por token)
     const cache = CacheService.getScriptCache();
     if (cache.get(data.token)) {
       return _json({ ok: false, error: "rate limit excedido" });
@@ -53,8 +52,8 @@ function doPost(e) {
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const eventos = _aba(ss, ABA_EVENTOS, HEADERS_EVENTOS);
-    eventos.appendRow([data.data, data.nome, data.entrada, data.saida, data.horas]);
-    _upsertResumo(ss, data.data, data.nome);
+    eventos.appendRow([data.data, data.nome, data.matricula || "", data.entrada, data.saida, data.horas]);
+    _upsertResumo(ss, data.data, data.nome, data.matricula || "");
     return _json({ ok: true });
   } catch (err) {
     return _json({ ok: false, error: String(err) });
@@ -77,10 +76,9 @@ function _aba(ss, nome, headers) {
   return sh;
 }
 
-// Segunda-feira da semana ISO da data (yyyy-MM-dd).
 function _segundaDaSemana(dataStr) {
   const d = new Date(dataStr + "T12:00:00");
-  const dow = d.getDay(); // 0=domingo
+  const dow = d.getDay(); 
   const offset = dow === 0 ? -6 : 1 - dow;
   d.setDate(d.getDate() + offset);
   return Utilities.formatDate(d, TZ, "yyyy-MM-dd");
@@ -94,9 +92,7 @@ function _domingoDaSemana(dataStr) {
   return Utilities.formatDate(d, TZ, "yyyy-MM-dd");
 }
 
-// Recalcula a linha (semana, nome) varrendo Eventos. O(N) por evento, ok
-// para o volume do laboratório.
-function _upsertResumo(ss, dataStr, nome) {
+function _upsertResumo(ss, dataStr, nome, matricula) {
   const segunda = _segundaDaSemana(dataStr);
   const domingo = _domingoDaSemana(dataStr);
 
@@ -107,7 +103,7 @@ function _upsertResumo(ss, dataStr, nome) {
   let abandonadas = 0;
 
   for (let i = 1; i < linhas.length; i++) {
-    const [rData, rNome, , , rHoras] = linhas[i];
+    const [rData, rNome, rMatricula, rEntrada, rSaida, rHoras] = linhas[i];
     if (rNome !== nome) continue;
     const dStr = (rData instanceof Date)
       ? Utilities.formatDate(rData, TZ, "yyyy-MM-dd")
@@ -135,7 +131,7 @@ function _upsertResumo(ss, dataStr, nome) {
   }
 
   const valores = [
-    segunda, domingo, nome,
+    segunda, domingo, nome, matricula,
     Number(total.toFixed(2)),
     Object.keys(dias).length,
     abandonadas,

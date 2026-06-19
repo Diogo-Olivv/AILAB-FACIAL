@@ -56,7 +56,7 @@ export async function testarSheetsConfig({ webhook, token }) {
   }
 }
 
-async function enviar(sessao, cfg) {
+async function enviar(sessao, cfg, matricula) {
   const ci = new Date(sessao.check_in);
   const co = new Date(sessao.check_out);
   const abandonada = !!sessao.abandonada;
@@ -64,6 +64,7 @@ async function enviar(sessao, cfg) {
     token: cfg.token,
     data: ci.toISOString().slice(0, 10),
     nome: sessao.pessoa,
+    matricula: matricula || "",
     entrada: ci.toTimeString().slice(0, 5),
     saida: abandonada ? "n/a" : co.toTimeString().slice(0, 5),
     horas: abandonada ? "n/a" : ((co - ci) / 3600000).toFixed(2),
@@ -82,10 +83,18 @@ export async function sincronizar() {
   const cfg = getSheetsConfig();
   if (!cfg.webhook || !cfg.token) return;
   if (!navigator.onLine) return;
+  
+  const pessoas = await Storage.obterPessoas();
+  const mapaMatriculas = {};
+  for (const p of pessoas) {
+    mapaMatriculas[p.id] = p.matricula;
+  }
+
   const pendentes = await Storage.sessoesNaoSincronizadas();
   for (const s of pendentes) {
     try {
-      await enviar(s, cfg);
+      const matricula = mapaMatriculas[s.pessoa] || "";
+      await enviar(s, cfg, matricula);
       await Storage.marcarSincronizada(s.id);
       console.log("✓ sincronizado", s.id);
     } catch (e) {
