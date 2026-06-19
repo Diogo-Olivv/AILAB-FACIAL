@@ -6,7 +6,7 @@ if (!globalThis.structuredClone) {
 
 describe('Storage - State Machine de Presenças', () => {
   test('abrirSessao e sessaoAberta devem funcionar', async () => {
-    await Storage.addPessoa('joao', new Float32Array(128));
+    await Storage.addPessoa('joao', '123', new Float32Array(128));
     await Storage.abrirSessao('joao');
     
     const aberta = await Storage.sessaoAberta('joao');

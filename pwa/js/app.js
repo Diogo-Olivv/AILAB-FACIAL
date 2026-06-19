@@ -16,6 +16,7 @@ const MAX_TENTATIVAS_SEM_ROSTO = 20;
 const ADMIN_PIN = "1234";
 
 const nomeInput = document.getElementById("nome");
+const matriculaInput = document.getElementById("matricula");
 const lgpdConsent = document.getElementById("lgpd-consent");
 const btnCapturar = document.getElementById("btn-capturar");
 const enrollPanel = document.getElementById("enroll-panel");
@@ -38,11 +39,14 @@ worker.onmessage = (e) => {
 };
 
 function dispatchToWorker(type, data) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const handler = (e) => {
       if (e.data.type === `${type}_result`) {
         worker.removeEventListener('message', handler);
         resolve(e.data);
+      } else if (e.data.type === `${type}_error`) {
+        worker.removeEventListener('message', handler);
+        reject(new Error(e.data.error));
       }
     };
     worker.addEventListener('message', handler);
@@ -138,6 +142,7 @@ async function loop() {
 function abrirEnroll() {
   State.setModo("enrolling");
   nomeInput.value = "";
+  if (matriculaInput) matriculaInput.value = "";
   lgpdConsent.checked = false;
   UI.setEnrollStatus("Digite o nome e clique Capturar.");
   btnCapturar.disabled = false;
@@ -161,6 +166,11 @@ async function fluxoCadastro() {
     UI.setEnrollStatus("Nome inválido. Use letras/dígitos/underscore.", "warn");
     return;
   }
+  const matricula = matriculaInput ? matriculaInput.value.trim() : "";
+  if (!matricula) {
+    UI.setEnrollStatus("Matrícula é obrigatória.", "warn");
+    return;
+  }
   btnCapturar.disabled = true;
 
   const descritores = [];
@@ -171,23 +181,28 @@ async function fluxoCadastro() {
       UI.setEnrollStatus(`Foto ${i}/${N_FOTOS} — olhe para a câmera`);
       await new Promise((r) => setTimeout(r, DELAY_ENTRE_FOTOS_MS));
       
-      const res = await dispatchToWorker('enroll', {
-        imageData: Camera.getFrameData(),
-        inputSize: DETECTOR_INPUT_SIZE_ENROLL
-      });
-      const desc = res.descriptor;
+      try {
+        const res = await dispatchToWorker('enroll', {
+          imageData: Camera.getFrameData(),
+          inputSize: DETECTOR_INPUT_SIZE_ENROLL
+        });
+        const desc = res.descriptor;
 
-      if (!desc) {
-        tentativasSemRosto++;
-        if (tentativasSemRosto >= MAX_TENTATIVAS_SEM_ROSTO) {
-          UI.setEnrollStatus(`Cancelado: falha prolongada ao detectar rosto.`, "warn");
-          return;
+        if (!desc) {
+          tentativasSemRosto++;
+          if (tentativasSemRosto >= MAX_TENTATIVAS_SEM_ROSTO) {
+            UI.setEnrollStatus(`Cancelado: falha prolongada ao detectar rosto.`, "warn");
+            return;
+          }
+          UI.setEnrollStatus(`Tentando…`, "warn");
+          i--;
+          continue;
         }
-        UI.setEnrollStatus(`Tentando…`, "warn");
-        i--;
-        continue;
+        descritores.push(desc);
+      } catch (err) {
+        UI.setEnrollStatus(`Erro do worker: ${err.message}`, "warn");
+        return;
       }
-      descritores.push(desc);
     }
 
     const dim = descritores[0].length;
@@ -195,7 +210,7 @@ async function fluxoCadastro() {
     for (const d of descritores) for (let i = 0; i < dim; i++) media[i] += d[i];
     for (let i = 0; i < dim; i++) media[i] /= descritores.length;
 
-    await Storage.addPessoa(nome, media);
+    await Storage.addPessoa(nome, matricula, media);
     await atualizarLista();
     UI.mostrarToast(`${nome} cadastrado`, `${N_FOTOS} fotos capturadas`);
     fecharEnroll();
@@ -218,7 +233,8 @@ async function atualizarLista() {
   for (const p of pessoas) {
     const li = document.createElement("li");
     const span = document.createElement("span");
-    span.textContent = `${p.nome} · ${p.cadastrado_em.slice(0, 10)}`;
+    const mat = p.matricula ? ` (${p.matricula})` : "";
+    span.textContent = `${p.nome}${mat} · ${p.cadastrado_em.slice(0, 10)}`;
     li.appendChild(span);
     const btn = document.createElement("button");
     btn.textContent = "Remover";

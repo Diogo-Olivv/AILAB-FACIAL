@@ -73,10 +73,11 @@ async function runTx(storeName, mode, fn) {
 }
 
 export const Storage = {
-  async addPessoa(nome, embedding) {
+  async addPessoa(nome, matricula, embedding) {
     return runTx("pessoas", "readwrite", (s) => {
       s.put({
         nome,
+        matricula,
         embedding: Array.from(embedding),
         cadastrado_em: new Date().toISOString(),
       });
