@@ -26,33 +26,7 @@ const pinInput = document.getElementById("pin-input");
 const pinStatus = document.getElementById("pin-status");
 const listaEl = document.getElementById("lista");
 
-const worker = new Worker("js/worker.js?v=" + Date.now());
-let modelsLoaded = false;
-
-worker.onmessage = (e) => {
-  if (e.data.type === 'models_loaded') {
-    modelsLoaded = true;
-    UI.setStatus("Pronto. Aguardando rosto…");
-  } else if (e.data.type === 'models_error') {
-    UI.setStatus(`Erro ao carregar modelos no Worker: ${e.data.error}`, "warn");
-  }
-};
-
-function dispatchToWorker(type, data) {
-  return new Promise((resolve, reject) => {
-    const handler = (e) => {
-      if (e.data.type === `${type}_result`) {
-        worker.removeEventListener('message', handler);
-        resolve(e.data);
-      } else if (e.data.type === `${type}_error`) {
-        worker.removeEventListener('message', handler);
-        reject(new Error(e.data.error));
-      }
-    };
-    worker.addEventListener('message', handler);
-    worker.postMessage({ type, ...data });
-  });
-}
+let modelsLoaded = true;
 
 async function registrarPresenca(nome) {
   const ultimo = await Storage.ultimoEvento(nome);
@@ -96,21 +70,25 @@ async function loop() {
 
   const t0 = Date.now();
   try {
-    const frameData = Camera.getFrameData();
-    const resultMsg = await dispatchToWorker('recognize', {
-      imageData: frameData,
-      pessoas,
-      threshold: THRESHOLD,
-      inputSize: DETECTOR_INPUT_SIZE_RECONHECER
-    });
+    const tensor = faceapi.tf.browser.fromPixels(Camera.video);
+    const det = await faceapi
+      .detectSingleFace(tensor, new faceapi.TinyFaceDetectorOptions({ inputSize: DETECTOR_INPUT_SIZE_RECONHECER }))
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+    tensor.dispose();
 
-    if (!resultMsg.result) {
+    if (!det) {
       UI.setStatus("Aguardando rosto…");
       Camera.limpar();
     } else {
-      const { box, melhor } = resultMsg.result;
+      let melhor = { nome: null, dist: Infinity };
+      for (const p of pessoas) {
+        const dist = faceapi.euclideanDistance(det.descriptor, p.embedding);
+        if (dist < melhor.dist) melhor = { nome: p.nome, dist: dist };
+      }
+
       if (melhor.dist < THRESHOLD) {
-        Camera.desenharBox(box, melhor.nome, true);
+        Camera.desenharBox(det.detection.box, melhor.nome, true);
         const reg = await registrarPresenca(melhor.nome);
         if (reg?.acao === "entrada") {
           UI.setStatus(`Entrada de ${melhor.nome} registrada.`, "ok");
@@ -182,11 +160,14 @@ async function fluxoCadastro() {
       await new Promise((r) => setTimeout(r, DELAY_ENTRE_FOTOS_MS));
       
       try {
-        const res = await dispatchToWorker('enroll', {
-          imageData: Camera.getFrameData(),
-          inputSize: DETECTOR_INPUT_SIZE_ENROLL
-        });
-        const desc = res.descriptor;
+        const tensor = faceapi.tf.browser.fromPixels(Camera.video);
+        const det = await faceapi
+          .detectSingleFace(tensor, new faceapi.TinyFaceDetectorOptions({ inputSize: DETECTOR_INPUT_SIZE_ENROLL }))
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+        tensor.dispose();
+        
+        const desc = det ? Array.from(det.descriptor) : null;
 
         if (!desc) {
           tentativasSemRosto++;
@@ -201,7 +182,7 @@ async function fluxoCadastro() {
         }
         descritores.push(desc);
       } catch (err) {
-        UI.setEnrollStatus(`Erro do worker: ${err.message}`, "warn");
+        UI.setEnrollStatus(`Erro do faceapi: ${err.message}`, "warn");
         return;
       }
     }
@@ -251,13 +232,22 @@ async function atualizarLista() {
 }
 
 // Config e Setup
+async function carregarModelos() {
+  await faceapi.nets.tinyFaceDetector.loadFromUri("models");
+  await faceapi.nets.faceLandmark68Net.loadFromUri("models");
+  await faceapi.nets.faceRecognitionNet.loadFromUri("models");
+}
+
 async function main() {
   if (!navigator.mediaDevices?.getUserMedia) {
     UI.setStatus("Câmera não suportada neste navegador", "warn");
     return;
   }
-  UI.setStatus("Carregando modelos no WebWorker...");
+  
+  UI.setStatus("Carregando modelos de IA...");
+  await carregarModelos();
   await Camera.abrir();
+  UI.setStatus("Pronto. Aguardando rosto…");
 
   if (navigator.storage?.persist) {
     navigator.storage.persist().catch(() => {});
