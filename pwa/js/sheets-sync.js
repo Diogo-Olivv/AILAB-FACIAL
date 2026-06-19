@@ -106,4 +106,5 @@ export async function sincronizar() {
 
 setInterval(sincronizar, RETRY_INTERVAL_MS);
 window.addEventListener("online", sincronizar);
+window.addEventListener("sessao_fechada", sincronizar);
 sincronizar();

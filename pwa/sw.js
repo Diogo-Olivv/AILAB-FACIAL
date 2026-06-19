@@ -1,5 +1,5 @@
 // Service Worker para AILAB PWA — cache offline-first.
-const CACHE = "ailab-v13";
+const CACHE = "ailab-v14";
 const ASSETS = [
   "./",
   "./index.html",
