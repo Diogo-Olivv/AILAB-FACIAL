@@ -11,7 +11,7 @@ const FRAME_INTERVAL_MS = 500;
 const N_FOTOS = 8;
 const DELAY_ENTRE_FOTOS_MS = 700;
 const DETECTOR_INPUT_SIZE_RECONHECER = 320;
-const DETECTOR_INPUT_SIZE_ENROLL = 224;
+const DETECTOR_INPUT_SIZE_ENROLL = 320;
 const MAX_TENTATIVAS_SEM_ROSTO = 20;
 const ADMIN_PIN = "1234";
 
@@ -194,7 +194,8 @@ async function fluxoCadastro() {
             UI.setEnrollStatus(`Cancelado: falha prolongada ao detectar rosto.`, "warn");
             return;
           }
-          UI.setEnrollStatus(`Tentando…`, "warn");
+          UI.setEnrollStatus(`Tentando… (Aproxime ou ilumine melhor o rosto)`, "warn");
+          await new Promise((r) => setTimeout(r, 1000));
           i--;
           continue;
         }

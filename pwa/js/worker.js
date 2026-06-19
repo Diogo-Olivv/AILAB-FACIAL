@@ -86,7 +86,7 @@ self.onmessage = async (e) => {
       tensor.dispose();
       self.postMessage({ type: 'enroll_result', descriptor: det ? Array.from(det.descriptor) : null });
     } catch (err) {
-      self.postMessage({ type: 'enroll_result', descriptor: null });
+      self.postMessage({ type: 'enroll_error', error: "Inferência falhou: " + err.message });
     }
   }
 };
