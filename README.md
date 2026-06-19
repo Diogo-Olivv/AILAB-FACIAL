@@ -1,99 +1,70 @@
+![AILAB FACIAL Banner](docs/banner.png)
+
 # AILAB-FACIAL — Presença por Reconhecimento Facial
 
-Sistema de controle de presença para laboratório de extensão. Substitui a lista
-de assinatura manual por reconhecimento facial automático em um tablet Samsung
-Galaxy Tab S6 Lite posicionado na entrada do laboratório.
+Sistema offline-first de controle de presença para laboratório de extensão. Substitui a lista de assinatura manual por reconhecimento facial automático em um tablet ou computador posicionado na entrada do laboratório.
 
-> Projeto didático. O objetivo é tanto entregar o sistema quanto **aprender os
-> fundamentos de ciência de dados por trás do reconhecimento facial**.
+> Projeto didático e prático. O objetivo é tanto entregar o sistema com a melhor experiência de usuário quanto **aprender os fundamentos de inteligência artificial por trás do reconhecimento facial**.
+
+## 🚀 Novidades e Melhorias
+
+- **Offline-First PWA:** O sistema inteiro roda diretamente no navegador, suportando instalação como aplicativo e funcionando perfeitamente sem internet.
+- **Painel Administrativo Restrito:** Área de configurações, cadastros e backup protegida por um PIN numérico para evitar acesso não autorizado.
+- **Sincronização em Tempo Real (Google Sheets):** Registro instantâneo de Entrada e Saída. Calcula os minutos de permanência e os sincroniza com a nuvem quando houver conexão.
+- **Matrículas Integradas:** Cada aluno agora possui nome e matrícula vinculados nativamente à sua biometria facial.
 
 ## Arquitetura em uma frase
 
-PWA (web app instalável) que roda no tablet, usa a câmera frontal, identifica o
-participante via `face-api.js` (TensorFlow.js, 128-D embeddings), registra
-entrada/saída em IndexedDB e sincroniza com uma Google Sheets para os tutores
-visualizarem as horas.
+PWA (web app instalável) que roda no tablet, usa a câmera frontal, identifica o participante localmente via `face-api.js` (TensorFlow.js, 128-D embeddings), registra a entrada/saída em IndexedDB (Storage v2) e sincroniza em background com uma Google Sheets para os tutores visualizarem as horas de forma transparente.
 
 ```
 Tablet (PWA)  ──Wi-Fi──►  Google Sheets  ──►  Tutores
    │
-   └─ Câmera → detecção → embedding → matching → SQLite local
+   └─ Câmera → detecção → embedding → matching → IndexedDB
 ```
 
 ## Estrutura do repositório
 
 | Pasta | O que vive aqui |
 |---|---|
-| `notebooks/` | Jupyter — Sprint 1, fase de **aprendizado**. Cada notebook ensina um conceito. |
-| `enrollment/` | Scripts Python de cadastro de pessoas (gera embeddings a partir da webcam). |
-| `attendance/` | Lógica de presença em Python (SQLite, debounce, soma de horas). |
-| `dataset/` | Fotos cadastradas, 1 subpasta por pessoa. **Não versionar** (dado biométrico). |
-| `embeddings/` | Banco de embeddings (`database.json`). **Não versionar**. |
-| `pwa/` | App web final que vai rodar no tablet. |
-| `pwa/models/` | Modelos pré-treinados do face-api.js (baixados, não versionados). |
-| `docs/` | Notas, `THRESHOLD.md` (justificativa do threshold), `PRIVACIDADE.md` (LGPD). |
+| `notebooks/` | Jupyter — fase inicial de **aprendizado**. Cada notebook ensina um conceito do OpenCV e TensorFlow. |
+| `pwa/` | App web final (PWA) que roda no dispositivo com cache offline, UI e IA embarcada. |
+| `pwa/models/` | Modelos pré-treinados do face-api.js (TinyFaceDetector, 68Landmark, RecognitionNet). |
+| `pwa/js/` | Lógica central separada em módulos (`app.js`, `storage.js`, `sheets-sync.js`, `camera.js`, `ui.js`). |
+| `docs/` | Imagens (banner), notas de deploy, setup do Google Sheets e LGPD. |
+| `python/` | (Legado/Estudo) Antigo servidor e scripts de avaliação/validação de dataset do início do projeto. |
 
-## Como começar
+## Como testar e rodar o PWA
 
-```bash
-cd ~/Coding/AILAB-FACIAL
-python3 -m venv .venv          # 3.13 funciona; cmake vem via pip (ver requirements.txt)
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-python -m ipykernel install --user --name ailab-facial --display-name "AILAB-FACIAL"
-jupyter lab
-```
-
-## Fluxo de uso
-
-### Aprender (rodar 1x)
+O aplicativo foi inteiramente convertido para Web e funciona sem necessidade de servidor Python rodando por trás.
 
 ```bash
-jupyter lab        # abrir notebooks/01..05 em ordem
+# Navegue até a pasta do PWA
+cd pwa
+
+# Inicie um servidor web simples (ex: http-server do npm)
+npx http-server -p 8080
+
+# Abra http://localhost:8080 no seu navegador.
+# Clique em "Gerenciar" e crie seu PIN Administrativo.
 ```
 
-### Cadastrar pessoa (Python, validação)
+## Sincronização com o Google Sheets
 
-```bash
-python enrollment/enroll.py NOME --fotos 8
-# salva dataset/NOME/NN.jpg + embeddings/database.json
-```
+Para acompanhar a presença pelo Google Sheets:
+1. Crie uma planilha em branco no Google Sheets.
+2. Acesse **Extensões > Apps Script**.
+3. Copie o script contido em `docs/SHEETS_SETUP.md` e cole no editor.
+4. Clique em Implantação > Nova implantação > App Web (Acesso: Qualquer pessoa).
+5. Copie a URL gerada pelo Google.
+6. No aplicativo AILAB, abra as Configurações (⚙️), cole a URL e a senha de segurança (token).
+7. Clique em Salvar. O sistema irá automaticamente recriar as abas e enviar os dados das saídas dos alunos.
 
-### Loop de presença (Python, validação)
+## Privacidade e Segurança — LGPD
 
-```bash
-python attendance/run.py --show     # ESC para sair
-# escreve em attendance/attendance.db
-```
+O rosto de um aluno é um **dado biométrico sensível**. Antes de cadastrar qualquer participante:
 
-### PWA (final, roda no tablet)
-
-```bash
-cd pwa && python3 -m http.server 8765
-# abrir http://localhost:8765 → cadastro em /enroll.html
-# deploy: docs/DEPLOY_TABLET.md
-```
-
-## Sprints (status)
-
-| Sprint | Entrega | Status |
-|---|---|---|
-| 0 | Setup, requirements, estrutura | ✅ |
-| 1 | Notebooks `01..05` (detecção, alinhamento, embeddings, FAR/FRR) | ✅ threshold `0.55` (`docs/THRESHOLD.md`) |
-| 2 | `enrollment/enroll.py`, `attendance/logic.py`, `attendance/run.py` | ✅ lógica testada |
-| 3 | PWA (HTML/JS + face-api.js + IndexedDB + Service Worker) | ✅ |
-| 4 | Sync Google Sheets via Apps Script | ✅ código + `docs/SHEETS_SETUP.md` (webhook a configurar) |
-| 5 | Deploy GitHub Pages + Fully Kiosk | ✅ `docs/DEPLOY_TABLET.md` |
-| 6 | Avaliação em uso real após 1 semana | ⏳ depois do deploy |
-
-Plano completo: `~/.claude/plans/starry-sniffing-codd.md`.
-
-## Privacidade — LGPD
-
-Rosto é **dado biométrico sensível**. Antes de cadastrar qualquer participante:
-
-1. Coletar **consentimento explícito por escrito** (modelo em `docs/PRIVACIDADE.md`).
-2. Deixar claro: finalidade (presença), onde os dados ficam (tablet do lab +
-   planilha do lab), retenção (semestre vigente), direito de revogar.
-3. Embeddings e fotos **nunca** saem do tablet/planilha do laboratório.
+1. Foi implementado o **checkbox obrigatório de consentimento LGPD** direto no fluxo do aplicativo, que não permite o cadastro sem aceite.
+2. O participante deve estar ciente da finalidade (computar presença) e de onde os dados ficam hospedados.
+3. As fotos capturadas não são salvas de forma bruta; elas são matematicamente processadas e convertidas em matrizes vetoriais (embeddings).
+4. Os embeddings **nunca saem do dispositivo**, garantindo proteção contra interceptação dos dados biométricos.
