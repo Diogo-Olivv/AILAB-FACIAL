@@ -150,9 +150,9 @@ button:disabled { background: #555; cursor: not-allowed; }
   border-color: var(--accent);
 }
 
-/* === Modal de config Sheets (reusa estilo do enroll-panel) === */
+/* === Modais auxiliares: Config Sheets e PIN === */
 
-#config-panel {
+#config-panel, #pin-panel {
   position: fixed;
   inset: 0;
   background: rgba(11, 15, 26, 0.92);
@@ -164,8 +164,8 @@ button:disabled { background: #555; cursor: not-allowed; }
   padding: 1.5rem;
   z-index: 50;
 }
-#config-panel.active { display: flex; }
-#config-panel .panel-card {
+#config-panel.active, #pin-panel.active { display: flex; }
+#config-panel .panel-card, #pin-panel .panel-card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 1rem;
@@ -175,7 +175,7 @@ button:disabled { background: #555; cursor: not-allowed; }
   flex-direction: column;
   gap: 1rem;
 }
-#config-panel h2 { font-size: 1.3rem; font-weight: 600; }
+#config-panel h2, #pin-panel h2 { font-size: 1.3rem; font-weight: 600; }
 #config-panel code {
   background: var(--panel-2);
   padding: 0.1rem 0.35rem;
