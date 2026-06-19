@@ -84,10 +84,10 @@ export async function sincronizar() {
   if (!cfg.webhook || !cfg.token) return;
   if (!navigator.onLine) return;
   
-  const pessoas = await Storage.obterPessoas();
+  const pessoas = await Storage.listarPessoas();
   const mapaMatriculas = {};
   for (const p of pessoas) {
-    mapaMatriculas[p.id] = p.matricula;
+    mapaMatriculas[p.nome] = p.matricula;
   }
 
   const pendentes = await Storage.sessoesNaoSincronizadas();
