@@ -117,7 +117,7 @@ async function loop() {
           UI.setStatus(`${melhor.nome} já registrado há pouco…`);
         }
       } else {
-        Camera.desenharBox(box, null, false);
+        Camera.desenharBox(det.detection.box, null, false);
         UI.setStatus(`Rosto não reconhecido (dist ${melhor.dist.toFixed(2)})`, "warn");
       }
     }
