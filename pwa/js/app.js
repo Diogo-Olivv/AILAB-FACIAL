@@ -1,25 +1,23 @@
-import { Storage, MAX_SESSAO_MS } from "./storage.js";
+import { Storage } from "./storage.js";
 import { getSheetsConfig, setSheetsConfig, testarSheetsConfig, sincronizar } from "./sheets-sync.js";
 import { UI } from "./ui.js";
 import { Camera } from "./camera.js";
 import { State } from "./state.js";
+import { Flow } from "./flow.js";
+import { ActiveSessions } from "./active-sessions.js";
 import "./heartbeat.js";
 
-const THRESHOLD = 0.55;
-const DEBOUNCE_MS = 60_000;
-const FRAME_INTERVAL_MS = 500;
 const N_FOTOS = 8;
 const DELAY_ENTRE_FOTOS_MS = 700;
-const DETECTOR_INPUT_SIZE_RECONHECER = 320;
 const DETECTOR_INPUT_SIZE_ENROLL = 320;
 const MAX_TENTATIVAS_SEM_ROSTO = 20;
-const ADMIN_PIN = "1234";
 
 const nomeInput = document.getElementById("nome");
 const matriculaInput = document.getElementById("matricula");
 const lgpdConsent = document.getElementById("lgpd-consent");
 const btnCapturar = document.getElementById("btn-capturar");
-const enrollPanel = document.getElementById("enroll-panel");
+const enrollInline = document.getElementById("enroll-inline");
+const acaoBar = document.getElementById("acao-bar");
 const gerenciarPanel = document.getElementById("gerenciar-panel");
 const pinPanel = document.getElementById("pin-panel");
 const pinInput = document.getElementById("pin-input");
@@ -33,7 +31,8 @@ const cfgToken = document.getElementById("cfg-token");
 const cfgStatus = document.getElementById("cfg-status");
 const btnTestarConfig = document.getElementById("btn-testar-config");
 
-let modelsLoaded = true;
+const btnEntrada = document.getElementById("btn-entrada");
+const btnSaida = document.getElementById("btn-saida");
 
 async function hashSHA256(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
@@ -42,110 +41,26 @@ async function hashSHA256(str) {
     .join("");
 }
 
-async function registrarPresenca(nome) {
-  const ultimo = await Storage.ultimoEvento(nome);
-  if (ultimo && Date.now() - new Date(ultimo).getTime() < DEBOUNCE_MS) return null;
-
-  const aberta = await Storage.sessaoAberta(nome);
-  if (aberta) {
-    const inicio = new Date(aberta.check_in).getTime();
-    if (Date.now() - inicio > MAX_SESSAO_MS) {
-      await Storage.fecharSessaoAbandonada(aberta.id);
-      await Storage.abrirSessao(nome);
-      return { acao: "entrada_pos_abandono" };
-    }
-    const r = await Storage.fecharSessao(aberta.id);
-    const minutos = Math.round((new Date(r.check_out) - new Date(r.check_in)) / 60000);
-    return { acao: "saida", minutos };
-  }
-
-  await Storage.abrirSessao(nome);
-  return { acao: "entrada" };
-}
-
-async function loop() {
-  if (State.modo !== "recognizing") {
-    setTimeout(loop, FRAME_INTERVAL_MS);
-    return;
-  }
-
-  const pessoas = await Storage.listarPessoas();
-  if (pessoas.length === 0) {
-    UI.setStatus("Nenhuma pessoa cadastrada. Clique em + Cadastrar.", "warn");
-    Camera.limpar();
-    setTimeout(loop, 2000);
-    return;
-  }
-
-  if (!modelsLoaded) {
-    setTimeout(loop, FRAME_INTERVAL_MS);
-    return;
-  }
-
-  const t0 = Date.now();
-  try {
-    const tensor = faceapi.tf.browser.fromPixels(Camera.video);
-    const det = await faceapi
-      .detectSingleFace(tensor, new faceapi.TinyFaceDetectorOptions({ inputSize: DETECTOR_INPUT_SIZE_RECONHECER }))
-      .withFaceLandmarks()
-      .withFaceDescriptor();
-    tensor.dispose();
-
-    if (!det) {
-      UI.setStatus("Aguardando rosto…");
-      Camera.limpar();
-    } else {
-      let melhor = { nome: null, dist: Infinity };
-      for (const p of pessoas) {
-        const dist = faceapi.euclideanDistance(det.descriptor, p.embedding);
-        if (dist < melhor.dist) melhor = { nome: p.nome, dist: dist };
-      }
-
-      if (melhor.dist < THRESHOLD) {
-        Camera.desenharBox(det.detection.box, melhor.nome, true);
-        const reg = await registrarPresenca(melhor.nome);
-        if (reg?.acao === "entrada") {
-          UI.setStatus(`Entrada de ${melhor.nome} registrada.`, "ok");
-          UI.mostrarToast(`Olá, ${melhor.nome}!`, "Entrada registrada");
-        } else if (reg?.acao === "saida") {
-          UI.setStatus(`Saída de ${melhor.nome} registrada.`, "ok");
-          UI.mostrarToast(`Até mais, ${melhor.nome}!`, `Saída registrada · ${UI.formatarMinutos(reg.minutos)}`);
-        } else if (reg?.acao === "entrada_pos_abandono") {
-          UI.setStatus(`Sessão anterior expirou. Nova entrada de ${melhor.nome}.`, "warn");
-          UI.mostrarToast(`Olá, ${melhor.nome}!`, "Sessão anterior > 10h foi encerrada", "warn");
-        } else {
-          UI.setStatus(`${melhor.nome} já registrado há pouco…`);
-        }
-      } else {
-        Camera.desenharBox(det.detection.box, null, false);
-        UI.setStatus(`Rosto não reconhecido (dist ${melhor.dist.toFixed(2)})`, "warn");
-      }
-    }
-  } catch (e) {
-    console.error(e);
-    UI.setStatus("Erro: " + e.message, "warn");
-  }
-
-  const dt = Date.now() - t0;
-  setTimeout(loop, Math.max(0, FRAME_INTERVAL_MS - dt));
-}
-
-// Enroll
+// Enroll inline: troca acao-bar pelo formulário, mantendo a câmera visível
+// pra o usuário centralizar o rosto enquanto digita e durante a captura.
 function abrirEnroll() {
   State.setModo("enrolling");
   nomeInput.value = "";
   if (matriculaInput) matriculaInput.value = "";
   lgpdConsent.checked = false;
-  UI.setEnrollStatus("Digite o nome e clique Capturar.");
+  UI.setEnrollStatus("Centralize o rosto na câmera, preencha os campos e clique Capturar.");
   btnCapturar.disabled = false;
-  enrollPanel.classList.add("active");
+  acaoBar.hidden = true;
+  enrollInline.hidden = false;
   setTimeout(() => nomeInput.focus(), 50);
 }
 
 function fecharEnroll() {
-  enrollPanel.classList.remove("active");
-  State.setModo("recognizing");
+  enrollInline.hidden = true;
+  acaoBar.hidden = false;
+  State.setModo("idle");
   Camera.limpar();
+  UI.setStatus("Pronto. Escolha uma ação.");
 }
 
 async function fluxoCadastro() {
@@ -172,7 +87,7 @@ async function fluxoCadastro() {
     for (let i = 1; i <= N_FOTOS; i++) {
       UI.setEnrollStatus(`Foto ${i}/${N_FOTOS} — olhe para a câmera`);
       await new Promise((r) => setTimeout(r, DELAY_ENTRE_FOTOS_MS));
-      
+
       try {
         const tensor = faceapi.tf.browser.fromPixels(Camera.video);
         const det = await faceapi
@@ -180,7 +95,7 @@ async function fluxoCadastro() {
           .withFaceLandmarks()
           .withFaceDescriptor();
         tensor.dispose();
-        
+
         const desc = det ? Array.from(det.descriptor) : null;
 
         if (!desc) {
@@ -379,11 +294,11 @@ async function main() {
     UI.setStatus("Câmera não suportada neste navegador", "warn");
     return;
   }
-  
+
   UI.setStatus("Carregando modelos de IA...");
   await carregarModelos();
   await Camera.abrir();
-  UI.setStatus("Pronto. Aguardando rosto…");
+  UI.setStatus("Pronto. Escolha uma ação.");
 
   if (navigator.storage?.persist) {
     navigator.storage.persist().catch(() => {});
@@ -398,6 +313,12 @@ async function main() {
     console.warn(e);
   }
 
+  // Habilita botões de ação só depois dos modelos carregados.
+  btnEntrada.disabled = false;
+  btnSaida.disabled = false;
+  btnEntrada.addEventListener("click", () => Flow.iniciarFluxo("entrada"));
+  btnSaida.addEventListener("click", () => Flow.iniciarFluxo("saida"));
+
   document.getElementById("btn-abrir-enroll").addEventListener("click", abrirEnroll);
   document.getElementById("btn-cancelar-enroll").addEventListener("click", fecharEnroll);
   btnCapturar.addEventListener("click", fluxoCadastro);
@@ -405,7 +326,7 @@ async function main() {
   document.getElementById("btn-cancelar-pin").addEventListener("click", () => {
     pinPanel.classList.remove("active");
   });
-  
+
   document.getElementById("btn-confirmar-pin").addEventListener("click", async () => {
     const pin = pinInput.value.trim();
     if (!pin) {
@@ -416,14 +337,12 @@ async function main() {
     const savedHash = localStorage.getItem("admin_pin_hash");
 
     if (!savedHash) {
-      // Setup no primeiro acesso
       localStorage.setItem("admin_pin_hash", hash);
       pinPanel.classList.remove("active");
       gerenciarPanel.classList.add("active");
       await atualizarLista();
       UI.mostrarToast("Novo PIN configurado", "Este dispositivo está protegido");
     } else {
-      // Validação
       if (hash === savedHash) {
         pinPanel.classList.remove("active");
         gerenciarPanel.classList.add("active");
@@ -440,14 +359,14 @@ async function main() {
     } else {
       pinInput.value = "";
       pinStatus.textContent = "";
-      
+
       const savedHash = localStorage.getItem("admin_pin_hash");
       const titleEl = document.getElementById("pin-titulo");
       if (titleEl) {
         titleEl.textContent = savedHash ? "Acesso Administrativo" : "Criar PIN de Admin";
       }
       pinInput.placeholder = savedHash ? "Digite o PIN" : "Crie um novo PIN numérico";
-      
+
       pinPanel.classList.add("active");
       setTimeout(() => pinInput.focus(), 50);
     }
@@ -469,7 +388,9 @@ async function main() {
   document.getElementById("btn-salvar-config").addEventListener("click", salvarConfigSheets);
 
   await atualizarLista();
-  loop();
+
+  // Painel de ativos: monta e mantém em sincronia.
+  ActiveSessions.iniciar();
 }
 
 window.addEventListener("DOMContentLoaded", main);

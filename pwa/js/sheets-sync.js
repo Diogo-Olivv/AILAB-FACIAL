@@ -68,6 +68,7 @@ async function enviar(sessao, cfg, matricula) {
     entrada: ci.toTimeString().slice(0, 5),
     saida: abandonada ? "n/a" : co.toTimeString().slice(0, 5),
     horas: abandonada ? "n/a" : ((co - ci) / 3600000).toFixed(2),
+    confirmacao: sessao.confirmacao || "auto",
   };
   const res = await fetch(cfg.webhook, {
     method: "POST",

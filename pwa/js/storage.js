@@ -1,13 +1,16 @@
 // IndexedDB para PWA AILAB. Stores: pessoas, sessoes.
-// pessoas: { nome (PK), embedding (number[128]), cadastrado_em (ISO 8601) }
+// pessoas: { nome (PK), matricula, embedding (number[128]), cadastrado_em (ISO 8601) }
 // sessoes: { id (autoInc PK), pessoa, check_in (ISO), check_out (ISO|null),
-//            abandonada (0|1), sincronizado (0|1) }
+//            abandonada (0|1), sincronizado (0|1),
+//            confirmacao ("auto" | "manual") }
 //
 // abandonada = sessão fechada automaticamente por exceder MAX_SESSAO_MS sem saída.
 // Quando abandonada=1, a sincronização envia saida/horas como "n/a".
+// confirmacao = "auto" quando o reconhecimento facial bateu e o usuário confirmou
+//   ("Sim, sou eu"); "manual" quando o usuário escolheu o nome correto na fallback.
 
 const DB_NAME = "ailab";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export const MAX_SESSAO_MS = 10 * 60 * 60 * 1000; // 10h
 
@@ -28,16 +31,16 @@ function getDb() {
         s.createIndex("pessoa", "pessoa", { unique: false });
         s.createIndex("sincronizado", "sincronizado", { unique: false });
       } else {
-        // Migração v1 → v2: default abandonada=0 nas sessões antigas.
+        // Migrações: garante campos novos em sessões antigas (default seguro).
         const s = tx.objectStore("sessoes");
         s.openCursor().onsuccess = (ev) => {
           const cur = ev.target.result;
           if (!cur) return;
-          if (cur.value.abandonada === undefined) {
-            const v = cur.value;
-            v.abandonada = 0;
-            cur.update(v);
-          }
+          const v = cur.value;
+          let mudou = false;
+          if (v.abandonada === undefined) { v.abandonada = 0; mudou = true; }
+          if (v.confirmacao === undefined) { v.confirmacao = "auto"; mudou = true; }
+          if (mudou) cur.update(v);
           cur.continue();
         };
       }
@@ -151,7 +154,7 @@ export const Storage = {
     });
   },
 
-  async abrirSessao(pessoa) {
+  async abrirSessao(pessoa, { confirmacao = "auto" } = {}) {
     return runTx("sessoes", "readwrite", (s) => {
       s.add({
         pessoa,
@@ -159,17 +162,20 @@ export const Storage = {
         check_out: null,
         abandonada: 0,
         sincronizado: 0,
+        confirmacao,
       });
     });
   },
 
-  async fecharSessao(id) {
+  async fecharSessao(id, { confirmacao = "auto" } = {}) {
     return runTx("sessoes", "readwrite", async (s) => {
       const r = await reqAsPromise(s.get(id));
       if (!r) throw new Error(`sessão ${id} não encontrada`);
       r.check_out = new Date().toISOString();
       r.abandonada = 0;
       r.sincronizado = 0;
+      // Sobrescreve com a confirmação do fechamento (entrada pode ter sido auto e saída manual ou vice-versa).
+      r.confirmacao = confirmacao;
       s.put(r);
       return r;
     });
@@ -224,6 +230,32 @@ export const Storage = {
       if (!r) return;
       r.sincronizado = 1;
       s.put(r);
+    });
+  },
+
+  // Sessões com check_out == null. Enriquece com matrícula e duração até agora.
+  // Ordenado por check_in crescente (quem chegou primeiro aparece primeiro).
+  async sessoesAtivas() {
+    const pessoas = await this.listarPessoas();
+    const mapa = new Map(pessoas.map((p) => [p.nome, p]));
+    return runTx("sessoes", "readonly", async (s) => {
+      const todas = await reqAsPromise(s.getAll());
+      const agora = Date.now();
+      const abertas = todas
+        .filter((r) => !r.check_out)
+        .map((r) => {
+          const pessoa = mapa.get(r.pessoa);
+          return {
+            id: r.id,
+            nome: r.pessoa,
+            matricula: pessoa ? pessoa.matricula || "" : "",
+            check_in: r.check_in,
+            duracaoMs: agora - new Date(r.check_in).getTime(),
+            confirmacao: r.confirmacao || "auto",
+          };
+        });
+      abertas.sort((a, b) => a.check_in.localeCompare(b.check_in));
+      return abertas;
     });
   },
 };

@@ -18,38 +18,58 @@
   </header>
 
   <main>
-    <div id="video-wrap">
-      <video id="video" autoplay muted playsinline></video>
-      <canvas id="overlay"></canvas>
-    </div>
-    <div id="status">Inicializando…</div>
-  </main>
+    <section id="camera-col">
+      <div id="video-wrap">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div id="status">Inicializando…</div>
 
-  <!-- Painel de cadastro (modal-like, overlay) -->
-  <div id="enroll-panel" role="dialog" aria-modal="true" aria-labelledby="enroll-titulo">
-    <div class="panel-card">
-      <h2 id="enroll-titulo">Cadastrar participante</h2>
-      <div class="form-row">
-        <label for="nome">Nome (snake_case)</label>
-        <input id="nome" type="text" placeholder="ex.: maria_silva" autocomplete="off" />
+      <div id="acao-bar">
+        <button id="btn-entrada" class="btn-acao btn-entrada" type="button" disabled>
+          <span class="btn-acao-icone">→</span>
+          <span class="btn-acao-label">ENTRADA</span>
+        </button>
+        <button id="btn-saida" class="btn-acao btn-saida" type="button" disabled>
+          <span class="btn-acao-icone">←</span>
+          <span class="btn-acao-label">SAÍDA</span>
+        </button>
       </div>
-      <div class="form-row" style="margin-top: 0.5rem;">
-        <label for="matricula">Matrícula</label>
-        <input id="matricula" type="text" placeholder="ex.: 2023001" autocomplete="off" />
+
+      <!-- Formulário de cadastro inline (substitui acao-bar quando ativo) -->
+      <div id="enroll-inline" hidden>
+        <h2 id="enroll-titulo">Cadastrar participante</h2>
+        <div class="enroll-fields">
+          <div class="form-row">
+            <label for="nome">Nome (snake_case)</label>
+            <input id="nome" type="text" placeholder="ex.: maria_silva" autocomplete="off" />
+          </div>
+          <div class="form-row">
+            <label for="matricula">Matrícula</label>
+            <input id="matricula" type="text" placeholder="ex.: 2023001" autocomplete="off" />
+          </div>
+        </div>
+        <div class="form-row form-row-inline">
+          <input type="checkbox" id="lgpd-consent" />
+          <label for="lgpd-consent">
+            Confirmo que assinei o <a href="termos.html" target="_blank">Termo de Consentimento (LGPD)</a>
+          </label>
+        </div>
+        <div id="enroll-status"></div>
+        <div class="row-actions">
+          <button id="btn-cancelar-enroll" class="btn-secondary" type="button">Cancelar</button>
+          <button id="btn-capturar" type="button">Capturar 8 fotos</button>
+        </div>
       </div>
-      <div class="form-row" style="flex-direction: row; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-        <input type="checkbox" id="lgpd-consent" />
-        <label for="lgpd-consent" style="font-size: 0.85rem; font-weight: normal; cursor: pointer;">
-          Confirmo que assinei o <a href="termos.html" target="_blank" style="color: var(--accent); text-decoration: underline;">Termo de Consentimento (LGPD)</a>
-        </label>
-      </div>
-      <div id="enroll-status" style="color: var(--muted); font-size: 0.95rem; min-height: 1.5rem;"></div>
-      <div class="row-actions">
-        <button id="btn-cancelar-enroll" class="btn-secondary" type="button">Cancelar</button>
-        <button id="btn-capturar" type="button">Capturar 8 fotos</button>
-      </div>
-    </div>
-  </div>
+    </section>
+
+    <!-- Painel de sessões ativas, sempre visível à direita -->
+    <aside id="ativos-side" aria-label="Sessões ativas">
+      <h3>Quem está no lab <span id="ativos-badge">0</span></h3>
+      <ul id="ativos-lista" class="lista-ativos"></ul>
+      <div class="ativos-rodape">Atualiza automaticamente.</div>
+    </aside>
+  </main>
 
   <!-- Modal de PIN Administrativo -->
   <div id="pin-panel" role="dialog" aria-modal="true" aria-labelledby="pin-titulo">
@@ -78,6 +98,36 @@
     </div>
     <input id="file-import" type="file" accept="application/json,.json" hidden />
   </aside>
+
+  <!-- Modal de confirmação pós-reconhecimento -->
+  <div id="confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-titulo">
+    <div class="panel-card">
+      <h2 id="confirm-titulo">Confirmar identidade</h2>
+      <div id="confirm-acao" class="confirm-acao">— ENTRADA —</div>
+      <div id="confirm-nome" class="confirm-nome">—</div>
+      <div id="confirm-matricula" class="confirm-matricula"></div>
+      <div id="confirm-info" style="color: var(--muted); font-size: 0.85rem; text-align: center;"></div>
+      <div class="row-actions" style="justify-content: space-between;">
+        <button id="btn-confirm-nao" class="btn-secondary" type="button">Não sou eu</button>
+        <button id="btn-confirm-sim" type="button">Sim, sou eu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de seleção manual (fallback quando reconhecimento errou) -->
+  <div id="select-panel" role="dialog" aria-modal="true" aria-labelledby="select-titulo">
+    <div class="panel-card">
+      <h2 id="select-titulo">Quem é você?</h2>
+      <div id="select-acao" class="confirm-acao">— ENTRADA —</div>
+      <div class="form-row">
+        <input id="select-busca" type="text" placeholder="Buscar por nome ou matrícula…" autocomplete="off" />
+      </div>
+      <ul id="select-lista" class="lista-select"></ul>
+      <div class="row-actions">
+        <button id="btn-select-cancelar" class="btn-secondary" type="button">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal de configuração do Sheets -->
   <div id="config-panel" role="dialog" aria-modal="true" aria-labelledby="config-titulo">
