@@ -52,7 +52,8 @@ async function renderizar() {
 
     const dur = document.createElement("div");
     dur.className = "duracao";
-    dur.textContent = `há ${_formatarDuracao(s.duracaoMs)} · entrou às ${s.check_in.slice(11, 16)}`;
+    const horaEntrada = new Date(s.check_in).toTimeString().slice(0, 5);
+    dur.textContent = `há ${_formatarDuracao(s.duracaoMs)} · entrou às ${horaEntrada}`;
 
     li.appendChild(nome);
     li.appendChild(dur);
