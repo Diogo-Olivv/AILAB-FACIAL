@@ -1,11 +1,12 @@
-"""Identifica rostos em frames JPEG/PNG contra embeddings no Supabase.
+"""Extracao e identificacao de embeddings faciais.
 
-Usa InsightFace (buffalo_s) com execução em CPU — sem CUDA necessário.
+Usa InsightFace (buffalo_s) com execucao em CPU e produz vetores 512-D
+normalizados (L2). A extracao e reutilizada tanto pelo reconhecimento quanto
+pelo cadastro de novos integrantes.
 """
 from __future__ import annotations
 
 import io
-from functools import lru_cache
 
 import numpy as np
 from PIL import Image
@@ -13,23 +14,22 @@ from PIL import Image
 from app.config import settings
 from app.db.supabase_client import get_client
 
+_MIN_DET_SCORE = 0.70
+_analyzer = None
+
 
 def _get_analyzer():
-    """Lazy-init do FaceAnalysis (carrega modelos uma única vez)."""
+    """Lazy-init do FaceAnalysis (carrega modelos uma unica vez)."""
     try:
         from insightface.app import FaceAnalysis  # type: ignore
     except ImportError as exc:
         raise RuntimeError(
-            "insightface não instalado. Execute: pip install insightface onnxruntime"
+            "insightface nao instalado. Execute: pip install insightface onnxruntime"
         ) from exc
 
     fa = FaceAnalysis(name="buffalo_s", providers=["CPUExecutionProvider"])
     fa.prepare(ctx_id=0, det_size=(320, 320))
     return fa
-
-
-# Inicializado na primeira chamada
-_analyzer = None
 
 
 def _analyzer_instance():
@@ -39,54 +39,56 @@ def _analyzer_instance():
     return _analyzer
 
 
-def _load_profiles() -> list[dict]:
-    """Carrega todos os perfis ativos com embedding do Supabase."""
-    rows = (
-        get_client()
-        .table("profiles")
-        .select("id, embedding")
-        .eq("active", True)
-        .execute()
-    )
-    return rows.data or []
+def extract_embedding(image_bytes: bytes) -> np.ndarray | None:
+    """Extrai o embedding facial 512-D normalizado de uma imagem.
 
-
-def identify(image_bytes: bytes) -> dict | None:
-    """Extrai embedding do frame e retorna {profile_id, confidence} ou None.
-
-    Args:
-        image_bytes: conteúdo bruto da imagem (JPEG, PNG ou WebP).
-
-    Returns:
-        dict com ``profile_id`` e ``confidence`` (0–1), ou None se não reconhecido.
+    Retorna o vetor da face de maior score, ou None se nenhuma face confiavel
+    for detectada.
     """
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    arr = np.array(img)
-    # InsightFace espera BGR
-    bgr = arr[:, :, ::-1]
+    bgr = np.array(img)[:, :, ::-1]
 
-    fa = _analyzer_instance()
-    faces = fa.get(bgr)
+    faces = _analyzer_instance().get(bgr)
     if not faces:
         return None
 
-    # Pega a face com maior score de detecção
     face = max(faces, key=lambda f: float(f.det_score))
-    if float(face.det_score) < 0.70:
+    if float(face.det_score) < _MIN_DET_SCORE:
         return None
 
     enc = np.array(face.embedding, dtype=np.float64)
     norm = np.linalg.norm(enc)
     if norm == 0:
         return None
-    enc /= norm
+    return enc / norm
 
-    profiles = _load_profiles()
-    if not profiles:
+
+def _load_embeddings() -> tuple[list[str], np.ndarray] | None:
+    """Carrega embeddings de integrantes ativos da tabela isolada."""
+    rows = (
+        get_client()
+        .table("face_embeddings")
+        .select("profile_id, embedding, profiles!inner(active)")
+        .eq("profiles.active", True)
+        .execute()
+    ).data or []
+    if not rows:
+        return None
+    ids = [r["profile_id"] for r in rows]
+    matrix = np.array([r["embedding"] for r in rows], dtype=np.float64)
+    return ids, matrix
+
+
+def identify(image_bytes: bytes) -> dict | None:
+    """Retorna {profile_id, confidence} do integrante reconhecido, ou None."""
+    enc = extract_embedding(image_bytes)
+    if enc is None:
         return None
 
-    ids = [p["id"] for p in profiles]
-    matrix = np.array([p["embedding"] for p in profiles], dtype=np.float64)
+    loaded = _load_embeddings()
+    if loaded is None:
+        return None
+    ids, matrix = loaded
 
     dists = np.linalg.norm(matrix - enc, axis=1)
     idx = int(np.argmin(dists))

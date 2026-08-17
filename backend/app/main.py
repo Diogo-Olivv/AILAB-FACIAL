@@ -6,7 +6,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import health, recognize
+from app.routers import enroll, health, recognize
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,6 +28,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(recognize.router)
+app.include_router(enroll.router)
 
 
 @app.on_event("startup")
