@@ -12,11 +12,6 @@ class Settings(BaseSettings):
     face_threshold: float = 0.55
     debounce_seconds: int = 60
 
-    # Google Sheets
-    google_creds_json: str = ""          # JSON completo da service-account
-    sheets_spreadsheet_id: str = ""
-    sheets_sync_interval_minutes: int = 15
-
     # API
     api_key: str = ""                    # chave para autenticar a câmera
 

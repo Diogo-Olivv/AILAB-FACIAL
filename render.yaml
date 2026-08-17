@@ -12,12 +12,6 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
-      - key: GOOGLE_CREDS_JSON
-        sync: false
-      - key: SHEETS_SPREADSHEET_ID
-        sync: false
-      - key: SHEETS_SYNC_INTERVAL_MINUTES
-        value: "15"
       - key: FACE_THRESHOLD
         value: "0.55"
       - key: DEBOUNCE_SECONDS

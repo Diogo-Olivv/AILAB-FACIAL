@@ -64,10 +64,3 @@ def session_stats(
         "year": year,
         "month": month,
     }
-
-
-@router.post("/sync/sheets", dependencies=[Depends(verify_api_key)])
-def trigger_sheets_sync():
-    """Dispara o sync Google Sheets manualmente (util para testes)."""
-    from app.services.sheets_service import sync_batch
-    return sync_batch()

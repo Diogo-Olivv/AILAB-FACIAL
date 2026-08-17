@@ -29,15 +29,3 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(recognize.router)
 app.include_router(enroll.router)
-
-
-@app.on_event("startup")
-async def on_startup() -> None:
-    from workers.sheets_worker import start_scheduler
-    start_scheduler()
-
-
-@app.on_event("shutdown")
-async def on_shutdown() -> None:
-    from workers.sheets_worker import stop_scheduler
-    stop_scheduler()
