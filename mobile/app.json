@@ -21,7 +21,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -34,6 +35,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2894c5e9-4025-43db-a053-4bff089e7cc3"
+      }
+    },
+    "owner": "icabralokas-team"
   }
 }

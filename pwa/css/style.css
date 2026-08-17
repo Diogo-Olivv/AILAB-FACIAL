@@ -267,9 +267,9 @@ button:disabled { background: #555; cursor: not-allowed; }
   border-color: var(--accent);
 }
 
-/* === Modais auxiliares: Config Sheets, PIN, Confirm, Select === */
+/* === Modais auxiliares: Owner login, PIN, Confirm, Select === */
 
-#config-panel, #pin-panel, #confirm-panel, #select-panel {
+#owner-login, #pin-panel, #confirm-panel, #select-panel {
   position: fixed;
   inset: 0;
   background: rgba(11, 15, 26, 0.92);
@@ -281,9 +281,9 @@ button:disabled { background: #555; cursor: not-allowed; }
   padding: 1.5rem;
   z-index: 50;
 }
-#config-panel.active, #pin-panel.active,
+#owner-login.active, #pin-panel.active,
 #confirm-panel.active, #select-panel.active { display: flex; }
-#config-panel .panel-card, #pin-panel .panel-card,
+#owner-login .panel-card, #pin-panel .panel-card,
 #confirm-panel .panel-card, #select-panel .panel-card {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -294,14 +294,8 @@ button:disabled { background: #555; cursor: not-allowed; }
   flex-direction: column;
   gap: 1rem;
 }
-#config-panel h2, #pin-panel h2,
+#owner-login h2, #pin-panel h2,
 #confirm-panel h2, #select-panel h2 { font-size: 1.3rem; font-weight: 600; }
-#config-panel code {
-  background: var(--panel-2);
-  padding: 0.1rem 0.35rem;
-  border-radius: 0.25rem;
-  font-size: 0.85rem;
-}
 
 /* === Painel de gerenciamento (lista) === */
 

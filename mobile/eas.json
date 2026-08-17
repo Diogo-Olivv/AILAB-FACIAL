@@ -16,7 +16,9 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://ailab-facial-api.onrender.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://ailab-facial-api.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://jbahfjfvyomayrmytpdk.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiYWhmamZ2eW9tYXlybXl0cGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5NzgzMDgsImV4cCI6MjEwMjU1NDMwOH0.W81hTTZ2fPPicnnOFiqNPR_V5x8S0tqNeFy9q_kOnDc"
       }
     },
     "production": {

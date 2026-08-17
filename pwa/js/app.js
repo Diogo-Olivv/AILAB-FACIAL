@@ -1,11 +1,10 @@
 import { Storage } from "./storage.js";
-import { getSheetsConfig, setSheetsConfig, testarSheetsConfig, sincronizar } from "./sheets-sync.js";
+import { garantirOwner } from "./auth.js";
 import { UI } from "./ui.js";
 import { Camera } from "./camera.js";
 import { State } from "./state.js";
 import { Flow } from "./flow.js";
 import { ActiveSessions } from "./active-sessions.js";
-import "./heartbeat.js";
 
 const N_FOTOS = 8;
 const DELAY_ENTRE_FOTOS_MS = 700;
@@ -24,12 +23,6 @@ const pinInput = document.getElementById("pin-input");
 const pinStatus = document.getElementById("pin-status");
 const listaEl = document.getElementById("lista");
 const fileImport = document.getElementById("file-import");
-
-const configPanel = document.getElementById("config-panel");
-const cfgWebhook = document.getElementById("cfg-webhook");
-const cfgToken = document.getElementById("cfg-token");
-const cfgStatus = document.getElementById("cfg-status");
-const btnTestarConfig = document.getElementById("btn-testar-config");
 
 const btnEntrada = document.getElementById("btn-entrada");
 const btnSaida = document.getElementById("btn-saida");
@@ -231,57 +224,6 @@ async function importarCadastros(file) {
   UI.mostrarToast("Importação concluída", partes.join(" · ") || "sem mudanças");
 }
 
-// --- config sheets ---
-
-function abrirConfigSheets() {
-  const atual = getSheetsConfig();
-  cfgWebhook.value = atual.webhook;
-  cfgToken.value = atual.token;
-  cfgStatus.textContent = atual.webhook && atual.token
-    ? "Configurado neste dispositivo."
-    : "Não configurado — sincronização desabilitada.";
-  cfgStatus.style.color = "var(--muted)";
-  configPanel.classList.add("active");
-  setTimeout(() => cfgWebhook.focus(), 50);
-}
-
-function fecharConfigSheets() {
-  configPanel.classList.remove("active");
-}
-
-function _setCfgStatus(msg, classe = "") {
-  cfgStatus.textContent = msg;
-  cfgStatus.style.color = classe === "ok" ? "var(--accent)" :
-                          classe === "warn" ? "var(--warn)" : "var(--muted)";
-}
-
-async function testarConfigSheets() {
-  const webhook = cfgWebhook.value.trim();
-  const token = cfgToken.value.trim();
-  if (!webhook || !token) {
-    _setCfgStatus("Preencha URL e token.", "warn");
-    return;
-  }
-  btnTestarConfig.disabled = true;
-  _setCfgStatus("Testando…");
-  const r = await testarSheetsConfig({ webhook, token });
-  btnTestarConfig.disabled = false;
-  if (r.ok) {
-    _setCfgStatus("✓ Conectado. Apps Script respondeu ok:true.", "ok");
-  } else {
-    _setCfgStatus("✗ " + (r.error || "falha desconhecida"), "warn");
-  }
-}
-
-function salvarConfigSheets() {
-  const webhook = cfgWebhook.value.trim();
-  const token = cfgToken.value.trim();
-  setSheetsConfig({ webhook, token });
-  UI.mostrarToast("Configuração salva", webhook && token ? "Sincronização ativa" : "Sincronização desabilitada (campos vazios)");
-  fecharConfigSheets();
-  if (webhook && token) sincronizar();
-}
-
 // Config e Setup
 async function carregarModelos() {
   await faceapi.nets.tinyFaceDetector.loadFromUri("models");
@@ -294,6 +236,8 @@ async function main() {
     UI.setStatus("Câmera não suportada neste navegador", "warn");
     return;
   }
+
+  await garantirOwner();
 
   UI.setStatus("Carregando modelos de IA...");
   await carregarModelos();
@@ -380,12 +324,6 @@ async function main() {
     if (file) await importarCadastros(file);
     fileImport.value = "";
   });
-
-  // Config Sheets
-  document.getElementById("btn-config-sheets").addEventListener("click", abrirConfigSheets);
-  document.getElementById("btn-cancelar-config").addEventListener("click", fecharConfigSheets);
-  btnTestarConfig.addEventListener("click", testarConfigSheets);
-  document.getElementById("btn-salvar-config").addEventListener("click", salvarConfigSheets);
 
   await atualizarLista();
 

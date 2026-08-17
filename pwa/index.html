@@ -94,7 +94,6 @@
     <div class="row-actions" style="border-top: 1px solid var(--border); padding-top: 0.75rem;">
       <button id="btn-exportar" class="btn-secondary" type="button">↓ Exportar</button>
       <button id="btn-importar" class="btn-secondary" type="button">↑ Importar</button>
-      <button id="btn-config-sheets" class="btn-secondary" type="button">⚙ Sheets</button>
     </div>
     <input id="file-import" type="file" accept="application/json,.json" hidden />
   </aside>
@@ -129,27 +128,24 @@
     </div>
   </div>
 
-  <!-- Modal de configuração do Sheets -->
-  <div id="config-panel" role="dialog" aria-modal="true" aria-labelledby="config-titulo">
+  <!-- Overlay de login do owner (dispositivo do laboratorio) -->
+  <div id="owner-login">
     <div class="panel-card">
-      <h2 id="config-titulo">Configurar Google Sheets</h2>
+      <h2>Acesso ao reconhecimento</h2>
       <p style="color: var(--muted); font-size: 0.9rem;">
-        Valores salvos só neste dispositivo (localStorage). Setup do Apps Script: <code>docs/SHEETS_SETUP.md</code>.
+        Login exclusivo do dispositivo do laboratório.
       </p>
       <div class="form-row">
-        <label for="cfg-webhook">URL do webhook (Apps Script /exec)</label>
-        <input id="cfg-webhook" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" />
+        <label for="owner-email">Email</label>
+        <input id="owner-email" type="email" autocomplete="username" />
       </div>
       <div class="form-row">
-        <label for="cfg-token">Token (mesmo valor de EXPECTED_TOKEN no Code.gs)</label>
-        <input id="cfg-token" type="text" placeholder="hex aleatório" autocomplete="off" />
+        <label for="owner-senha">Senha</label>
+        <input id="owner-senha" type="password" autocomplete="current-password" />
       </div>
-      <div id="cfg-status" style="color: var(--muted); font-size: 0.9rem; min-height: 1.5rem;"></div>
+      <div id="owner-status" style="font-size: 0.9rem; min-height: 1.5rem;"></div>
       <div class="row-actions">
-        <button id="btn-cancelar-config" class="btn-secondary" type="button">Fechar</button>
-        <button id="btn-testar-config" class="btn-secondary" type="button">Testar</button>
-        <button id="btn-salvar-config" type="button">Salvar</button>
-      </div>
+        <button id="owner-btn" type="button">Entrar</button>
       </div>
     </div>
   </div>
