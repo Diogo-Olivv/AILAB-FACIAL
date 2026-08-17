@@ -6,10 +6,12 @@ import { Cadastro } from "./pages/Cadastro";
 import { Dashboard } from "./pages/Dashboard";
 import { Kiosk } from "./pages/Kiosk";
 
+const basename = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={basename}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route

@@ -1,70 +1,91 @@
-![AILAB FACIAL Banner](docs/banner.png)
-
 # AILAB-FACIAL — Presença por Reconhecimento Facial
 
-Sistema offline-first de controle de presença para laboratório de extensão. Substitui a lista de assinatura manual por reconhecimento facial automático em um tablet ou computador posicionado na entrada do laboratório.
+Controle de presença para o laboratório de extensão. Substitui a lista de assinatura manual por reconhecimento facial: um tablet na entrada identifica o integrante pela câmera e registra entrada/saída. Tutores acompanham as horas por um painel web.
 
-> Projeto didático e prático. O objetivo é tanto entregar o sistema com a melhor experiência de usuário quanto **aprender os fundamentos de inteligência artificial por trás do reconhecimento facial**.
+> Projeto didático e prático. O objetivo é tanto entregar o sistema com boa experiência de uso quanto aprender os fundamentos de inteligência artificial por trás do reconhecimento facial.
 
-## 🚀 Novidades e Melhorias
+## Arquitetura
 
-- **Offline-First PWA:** O sistema inteiro roda diretamente no navegador, suportando instalação como aplicativo e funcionando perfeitamente sem internet.
-- **Painel Administrativo Restrito:** Área de configurações, cadastros e backup protegida por um PIN numérico para evitar acesso não autorizado.
-- **Sincronização em Tempo Real (Google Sheets):** Registro instantâneo de Entrada e Saída. Calcula os minutos de permanência e os sincroniza com a nuvem quando houver conexão.
-- **Matrículas Integradas:** Cada aluno agora possui nome e matrícula vinculados nativamente à sua biometria facial.
-
-## Arquitetura em uma frase
-
-PWA (web app instalável) que roda no tablet, usa a câmera frontal, identifica o participante localmente via `face-api.js` (TensorFlow.js, 128-D embeddings), registra a entrada/saída em IndexedDB (Storage v2) e sincroniza em background com uma Google Sheets para os tutores visualizarem as horas de forma transparente.
+Reconhecimento server-side. Os clientes (tablet e web) capturam frames da câmera e enviam ao backend, que faz detecção, gera o embedding, compara com os cadastrados e registra a sessão. A biometria nunca sai do servidor.
 
 ```
-Tablet (PWA)  ──Wi-Fi──►  Google Sheets  ──►  Tutores
-   │
-   └─ Câmera → detecção → embedding → matching → IndexedDB
+Tablet (app Expo)  ─frames→  Backend FastAPI  ─service_role→  Supabase (Postgres)
+Web (React kiosk)  ─frames→   InsightFace 512-D                 ↑ leitura anon
+                                                          Dashboard web (tutores)
 ```
+
+- **Backend (FastAPI + InsightFace):** recebe os frames, gera o embedding facial de 512 dimensões (buffalo_s, L2-normalizado, ONNX CPU), faz o match, aplica debounce e escreve a sessão no Supabase usando a `service_role` key. É o único componente que acessa a biometria.
+- **Supabase (PostgreSQL):** banco único do sistema. `profiles`, `sessions`, `face_embeddings`, `face_logs`, com RLS. Clientes leem com a chave `anon`; `face_embeddings` é acessível somente pela `service_role`.
+- **App Expo (tablet):** APK Android instalado no tablet da entrada. Lê presença/histórico e faz o cadastro de novos integrantes (captura as fotos e envia ao backend).
+- **Web (React + Vite):** painel dos tutores (dashboard de horas) e modo kiosk de reconhecimento no navegador. Publicado no GitHub Pages.
 
 ## Estrutura do repositório
 
 | Pasta | O que vive aqui |
 |---|---|
-| `notebooks/` | Jupyter — fase inicial de **aprendizado**. Cada notebook ensina um conceito do OpenCV e TensorFlow. |
-| `pwa/` | App web final (PWA) que roda no dispositivo com cache offline, UI e IA embarcada. |
-| `pwa/models/` | Modelos pré-treinados do face-api.js (TinyFaceDetector, 68Landmark, RecognitionNet). |
-| `pwa/js/` | Lógica central separada em módulos (`app.js`, `storage.js`, `sheets-sync.js`, `camera.js`, `ui.js`). |
-| `docs/` | Imagens (banner), notas de deploy, setup do Google Sheets e LGPD. |
-| `python/` | (Legado/Estudo) Antigo servidor e scripts de avaliação/validação de dataset do início do projeto. |
+| `backend/` | API FastAPI. `app/routers` (recognize, enroll, health), `app/services` (face, enroll, session), `app/db`. Deploy via Docker. |
+| `web/` | SPA React + Vite + Tailwind. Login, dashboard, cadastro e kiosk. |
+| `mobile/` | App Expo (React Native, expo-router). Tabs: Presença, Histórico, Câmera, Cadastro. |
+| `supabase/` | `schema.sql` (tabelas, RPCs, RLS). Aplicar no SQL Editor ou `supabase db push`. |
+| `pwa/`, `python/`, `enrollment/` | Legado das fases anteriores (PWA offline e scripts de estudo). Não fazem parte do fluxo atual. |
 
-## Como testar e rodar o PWA
+## Rodando localmente
 
-O aplicativo foi inteiramente convertido para Web e funciona sem necessidade de servidor Python rodando por trás.
+### Backend
 
 ```bash
-# Navegue até a pasta do PWA
-cd pwa
-
-# Inicie um servidor web simples (ex: http-server do npm)
-npx http-server -p 8080
-
-# Abra http://localhost:8080 no seu navegador.
-# Clique em "Gerenciar" e crie seu PIN Administrativo.
+cd backend
+cp .env.example .env   # SUPABASE_URL, SUPABASE_SERVICE_KEY, API_KEY, FACE_THRESHOLD, DEBOUNCE_SECONDS
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
 
-## Sincronização com o Google Sheets
+### Web
 
-Para acompanhar a presença pelo Google Sheets:
-1. Crie uma planilha em branco no Google Sheets.
-2. Acesse **Extensões > Apps Script**.
-3. Copie o script contido em `docs/SHEETS_SETUP.md` e cole no editor.
-4. Clique em Implantação > Nova implantação > App Web (Acesso: Qualquer pessoa).
-5. Copie a URL gerada pelo Google.
-6. No aplicativo AILAB, abra as Configurações (⚙️), cole a URL e a senha de segurança (token).
-7. Clique em Salvar. O sistema irá automaticamente recriar as abas e enviar os dados das saídas dos alunos.
+```bash
+cd web
+cp .env.example .env   # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_BASE_URL, VITE_API_KEY, VITE_OWNER_EMAIL
+npm install
+npm run dev
+```
 
-## Privacidade e Segurança — LGPD
+### Mobile (Expo)
 
-O rosto de um aluno é um **dado biométrico sensível**. Antes de cadastrar qualquer participante:
+```bash
+cd mobile
+cp .env.example .env   # EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_API_BASE_URL, EXPO_PUBLIC_API_KEY
+npm install
+npx expo start
+```
 
-1. Foi implementado o **checkbox obrigatório de consentimento LGPD** direto no fluxo do aplicativo, que não permite o cadastro sem aceite.
-2. O participante deve estar ciente da finalidade (computar presença) e de onde os dados ficam hospedados.
-3. As fotos capturadas não são salvas de forma bruta; elas são matematicamente processadas e convertidas em matrizes vetoriais (embeddings).
-4. Os embeddings **nunca saem do dispositivo**, garantindo proteção contra interceptação dos dados biométricos.
+## Deploy
+
+### Backend (Render)
+
+`render.yaml` define o serviço Docker `ailab-facial-api`. As variáveis `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` e `API_KEY` entram como secrets no painel do Render (`sync: false`); `FACE_THRESHOLD` e `DEBOUNCE_SECONDS` têm default no arquivo.
+
+### Web (GitHub Pages)
+
+O workflow `.github/workflows/deploy-pages.yml` builda `web/` com base `/AILAB-FACIAL/` e publica no GitHub Pages a cada push na `master`. As `VITE_*` são secrets do repositório. O SPA usa fallback `404.html` para as rotas do react-router.
+
+### Tablet (APK Android via EAS)
+
+O tablet roda o app Expo empacotado como APK. O perfil `preview` do `eas.json` já produz um APK apontando para o backend em produção.
+
+```bash
+cd mobile
+npm install -g eas-cli
+eas login
+eas build -p android --profile preview
+```
+
+Ao terminar, o EAS devolve um link do APK. Baixe no tablet e instale (ativar "fontes desconhecidas" nas configurações do Android). O backend que o app consome vem de `EXPO_PUBLIC_API_BASE_URL` (definido em `eas.json` no perfil `preview`); o Supabase vem de `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`. Não é preciso rebuildar para trocar o tablet: o mesmo APK serve para qualquer dispositivo, pois fala com o backend pela rede.
+
+## Privacidade e Segurança (LGPD)
+
+O rosto é um dado biométrico sensível. O sistema trata isso da seguinte forma:
+
+1. O cadastro exige consentimento explícito (checkbox obrigatório no fluxo do app e da web); sem aceite não há cadastro. O `profiles` guarda `consent_given` e `consent_at`.
+2. As fotos não são armazenadas: são processadas em embedding (vetor de 512 dimensões) e a imagem é descartada.
+3. O embedding fica apenas em `face_embeddings`, tabela sem policy de RLS, acessível somente pela `service_role` do backend. Nenhum cliente autenticado (web ou app) lê a biometria.
+4. O match acontece no servidor; o vetor facial nunca chega ao browser nem ao tablet.
