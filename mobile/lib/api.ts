@@ -38,6 +38,12 @@ export interface SessionStats {
   month: number | null;
 }
 
+export interface EnrollResult {
+  profile_id: string;
+  name: string;
+  photos_used: number;
+}
+
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 
 export async function recognizeFrame(imageBlob: Blob): Promise<RecognizeResult> {
@@ -61,6 +67,19 @@ export async function getSessionStats(
   return request<SessionStats>(`/api/v1/sessions/stats/${profileId}${qs}`);
 }
 
-export async function triggerSheetsSync(): Promise<{ synced: number; cursor: number }> {
-  return request("/api/v1/sync/sheets", { method: "POST" });
+export async function enrollStudent(
+  name: string,
+  matricula: string,
+  consent: boolean,
+  frames: Blob[]
+): Promise<EnrollResult> {
+  const form = new FormData();
+  form.append("name", name);
+  form.append("matricula", matricula);
+  form.append("consent", String(consent));
+  frames.forEach((frame, i) => form.append("frames", frame, `frame_${i}.jpg`));
+  return request<EnrollResult>("/api/v1/enroll", {
+    method: "POST",
+    body: form,
+  });
 }

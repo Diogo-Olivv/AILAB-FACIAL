@@ -51,6 +51,16 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="enroll"
+        options={{
+          title: "Cadastro",
+          tabBarLabel: "Cadastro",
+          tabBarIcon: ({ color }) => (
+            <TabIcon emoji="🆕" color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
