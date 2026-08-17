@@ -1,0 +1,20 @@
+fastapi>=0.111,<1
+uvicorn[standard]>=0.30,<1
+python-multipart>=0.0.9
+pydantic-settings>=2.2,<3
+
+# Supabase
+supabase>=2.4,<3
+
+# Face recognition
+insightface>=0.7
+onnxruntime>=1.17,<2
+Pillow>=10.0,<12
+numpy>=1.26,<2
+
+# Google Sheets
+google-auth>=2.29
+google-api-python-client>=2.130
+
+# Scheduler
+APScheduler>=3.10,<4

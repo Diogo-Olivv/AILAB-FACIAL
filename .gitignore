@@ -26,3 +26,18 @@ service-account*.json
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Backend Python
+backend/.env
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+
+# Mobile / Expo
+mobile/.env
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/android/
+mobile/ios/
+mobile/.env.local

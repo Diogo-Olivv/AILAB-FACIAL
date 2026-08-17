@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: ailab-facial-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    healthCheckPath: /health
+    branch: master
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: GOOGLE_CREDS_JSON
+        sync: false
+      - key: SHEETS_SPREADSHEET_ID
+        sync: false
+      - key: SHEETS_SYNC_INTERVAL_MINUTES
+        value: "15"
+      - key: FACE_THRESHOLD
+        value: "0.55"
+      - key: DEBOUNCE_SECONDS
+        value: "60"
+      - key: API_KEY
+        sync: false

@@ -1,0 +1,29 @@
+{
+  "name": "ailab-facial-mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "dependencies": {
+    "expo": "~57.0.14",
+    "expo-router": "~5.1.3",
+    "expo-status-bar": "~57.0.1",
+    "expo-camera": "~16.1.6",
+    "react": "19.2.3",
+    "react-native": "0.86.2",
+    "@supabase/supabase-js": "^2.46.2",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "react-native-url-polyfill": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "build:preview": "eas build --platform android --profile preview",
+    "build:prod": "eas build --platform android --profile production"
+  },
+  "private": true
+}
