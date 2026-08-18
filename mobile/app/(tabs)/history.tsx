@@ -33,7 +33,7 @@ export default function HistoryScreen() {
         .order("check_in", { ascending: false })
         .limit(100);
       if (err) setError(err.message);
-      else setSessions((data as HistorySession[]) ?? []);
+      else setSessions((data as unknown as HistorySession[]) ?? []);
       setLoading(false);
     })();
   }, []);
