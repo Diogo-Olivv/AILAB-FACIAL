@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # Face recognition
     face_threshold: float = 0.55
     debounce_seconds: int = 60
+    insightface_root: str = "~/.insightface"  # onde o pacote buffalo_s fica salvo
 
     # API
     api_key: str = ""                    # chave para autenticar a câmera

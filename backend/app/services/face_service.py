@@ -7,6 +7,7 @@ pelo cadastro de novos integrantes.
 from __future__ import annotations
 
 import io
+import os
 
 import numpy as np
 from PIL import Image
@@ -27,7 +28,12 @@ def _get_analyzer():
             "insightface nao instalado. Execute: pip install insightface onnxruntime"
         ) from exc
 
-    fa = FaceAnalysis(name="buffalo_s", providers=["CPUExecutionProvider"])
+    fa = FaceAnalysis(
+        name="buffalo_s",
+        root=os.path.expanduser(settings.insightface_root),
+        providers=["CPUExecutionProvider"],
+        allowed_modules=["detection", "recognition"],  # dispensa landmark/genderage p/ poupar RAM
+    )
     fa.prepare(ctx_id=0, det_size=(320, 320))
     return fa
 
@@ -37,6 +43,11 @@ def _analyzer_instance():
     if _analyzer is None:
         _analyzer = _get_analyzer()
     return _analyzer
+
+
+def warmup() -> None:
+    """Carrega o modelo no startup para nao pagar o custo no primeiro request."""
+    _analyzer_instance()
 
 
 def extract_embedding(image_bytes: bytes) -> np.ndarray | None:
