@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from app.db.supabase_client import get_client
 from app.deps import validate_image, verify_api_key
@@ -15,7 +15,10 @@ router = APIRouter(prefix="/api/v1", tags=["recognize"])
 
 
 @router.post("/recognize", dependencies=[Depends(verify_api_key)])
-async def recognize(frame: UploadFile = File(...)):
+async def recognize(
+    frame: UploadFile = File(...),
+    action: str | None = Form(None),
+):
     """Recebe um frame da camera, identifica o rosto e registra o evento."""
     data = await frame.read()
     validate_image(frame.content_type, len(data))
@@ -32,7 +35,7 @@ async def recognize(frame: UploadFile = File(...)):
     except Exception as exc:  # noqa: BLE001
         log.warning("Falha ao gravar face_log: %s", exc)
 
-    event = register_event(result["profile_id"])
+    event = register_event(result["profile_id"], action)
     return {"recognized": True, **result, "event": event}
 
 

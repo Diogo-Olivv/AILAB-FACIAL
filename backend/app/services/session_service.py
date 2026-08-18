@@ -51,11 +51,16 @@ def _last_event_ts(profile_id: str) -> datetime | None:
 # API pública
 # ──────────────────────────────────────────────────────────────────────────────
 
-def register_event(profile_id: str) -> dict[str, Any]:
-    """Alterna check-in / check-out com debounce.
+def register_event(profile_id: str, action: str | None = None) -> dict[str, Any]:
+    """Registra entrada/saida com debounce.
+
+    Args:
+        action: quando ``check_in`` ou ``check_out``, forca a direcao; caso
+            contrario alterna conforme a sessao aberta.
 
     Returns:
-        dict com campo ``action`` em {check_in, check_out, debounced}.
+        dict com campo ``action`` em
+        {check_in, check_out, already_in, not_in, debounced}.
     """
     now = datetime.now(UTC)
     db = get_client()
@@ -70,6 +75,11 @@ def register_event(profile_id: str) -> dict[str, Any]:
         }
 
     open_sess = _open_session(profile_id)
+
+    if action == "check_in" and open_sess is not None:
+        return {"action": "already_in", "profile_id": profile_id}
+    if action == "check_out" and open_sess is None:
+        return {"action": "not_in", "profile_id": profile_id}
 
     if open_sess is None:
         # ── CHECK-IN ──────────────────────────────────────────────────────────

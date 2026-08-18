@@ -18,12 +18,19 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
+export type RecognitionAction =
+  | "check_in"
+  | "check_out"
+  | "already_in"
+  | "not_in"
+  | "debounced";
+
 export interface RecognizeResult {
   recognized: boolean;
   profile_id?: string;
   confidence?: number;
   event?: {
-    action: "check_in" | "check_out" | "debounced";
+    action: RecognitionAction;
     session_id?: number;
     timestamp?: string;
     duration_minutes?: number;
@@ -46,9 +53,13 @@ export interface EnrollResult {
 
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 
-export async function recognizeFrame(imageBlob: Blob): Promise<RecognizeResult> {
+export async function recognizeFrame(
+  imageBlob: Blob,
+  action?: "check_in" | "check_out"
+): Promise<RecognizeResult> {
   const form = new FormData();
   form.append("frame", imageBlob, "frame.jpg");
+  if (action) form.append("action", action);
   return request<RecognizeResult>("/api/v1/recognize", {
     method: "POST",
     body: form,

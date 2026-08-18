@@ -7,7 +7,8 @@ export function useRecognize() {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const recognize = useCallback(async (imageBlob: Blob) => {
+  const recognize = useCallback(
+    async (imageBlob: Blob, action?: "check_in" | "check_out") => {
     // Cancela chamada anterior se ainda pendente
     abortRef.current?.abort();
     abortRef.current = new AbortController();
@@ -15,7 +16,7 @@ export function useRecognize() {
     setLoading(true);
     setError(null);
     try {
-      const res = await recognizeFrame(imageBlob);
+      const res = await recognizeFrame(imageBlob, action);
       setResult(res);
       return res;
     } catch (err: any) {
@@ -26,7 +27,9 @@ export function useRecognize() {
     } finally {
       setLoading(false);
     }
-  }, []);
+    },
+    []
+  );
 
   return { recognize, result, loading, error };
 }
