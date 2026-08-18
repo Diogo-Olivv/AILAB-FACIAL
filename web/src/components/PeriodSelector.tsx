@@ -28,7 +28,9 @@ export function PeriodSelector({
             key={key}
             onClick={() => onPeriod(key)}
             className={`rounded-full px-4 py-2 text-sm transition ${
-              period === key ? "bg-accent text-white" : "bg-surface text-white/60 hover:text-white"
+              period === key
+                ? "bg-navy text-white"
+                : "border border-line bg-card text-muted hover:text-ink"
             }`}
           >
             {PERIOD_LABELS[key]}
@@ -37,14 +39,14 @@ export function PeriodSelector({
       </div>
 
       {period === "custom" && (
-        <div className="flex flex-wrap items-center gap-3 text-sm text-white/60">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
           <label className="flex items-center gap-2">
             De
             <input
               type="date"
               value={customFrom}
               onChange={(e) => onCustomFrom(e.target.value)}
-              className="rounded-lg bg-surface px-3 py-2 text-white outline-none focus:ring-2 focus:ring-accent"
+              className="rounded-lg border border-line bg-white px-3 py-2 text-ink outline-none focus:ring-2 focus:ring-navy"
             />
           </label>
           <label className="flex items-center gap-2">
@@ -53,7 +55,7 @@ export function PeriodSelector({
               type="date"
               value={customTo}
               onChange={(e) => onCustomTo(e.target.value)}
-              className="rounded-lg bg-surface px-3 py-2 text-white outline-none focus:ring-2 focus:ring-accent"
+              className="rounded-lg border border-line bg-white px-3 py-2 text-ink outline-none focus:ring-2 focus:ring-navy"
             />
           </label>
         </div>

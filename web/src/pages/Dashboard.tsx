@@ -61,14 +61,14 @@ export function Dashboard() {
   const days = useMemo(() => groupByDay(members, filtered, new Date()), [members, filtered]);
 
   return (
-    <div className="min-h-screen bg-base px-4 py-8">
+    <div className="min-h-screen bg-cream px-4 py-8">
       <div className="mx-auto max-w-3xl space-y-6">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-white">Tempo de permanencia</h1>
-            <p className="text-sm text-white/50">Painel de acompanhamento do laboratorio.</p>
+            <h1 className="text-2xl font-semibold text-ink">Tempo de permanencia</h1>
+            <p className="text-sm text-muted">Painel de acompanhamento do laboratorio.</p>
           </div>
-          <button onClick={signOut} className="text-sm text-white/60 hover:text-white">
+          <button onClick={signOut} className="text-sm text-muted hover:text-ink">
             Sair
           </button>
         </header>
@@ -87,7 +87,9 @@ export function Dashboard() {
             <button
               onClick={() => setView("totals")}
               className={`rounded-lg px-4 py-2 text-sm ${
-                view === "totals" ? "bg-accent text-white" : "bg-surface text-white/60 hover:text-white"
+                view === "totals"
+                  ? "bg-navy text-white"
+                  : "border border-line bg-card text-muted hover:text-ink"
               }`}
             >
               Totais
@@ -95,7 +97,9 @@ export function Dashboard() {
             <button
               onClick={() => setView("history")}
               className={`rounded-lg px-4 py-2 text-sm ${
-                view === "history" ? "bg-accent text-white" : "bg-surface text-white/60 hover:text-white"
+                view === "history"
+                  ? "bg-navy text-white"
+                  : "border border-line bg-card text-muted hover:text-ink"
               }`}
             >
               Historico diario
@@ -104,8 +108,8 @@ export function Dashboard() {
           <MemberSelector members={members} selected={memberId} onSelect={setMemberId} />
         </div>
 
-        {loading && <p className="text-white/60">Carregando...</p>}
-        {error && <p className="text-red-400">{error}</p>}
+        {loading && <p className="text-muted">Carregando...</p>}
+        {error && <p className="text-warn">{error}</p>}
 
         {!loading && !error && (view === "totals" ? <TotalsTable rows={totals} /> : <DailyHistory days={days} />)}
       </div>

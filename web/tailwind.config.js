@@ -4,9 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        base: "#0F0F1A",
-        surface: "#1A1A2E",
-        accent: "#6C47FF",
+        cream: "#F4EFE4",
+        card: "#FBF8F1",
+        navy: "#1E2D5F",
+        green: "#166534",
+        ink: "#141A33",
+        muted: "#6B6F82",
+        warn: "#DC2626",
+        line: "rgba(30,45,95,0.14)",
       },
     },
   },

@@ -3,35 +3,35 @@ import { formatDuration } from "../lib/aggregate";
 
 export function TotalsTable({ rows }: { rows: MemberTotal[] }) {
   if (rows.length === 0) {
-    return <p className="text-white/40">Nenhum registro no periodo.</p>;
+    return <p className="text-muted">Nenhum registro no periodo.</p>;
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl bg-surface">
-      <table className="w-full text-left text-sm text-white">
-        <thead className="bg-black/20 text-white/60">
+    <div className="overflow-x-auto rounded-2xl border border-line bg-card">
+      <table className="w-full text-left text-sm text-ink">
+        <thead className="bg-navy text-white/80">
           <tr>
-            <th className="px-4 py-3">Integrante</th>
-            <th className="px-4 py-3">Matricula</th>
-            <th className="px-4 py-3">Sessoes</th>
-            <th className="px-4 py-3">Total</th>
-            <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3 font-medium">Integrante</th>
+            <th className="px-4 py-3 font-medium">Matricula</th>
+            <th className="px-4 py-3 font-medium">Sessoes</th>
+            <th className="px-4 py-3 font-medium">Total</th>
+            <th className="px-4 py-3 font-medium">Status</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.member.id} className="border-t border-white/5">
+            <tr key={row.member.id} className="border-t border-line">
               <td className="px-4 py-3">{row.member.name}</td>
-              <td className="px-4 py-3 text-white/60">{row.member.matricula ?? "-"}</td>
-              <td className="px-4 py-3 text-white/60">{row.sessionCount}</td>
+              <td className="px-4 py-3 text-muted">{row.member.matricula ?? "-"}</td>
+              <td className="px-4 py-3 text-muted">{row.sessionCount}</td>
               <td className="px-4 py-3">{formatDuration(row.totalSeconds)}</td>
               <td className="px-4 py-3">
                 {row.present ? (
-                  <span className="rounded-full bg-green-500/20 px-2 py-1 text-xs text-green-400">
+                  <span className="rounded-full bg-green/15 px-2 py-1 text-xs font-medium text-green">
                     No lab
                   </span>
                 ) : (
-                  <span className="text-xs text-white/40">Fora</span>
+                  <span className="text-xs text-muted">Fora</span>
                 )}
               </td>
             </tr>
