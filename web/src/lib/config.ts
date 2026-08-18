@@ -1,1 +1,1 @@
-export const OWNER_EMAIL = (import.meta.env.VITE_OWNER_EMAIL ?? "").toLowerCase();
+export const VIEWER_EMAIL = (import.meta.env.VITE_VIEWER_EMAIL ?? "").toLowerCase();

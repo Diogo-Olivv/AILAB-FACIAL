@@ -1,13 +1,8 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./useAuth";
 
-interface Props {
-  ownerOnly?: boolean;
-  children: React.ReactNode;
-}
-
-export function RequireAuth({ ownerOnly = false, children }: Props) {
-  const { session, isOwner, loading } = useAuth();
+export function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -15,9 +10,6 @@ export function RequireAuth({ ownerOnly = false, children }: Props) {
   }
   if (!session) {
     return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-  if (ownerOnly && !isOwner) {
-    return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;
 }

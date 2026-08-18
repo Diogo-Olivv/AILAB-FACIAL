@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
-import { OWNER_EMAIL } from "../lib/config";
+import { VIEWER_EMAIL } from "../lib/config";
 import { AuthContext, type AuthState } from "./auth-context";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -19,16 +19,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const value = useMemo<AuthState>(() => {
-    const email = session?.user.email?.toLowerCase() ?? "";
-    return {
+  const value = useMemo<AuthState>(
+    () => ({
       session,
       user: session?.user ?? null,
       loading,
-      isOwner: Boolean(OWNER_EMAIL) && email === OWNER_EMAIL,
-      signIn: async (emailInput, password) => {
+      signIn: async (password) => {
         const { error } = await supabase.auth.signInWithPassword({
-          email: emailInput,
+          email: VIEWER_EMAIL,
           password,
         });
         if (error) throw error;
@@ -36,8 +34,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut: async () => {
         await supabase.auth.signOut();
       },
-    };
-  }, [session, loading]);
+    }),
+    [session, loading]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

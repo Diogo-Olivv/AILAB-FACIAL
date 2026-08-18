@@ -5,8 +5,7 @@ export interface AuthState {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  isOwner: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 

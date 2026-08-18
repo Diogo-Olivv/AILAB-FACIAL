@@ -42,7 +42,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_OWNER_EMAIL: ${{ secrets.VITE_OWNER_EMAIL }}
+          VITE_VIEWER_EMAIL: ${{ secrets.VITE_VIEWER_EMAIL }}
 
       - name: SPA fallback
         run: cp dist/index.html dist/404.html
