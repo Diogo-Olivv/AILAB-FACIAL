@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { useIsFocused } from "expo-router";
 import { useRecognize } from "@/hooks/useRecognize";
 import type { RecognitionAction } from "@/lib/api";
 
@@ -24,6 +25,7 @@ export function RecognitionPanel() {
   const { recognize, loading } = useRecognize();
   const cameraRef = useRef<CameraView>(null);
   const [busy, setBusy] = useState(false);
+  const isFocused = useIsFocused();
 
   const capture = useCallback(
     async (action: "check_in" | "check_out") => {
@@ -36,8 +38,10 @@ export function RecognitionPanel() {
         });
         if (!photo?.uri) return;
 
-        const blob = await (await fetch(photo.uri)).blob();
-        const res = await recognize(blob, action);
+        const res = await recognize(
+          { uri: photo.uri, name: "frame.jpg", type: "image/jpeg" },
+          action
+        );
 
         if (!res) {
           Alert.alert("Erro", "Falha ao comunicar com o servidor.");
@@ -76,7 +80,9 @@ export function RecognitionPanel() {
   return (
     <View style={styles.container}>
       <View style={styles.cameraWrapper}>
-        <CameraView ref={cameraRef} style={styles.camera} facing="front" ratio="4:3" />
+        {isFocused && (
+          <CameraView ref={cameraRef} style={styles.camera} facing="front" />
+        )}
         {disabled && (
           <View style={styles.overlay}>
             <ActivityIndicator color="#fff" size="large" />
@@ -131,13 +137,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
   },
-  entrada: { backgroundColor: "#22C55E" },
-  saida: { backgroundColor: "#F59E0B" },
+  entrada: { backgroundColor: "#166534" },
+  saida: { backgroundColor: "#1E2D5F" },
   disabled: { opacity: 0.5 },
   actionText: { color: "#fff", fontWeight: "800", fontSize: 18 },
-  permText: { color: "#fff", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
+  permText: { color: "#141A33", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
   permBtn: {
-    backgroundColor: "#6C47FF",
+    backgroundColor: "#1E2D5F",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,

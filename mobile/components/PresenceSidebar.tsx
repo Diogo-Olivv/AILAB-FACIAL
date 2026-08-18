@@ -16,7 +16,7 @@ export function PresenceSidebar() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color="#6C47FF" style={styles.center} />
+        <ActivityIndicator color="#1E2D5F" style={styles.center} />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
@@ -59,10 +59,10 @@ function SidebarRow({ member }: { member: PresentMember }) {
 
 const styles = StyleSheet.create({
   container: {
-    width: 220,
-    backgroundColor: "#12121F",
+    width: 300,
+    backgroundColor: "#FBF8F1",
     borderLeftWidth: 1,
-    borderLeftColor: "#2A2A4A",
+    borderLeftColor: "rgba(30,45,95,.14)",
     paddingTop: 16,
   },
   header: {
@@ -73,20 +73,20 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   title: {
-    color: "#FFFFFF",
+    color: "#141A33",
     fontWeight: "800",
-    fontSize: 16,
+    fontSize: 17,
   },
   badge: {
-    backgroundColor: "#6C47FF22",
+    backgroundColor: "rgba(30,45,95,.10)",
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: "#6C47FF44",
+    borderColor: "rgba(30,45,95,.20)",
   },
   badgeText: {
-    color: "#A78BFA",
+    color: "#1E2D5F",
     fontWeight: "700",
     fontSize: 13,
   },
@@ -103,48 +103,48 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    backgroundColor: "#1A1A2E",
+    gap: 12,
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 10,
+    padding: 12,
     borderWidth: 1,
-    borderColor: "#2A2A4A",
+    borderColor: "rgba(30,45,95,.14)",
   },
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#6C47FF22",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(30,45,95,.10)",
     alignItems: "center",
     justifyContent: "center",
   },
   initials: {
-    color: "#6C47FF",
+    color: "#1E2D5F",
     fontWeight: "800",
-    fontSize: 13,
+    fontSize: 14,
   },
   info: {
     flex: 1,
     gap: 2,
   },
   name: {
-    color: "#FFFFFF",
+    color: "#141A33",
     fontWeight: "600",
-    fontSize: 13,
+    fontSize: 14,
   },
   elapsed: {
-    color: "#22C55E",
+    color: "#166534",
     fontSize: 12,
     fontWeight: "600",
   },
   empty: {
-    color: "#6B7280",
+    color: "#6B6F82",
     fontSize: 13,
     textAlign: "center",
     marginTop: 24,
   },
   error: {
-    color: "#F87171",
+    color: "#DC2626",
     fontSize: 13,
     textAlign: "center",
     marginTop: 24,

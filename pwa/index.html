@@ -3,14 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>AILAB Presença</title>
+  <title>AILAB Makers</title>
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0b0f1a" />
+  <meta name="theme-color" content="#1E2D5F" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <header>
-    <h1>AILAB Presença</h1>
+    <div class="brand">
+      <img class="brand-logo" src="ailab_makers.jpeg" alt="AILAB Makers" />
+      <h1>AILAB Makers</h1>
+    </div>
     <div style="display: flex; gap: 0.5rem;">
       <button id="btn-gerenciar" class="btn-secondary" type="button">Gerenciar</button>
       <button id="btn-abrir-enroll" class="btn-secondary" type="button">+ Cadastrar</button>
@@ -131,14 +137,14 @@
   <!-- Overlay de login do owner (dispositivo do laboratorio) -->
   <div id="owner-login">
     <div class="panel-card">
-      <h2>Acesso ao reconhecimento</h2>
-      <p style="color: var(--muted); font-size: 0.9rem;">
+      <div class="owner-brand">
+        <img class="brand-logo" src="ailab_makers.jpeg" alt="AILAB Makers" />
+        <strong>AILAB Makers</strong>
+        <span>Reconhecimento</span>
+      </div>
+      <p style="color: var(--muted); font-size: 0.9rem; text-align: center;">
         Login exclusivo do dispositivo do laboratório.
       </p>
-      <div class="form-row">
-        <label for="owner-email">Email</label>
-        <input id="owner-email" type="email" autocomplete="username" />
-      </div>
       <div class="form-row">
         <label for="owner-senha">Senha</label>
         <input id="owner-senha" type="password" autocomplete="current-password" />

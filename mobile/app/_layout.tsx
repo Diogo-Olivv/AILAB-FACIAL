@@ -8,9 +8,9 @@ export default function RootLayout() {
       <StatusBar style="light" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: "#0F0F1A" },
+          headerStyle: { backgroundColor: "#1E2D5F" },
           headerTintColor: "#fff",
-          contentStyle: { backgroundColor: "#0F0F1A" },
+          contentStyle: { backgroundColor: "#F4EFE4" },
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />

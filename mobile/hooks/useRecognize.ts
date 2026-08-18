@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { recognizeFrame, type RecognizeResult } from "@/lib/api";
+import { recognizeFrame, type RecognizeResult, type UploadFile } from "@/lib/api";
 
 export function useRecognize() {
   const [result, setResult] = useState<RecognizeResult | null>(null);
@@ -8,7 +8,7 @@ export function useRecognize() {
   const abortRef = useRef<AbortController | null>(null);
 
   const recognize = useCallback(
-    async (imageBlob: Blob, action?: "check_in" | "check_out") => {
+    async (frame: UploadFile, action?: "check_in" | "check_out") => {
     // Cancela chamada anterior se ainda pendente
     abortRef.current?.abort();
     abortRef.current = new AbortController();
@@ -16,7 +16,7 @@ export function useRecognize() {
     setLoading(true);
     setError(null);
     try {
-      const res = await recognizeFrame(imageBlob, action);
+      const res = await recognizeFrame(frame, action);
       setResult(res);
       return res;
     } catch (err: any) {

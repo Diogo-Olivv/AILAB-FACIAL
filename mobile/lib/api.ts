@@ -18,6 +18,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
+export interface UploadFile {
+  uri: string;
+  name: string;
+  type: string;
+}
+
 export type RecognitionAction =
   | "check_in"
   | "check_out"
@@ -54,11 +60,11 @@ export interface EnrollResult {
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 
 export async function recognizeFrame(
-  imageBlob: Blob,
+  frame: UploadFile,
   action?: "check_in" | "check_out"
 ): Promise<RecognizeResult> {
   const form = new FormData();
-  form.append("frame", imageBlob, "frame.jpg");
+  form.append("frame", frame as any);
   if (action) form.append("action", action);
   return request<RecognizeResult>("/api/v1/recognize", {
     method: "POST",
@@ -82,13 +88,13 @@ export async function enrollStudent(
   name: string,
   matricula: string,
   consent: boolean,
-  frames: Blob[]
+  frames: UploadFile[]
 ): Promise<EnrollResult> {
   const form = new FormData();
   form.append("name", name);
   form.append("matricula", matricula);
   form.append("consent", String(consent));
-  frames.forEach((frame, i) => form.append("frames", frame, `frame_${i}.jpg`));
+  frames.forEach((frame) => form.append("frames", frame as any));
   return request<EnrollResult>("/api/v1/enroll", {
     method: "POST",
     body: form,

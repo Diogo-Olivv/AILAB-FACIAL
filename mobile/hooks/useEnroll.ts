@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { enrollStudent, type EnrollResult } from "@/lib/api";
+import { enrollStudent, type EnrollResult, type UploadFile } from "@/lib/api";
 
 export function useEnroll() {
   const [result, setResult] = useState<EnrollResult | null>(null);
@@ -7,7 +7,7 @@ export function useEnroll() {
   const [error, setError] = useState<string | null>(null);
 
   const enroll = useCallback(
-    async (name: string, matricula: string, consent: boolean, frames: Blob[]) => {
+    async (name: string, matricula: string, consent: boolean, frames: UploadFile[]) => {
       setLoading(true);
       setError(null);
       try {

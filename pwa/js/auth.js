@@ -5,13 +5,11 @@ import { getUsuario, ehOwner, entrar } from "./db.js";
 import { OWNER_EMAIL } from "./config.js";
 
 const overlay = document.getElementById("owner-login");
-const emailInput = document.getElementById("owner-email");
 const senhaInput = document.getElementById("owner-senha");
 const btnEntrar = document.getElementById("owner-btn");
 const statusEl = document.getElementById("owner-status");
 
 function mostrar() {
-  emailInput.value = OWNER_EMAIL;
   overlay.classList.add("active");
   setTimeout(() => senhaInput.focus(), 50);
 }
@@ -32,7 +30,6 @@ export async function garantirOwner() {
   mostrar();
   return new Promise((resolve) => {
     async function tentar() {
-      const email = emailInput.value.trim();
       const senha = senhaInput.value;
       if (!senha) {
         setStatus("Digite a senha.", "warn");
@@ -41,7 +38,7 @@ export async function garantirOwner() {
       btnEntrar.disabled = true;
       setStatus("Entrando...");
       try {
-        const logado = await entrar(email, senha);
+        const logado = await entrar(OWNER_EMAIL, senha);
         if (!ehOwner(logado)) {
           setStatus("Esta conta nao tem acesso ao reconhecimento.", "warn");
           btnEntrar.disabled = false;

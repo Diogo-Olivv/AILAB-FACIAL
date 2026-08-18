@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AILAB Makers · Presença</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1E2D5F;
+    --navy-2:#2A3D78;
+    --green:#166534;
+    --green-2:#1B7A40;
+    --cream:#F4EFE4;
+    --cream-2:#EFE8D8;
+    --gold:#C9A961;
+    --ink:#141A33;
+    --muted:#6B6F82;
+    --line:rgba(30,45,95,.14);
+    --card:#FBF8F1;
+    --shadow:0 1px 2px rgba(20,26,51,.06),0 8px 24px rgba(20,26,51,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .display{font-family:'Archivo Black',sans-serif;letter-spacing:-.01em}
+
+  /* ---- brand mark (SVG A) ---- */
+  .mark{width:44px;height:44px;flex:none;border-radius:10px;object-fit:cover}
+  .mark.lg{width:76px;height:76px;border-radius:16px}
+
+  /* ================= LOGIN ================= */
+  #login{
+    min-height:100vh;display:grid;place-items:center;padding:24px;
+    background:
+      radial-gradient(1100px 600px at 15% -10%, rgba(22,101,52,.06), transparent 60%),
+      radial-gradient(900px 500px at 100% 110%, rgba(30,45,95,.08), transparent 55%),
+      var(--cream);
+  }
+  .card{
+    width:100%;max-width:400px;background:var(--card);
+    border:1px solid var(--line);border-radius:20px;
+    box-shadow:var(--shadow);padding:36px 32px 32px;
+    position:relative;overflow:hidden;
+  }
+  .card:before{content:"";position:absolute;inset:0 0 auto 0;height:4px;
+    background:linear-gradient(90deg,var(--navy),var(--green))}
+  .brand{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:26px}
+  .brand h1{font-size:15px;letter-spacing:.24em;color:var(--navy);text-transform:uppercase}
+  .brand span{font-size:11px;letter-spacing:.34em;color:var(--gold);text-transform:uppercase;font-weight:600}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--navy);margin-bottom:6px;letter-spacing:.02em}
+  .field input{
+    width:100%;padding:12px 14px;font-size:14px;font-family:inherit;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:11px;transition:.15s;
+  }
+  .field input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,45,95,.12)}
+  .btn{
+    width:100%;padding:13px;font-size:14px;font-weight:600;font-family:inherit;
+    color:#fff;background:var(--navy);border:none;border-radius:11px;cursor:pointer;
+    transition:.15s;margin-top:6px;
+  }
+  .btn:hover{background:var(--navy-2)}
+  .btn:active{transform:translateY(1px)}
+  .foot{text-align:center;margin-top:18px;font-size:12px;color:var(--muted)}
+  .foot a{color:var(--green);text-decoration:none;font-weight:600}
+
+  /* ================= DASHBOARD ================= */
+  #app{display:none;min-height:100vh}
+  #app.on{display:block}
+  .topbar{
+    background:var(--navy);color:#fff;padding:16px 24px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+  }
+  .topbar .id{display:flex;align-items:center;gap:12px}
+  .topbar .id b{font-size:14px;letter-spacing:.18em;text-transform:uppercase}
+  .topbar .id small{display:block;font-size:10px;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-top:2px}
+  .logout{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);
+    padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+  .logout:hover{background:rgba(255,255,255,.2)}
+
+  .wrap{max-width:1040px;margin:0 auto;padding:28px 24px 60px}
+  .head h2{font-size:26px;color:var(--navy);margin-bottom:4px}
+  .head p{font-size:14px;color:var(--muted)}
+
+  .rowbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin:22px 0 0}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .tab{
+    padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
+    background:var(--cream-2);color:var(--navy);border:1px solid transparent;border-radius:999px;transition:.15s;
+  }
+  .tab:hover{border-color:var(--line)}
+  .tab.active{background:var(--navy);color:#fff}
+
+  .subbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-top:14px}
+  .seg{display:inline-flex;background:var(--cream-2);border-radius:11px;padding:4px}
+  .seg button{
+    padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
+    background:transparent;color:var(--navy);border:none;border-radius:8px;transition:.15s;
+  }
+  .seg button.active{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(20,26,51,.1)}
+  select{
+    padding:9px 34px 9px 14px;font-size:13px;font-family:inherit;font-weight:500;color:var(--ink);
+    background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%231E2D5F' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+    border:1px solid var(--line);border-radius:10px;cursor:pointer;appearance:none;
+  }
+  select:focus{outline:none;border-color:var(--navy)}
+
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .stat .k{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .stat .v{font-size:24px;font-weight:700;color:var(--navy);margin-top:6px;font-variant-numeric:tabular-nums}
+  .stat.g .v{color:var(--green)}
+  .stat .v small{font-size:13px;font-weight:600;color:var(--muted)}
+
+  /* table */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-top:20px;overflow:hidden;box-shadow:var(--shadow)}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:14px 20px;font-size:14px}
+  thead th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--cream-2);font-weight:600}
+  tbody tr{border-top:1px solid var(--line)}
+  tbody tr:hover{background:rgba(30,45,95,.03)}
+  .who{display:flex;align-items:center;gap:11px}
+  .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;flex:none}
+  .who b{font-size:14px;color:var(--ink)}
+  .who small{display:block;font-size:12px;color:var(--muted);font-weight:500}
+  .num{font-variant-numeric:tabular-nums;font-weight:600;color:var(--navy)}
+  .bar{height:6px;border-radius:3px;background:var(--cream-2);overflow:hidden;min-width:120px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--green-2))}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+  .pill.in{background:rgba(22,101,52,.12);color:var(--green)}
+  .pill.out{background:rgba(30,45,95,.08);color:var(--navy)}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+  .empty{padding:56px 20px;text-align:center;color:var(--muted)}
+  .empty svg{opacity:.4;margin-bottom:12px}
+  .empty b{display:block;color:var(--navy);font-size:15px;margin-bottom:4px}
+
+  @media(max-width:760px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .barcell{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- reusable SVG mark -->
+<svg style="display:none">
+  <symbol id="glyph" viewBox="0 0 100 100">
+    <path d="M50 12 L86 88 H64 L50 50 L36 88 H14 Z" fill="#1E2D5F"/>
+    <path d="M14 88 L26 62 H74 L86 88 Z" fill="#166534"/>
+    <circle cx="50" cy="30" r="11" fill="#166534"/>
+    <circle cx="50" cy="30" r="6" fill="#F4EFE4"/>
+    <path d="M50 44 v10 M50 62 v10" stroke="#1E2D5F" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="50" cy="54" r="6" fill="#1E2D5F"/>
+    <circle cx="50" cy="74" r="7" fill="#1E2D5F"/>
+  </symbol>
+</svg>
+
+<!-- ============ LOGIN ============ -->
+<section id="login">
+  <div class="card">
+    <div class="brand">
+      <img class="mark lg" src="ailab_makers.jpeg" alt="AILAB Makers">
+      <h1 class="display">AILAB Makers</h1>
+      <span>Laboratório</span>
+    </div>
+    <div class="field">
+      <label for="pass">Senha</label>
+      <input id="pass" type="password" placeholder="••••••••" value="123456">
+    </div>
+    <button class="btn" onclick="enter()">Entrar</button>
+    <p class="foot">Acesso restrito à equipe. <a href="#" onclick="return false">Esqueci a senha</a></p>
+  </div>
+</section>
+
+<!-- ============ DASHBOARD ============ -->
+<section id="app">
+  <div class="topbar">
+    <div class="id">
+      <img class="mark" src="ailab_makers.jpeg" alt="AILAB Makers">
+      <div><b>AILAB Makers</b><small>Laboratório</small></div>
+    </div>
+    <button class="logout" onclick="leave()">Sair</button>
+  </div>
+
+  <div class="wrap">
+    <div class="head">
+      <h2 class="display">Tempo de permanência</h2>
+      <p>Painel de acompanhamento do laboratório</p>
+    </div>
+
+    <div class="rowbar">
+      <div class="tabs" id="range">
+        <button class="tab active" data-r="hoje">Hoje</button>
+        <button class="tab" data-r="semana">Esta semana</button>
+        <button class="tab" data-r="mes">Este mês</button>
+        <button class="tab" data-r="periodo">Período</button>
+      </div>
+    </div>
+
+    <div class="subbar">
+      <div class="seg" id="view">
+        <button class="active" data-v="totais">Totais</button>
+        <button data-v="historico">Histórico diário</button>
+      </div>
+      <select id="member" onchange="render()">
+        <option value="all">Todos os integrantes</option>
+        <option>Diogo Oliveira</option>
+        <option>Ana Prado</option>
+        <option>Bruno Reis</option>
+        <option>Carla Menezes</option>
+      </select>
+    </div>
+
+    <div class="stats" id="stats"></div>
+    <div class="panel" id="panel"></div>
+  </div>
+</section>
+
+<script>
+  /* ---- fake data ---- */
+  const COLORS=['#1E2D5F','#166534','#2A3D78','#1B7A40','#C9A961'];
+  const people=[
+    {n:'Diogo Oliveira', r:'ML Trainee'},
+    {n:'Ana Prado',      r:'Frontend'},
+    {n:'Bruno Reis',     r:'Backend'},
+    {n:'Carla Menezes',  r:'Design'},
+    {n:'Eduardo Lima',   r:'Data'},
+  ];
+  // minutes per range
+  const DATA={
+    hoje:    [180, 95, 0, 240, 60],
+    semana:  [1120, 640, 480, 1310, 320],
+    mes:     [4300, 2810, 1990, 5120, 1440],
+    periodo: [8600, 5620, 3980, 10240, 2880],
+  };
+  const hist={
+    'Diogo Oliveira':[['Seg','08:40','12:10'],['Ter','13:00','18:20'],['Qua','09:15','11:30']],
+    'Ana Prado':[['Seg','10:00','12:30'],['Qui','14:00','17:10']],
+    'Bruno Reis':[['Ter','09:00','11:00'],['Sex','13:30','16:00']],
+    'Carla Menezes':[['Seg','08:00','13:00'],['Qua','08:20','12:40'],['Sex','09:00','14:15']],
+    'Eduardo Lima':[['Qui','15:00','17:00']],
+  };
+
+  let range='hoje', view='totais';
+  const fmt=m=>`${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}min`;
+  const init=n=>n.split(' ').map(w=>w[0]).slice(0,2).join('');
+
+  /* ---- events ---- */
+  document.getElementById('range').onclick=e=>{
+    if(!e.target.dataset.r)return;
+    [...e.currentTarget.children].forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active'); range=e.target.dataset.r; render();
+  };
+  document.getElementById('view').onclick=e=>{
+    if(!e.target.dataset.v)return;
+    [...e.currentTarget.children].forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active'); view=e.target.dataset.v; render();
+  };
+
+  function enter(){
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').classList.add('on');
+    render();
+  }
+  function leave(){
+    document.getElementById('app').classList.remove('on');
+    document.getElementById('login').style.display='grid';
+  }
+
+  function render(){
+    const sel=document.getElementById('member').value;
+    const idx=DATA[range].map((m,i)=>({...people[i],m,i}))
+              .filter(p=>sel==='all'||p.n===sel)
+              .filter(p=>p.m>0)
+              .sort((a,b)=>b.m-a.m);
+
+    // stats
+    const total=idx.reduce((s,p)=>s+p.m,0);
+    const active=idx.length;
+    const avg=active?Math.round(total/active):0;
+    const top=idx[0];
+    document.getElementById('stats').innerHTML=`
+      <div class="stat"><div class="k">Tempo total</div><div class="v">${fmt(total)}</div></div>
+      <div class="stat g"><div class="k">Integrantes ativos</div><div class="v">${active} <small>/ ${people.length}</small></div></div>
+      <div class="stat"><div class="k">Média por pessoa</div><div class="v">${fmt(avg)}</div></div>
+      <div class="stat"><div class="k">Maior permanência</div><div class="v" style="font-size:16px;line-height:1.9">${top?top.n.split(' ')[0]:'—'}</div></div>`;
+
+    const panel=document.getElementById('panel');
+
+    if(idx.length===0){
+      panel.innerHTML=`<div class="empty">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1E2D5F" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+        <b>Nenhum registro no período</b>
+        Ajuste o filtro ou selecione outro integrante.</div>`;
+      return;
+    }
+
+    if(view==='totais'){
+      const max=idx[0].m;
+      panel.innerHTML=`<table><thead><tr>
+        <th>Integrante</th><th>Tempo</th><th class="barcell">Distribuição</th><th>Status</th>
+      </tr></thead><tbody>${idx.map(p=>`
+        <tr>
+          <td><div class="who">
+            <div class="av" style="background:${COLORS[p.i%5]}">${init(p.n)}</div>
+            <div><b>${p.n}</b><small>${p.r}</small></div></div></td>
+          <td class="num">${fmt(p.m)}</td>
+          <td class="barcell"><div class="bar"><i style="width:${Math.round(p.m/max*100)}%"></i></div></td>
+          <td>${range==='hoje' && p.i%2===0
+                ? '<span class="pill in"><span class="dot"></span>No lab</span>'
+                : '<span class="pill out"><span class="dot"></span>Saiu</span>'}</td>
+        </tr>`).join('')}</tbody></table>`;
+    } else {
+      const rows=idx.flatMap(p=>(hist[p.n]||[]).map(h=>({p,h})));
+      if(rows.length===0){ panel.innerHTML=`<div class="empty"><b>Sem histórico</b>Não há entradas registradas.</div>`; return; }
+      panel.innerHTML=`<table><thead><tr>
+        <th>Integrante</th><th>Dia</th><th>Entrada</th><th>Saída</th><th>Duração</th>
+      </tr></thead><tbody>${rows.map(({p,h})=>{
+        const [a,b]=[h[1],h[2]].map(t=>t.split(':').reduce((x,y,i)=>i?x+ +y:+y*60,0));
+        return `<tr>
+          <td><div class="who">
+            <div class="av" style="background:${COLORS[p.i%5]}">${init(p.n)}</div>
+            <div><b>${p.n}</b></div></div></td>
+          <td>${h[0]}</td><td class="num">${h[1]}</td><td class="num">${h[2]}</td>
+          <td class="num" style="color:var(--green)">${fmt(b-a)}</td>
+        </tr>`;}).join('')}</tbody></table>`;
+    }
+  }
+</script>
+</body>
+</html>

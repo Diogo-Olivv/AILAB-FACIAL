@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "scheme": "ailab-facial",
     "ios": {
       "supportsTablet": true,
@@ -14,7 +14,7 @@
     "android": {
       "package": "br.edu.ailab.facial",
       "adaptiveIcon": {
-        "backgroundColor": "#0F0F1A",
+        "backgroundColor": "#1E2D5F",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

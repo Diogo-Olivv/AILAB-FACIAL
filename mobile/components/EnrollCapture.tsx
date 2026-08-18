@@ -11,18 +11,21 @@ import {
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { useIsFocused } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEnroll } from "@/hooks/useEnroll";
 import { ENROLL_PHOTO_COUNT } from "@/lib/config";
 
 interface Shot {
   uri: string;
-  blob: Blob;
 }
 
 export function EnrollCapture() {
   const [permission, requestPermission] = useCameraPermissions();
   const { enroll, loading } = useEnroll();
   const cameraRef = useRef<CameraView>(null);
+  const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
 
   const [name, setName] = useState("");
   const [matricula, setMatricula] = useState("");
@@ -43,8 +46,7 @@ export function EnrollCapture() {
         skipProcessing: true,
       });
       if (!photo?.uri) return;
-      const blob = await (await fetch(photo.uri)).blob();
-      setShots((prev) => [...prev, { uri: photo.uri, blob }]);
+      setShots((prev) => [...prev, { uri: photo.uri }]);
     } finally {
       setCapturing(false);
     }
@@ -56,7 +58,7 @@ export function EnrollCapture() {
       name.trim(),
       matricula.trim(),
       consent,
-      shots.map((s) => s.blob)
+      shots.map((s, i) => ({ uri: s.uri, name: `frame_${i}.jpg`, type: "image/jpeg" }))
     );
     if (res) {
       setFeedback({ ok: true, text: `${res.name} cadastrado(a) com ${res.photos_used} fotos.` });
@@ -83,9 +85,21 @@ export function EnrollCapture() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.content,
+        {
+          paddingBottom: insets.bottom + 40,
+          paddingLeft: insets.left + 16,
+          paddingRight: insets.right + 16,
+        },
+      ]}
+    >
       <View style={styles.cameraWrapper}>
-        <CameraView ref={cameraRef} style={styles.camera} facing="front" />
+        {isFocused && (
+          <CameraView ref={cameraRef} style={styles.camera} facing="front" />
+        )}
       </View>
 
       <TouchableOpacity
@@ -121,14 +135,14 @@ export function EnrollCapture() {
       <TextInput
         style={styles.input}
         placeholder="Nome completo"
-        placeholderTextColor="#6B7280"
+        placeholderTextColor="#6B6F82"
         value={name}
         onChangeText={setName}
       />
       <TextInput
         style={styles.input}
         placeholder="Matricula (opcional)"
-        placeholderTextColor="#6B7280"
+        placeholderTextColor="#6B6F82"
         value={matricula}
         onChangeText={setMatricula}
         autoCapitalize="characters"
@@ -138,7 +152,7 @@ export function EnrollCapture() {
         <Switch
           value={consent}
           onValueChange={setConsent}
-          trackColor={{ true: "#6C47FF", false: "#2A2A4A" }}
+          trackColor={{ true: "#166534", false: "#C9C4B6" }}
           thumbColor="#fff"
         />
         <Text style={styles.consentText}>
@@ -168,12 +182,17 @@ export function EnrollCapture() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0F0F1A" },
+  container: { flex: 1, backgroundColor: "#F4EFE4" },
   content: { padding: 16, gap: 12, paddingBottom: 40 },
-  cameraWrapper: { height: 300, borderRadius: 16, overflow: "hidden" },
+  cameraWrapper: {
+    height: 440,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#000",
+  },
   camera: { flex: 1 },
   captureBtn: {
-    backgroundColor: "#6C47FF",
+    backgroundColor: "#1E2D5F",
     padding: 14,
     borderRadius: 14,
     alignItems: "center",
@@ -190,24 +209,24 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#EF4444",
+    backgroundColor: "#DC2626",
     alignItems: "center",
     justifyContent: "center",
   },
   removeThumbText: { color: "#fff", fontSize: 12, fontWeight: "700" },
   input: {
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#2A2A4A",
+    borderColor: "rgba(30,45,95,.14)",
     borderRadius: 12,
     padding: 14,
-    color: "#fff",
+    color: "#141A33",
     fontSize: 15,
   },
   consentRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  consentText: { flex: 1, color: "#9CA3AF", fontSize: 13 },
+  consentText: { flex: 1, color: "#6B6F82", fontSize: 13 },
   submitBtn: {
-    backgroundColor: "#22C55E",
+    backgroundColor: "#166534",
     padding: 16,
     borderRadius: 14,
     alignItems: "center",
@@ -216,15 +235,15 @@ const styles = StyleSheet.create({
   submitBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
   permContainer: {
     flex: 1,
-    backgroundColor: "#0F0F1A",
+    backgroundColor: "#F4EFE4",
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
   },
-  permText: { color: "#fff", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
-  btn: { backgroundColor: "#6C47FF", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  permText: { color: "#141A33", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
+  btn: { backgroundColor: "#1E2D5F", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
   btnText: { color: "#fff", fontWeight: "700" },
   feedback: { fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 4 },
-  feedbackOk: { color: "#22C55E" },
-  feedbackErr: { color: "#F87171" },
+  feedbackOk: { color: "#166534" },
+  feedbackErr: { color: "#DC2626" },
 });
