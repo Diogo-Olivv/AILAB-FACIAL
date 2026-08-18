@@ -1,72 +1,113 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { fetchMemberHours, formatHours, type MemberHours } from "../lib/dashboard";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/useAuth";
+import {
+  fetchMembers,
+  fetchPresentIds,
+  fetchSessions,
+  type Member,
+  type SessionRecord,
+} from "../lib/reports";
+import { rangeFor, type PeriodKey } from "../lib/period";
+import { groupByDay, totalsByMember } from "../lib/aggregate";
+import { PeriodSelector } from "../components/PeriodSelector";
+import { MemberSelector } from "../components/MemberSelector";
+import { TotalsTable } from "../components/TotalsTable";
+import { DailyHistory } from "../components/DailyHistory";
+
+type View = "totals" | "history";
 
 export function Dashboard() {
-  const { isOwner, signOut } = useAuth();
-  const [members, setMembers] = useState<MemberHours[]>([]);
-  const [error, setError] = useState("");
+  const { signOut } = useAuth();
+  const [members, setMembers] = useState<Member[]>([]);
+  const [sessions, setSessions] = useState<SessionRecord[]>([]);
+  const [presentIds, setPresentIds] = useState<string[]>([]);
+  const [period, setPeriod] = useState<PeriodKey>("week");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [memberId, setMemberId] = useState("");
+  const [view, setView] = useState<View>("totals");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchMemberHours()
+    fetchMembers()
       .then(setMembers)
-      .catch((e) => setError(e instanceof Error ? e.message : "Falha ao carregar."))
-      .finally(() => setLoading(false));
+      .catch((e) => setError(e instanceof Error ? e.message : "Falha ao carregar integrantes."));
   }, []);
+
+  useEffect(() => {
+    const range = rangeFor(period, customFrom, customTo);
+    setLoading(true);
+    setError("");
+    Promise.all([fetchSessions(range), fetchPresentIds()])
+      .then(([nextSessions, nextPresent]) => {
+        setSessions(nextSessions);
+        setPresentIds(nextPresent);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Falha ao carregar sessoes."))
+      .finally(() => setLoading(false));
+  }, [period, customFrom, customTo]);
+
+  const filtered = useMemo(
+    () => (memberId ? sessions.filter((s) => s.profileId === memberId) : sessions),
+    [sessions, memberId],
+  );
+
+  const totals = useMemo(() => {
+    const scope = memberId ? members.filter((m) => m.id === memberId) : members;
+    return totalsByMember(scope, filtered, presentIds, new Date());
+  }, [members, filtered, presentIds, memberId]);
+
+  const days = useMemo(() => groupByDay(members, filtered, new Date()), [members, filtered]);
 
   return (
     <div className="min-h-screen bg-base px-4 py-8">
       <div className="mx-auto max-w-3xl space-y-6">
         <header className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-white">Horas no laboratorio</h1>
-          <div className="flex items-center gap-4 text-sm">
-            {isOwner && (
-              <>
-                <Link to="/cadastro" className="text-accent hover:underline">Cadastro</Link>
-                <Link to="/kiosk" className="text-accent hover:underline">Kiosk</Link>
-              </>
-            )}
-            <button onClick={signOut} className="text-white/60 hover:text-white">Sair</button>
+          <div>
+            <h1 className="text-2xl font-semibold text-white">Tempo de permanencia</h1>
+            <p className="text-sm text-white/50">Painel de acompanhamento do laboratorio.</p>
           </div>
+          <button onClick={signOut} className="text-sm text-white/60 hover:text-white">
+            Sair
+          </button>
         </header>
+
+        <PeriodSelector
+          period={period}
+          customFrom={customFrom}
+          customTo={customTo}
+          onPeriod={setPeriod}
+          onCustomFrom={setCustomFrom}
+          onCustomTo={setCustomTo}
+        />
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setView("totals")}
+              className={`rounded-lg px-4 py-2 text-sm ${
+                view === "totals" ? "bg-accent text-white" : "bg-surface text-white/60 hover:text-white"
+              }`}
+            >
+              Totais
+            </button>
+            <button
+              onClick={() => setView("history")}
+              className={`rounded-lg px-4 py-2 text-sm ${
+                view === "history" ? "bg-accent text-white" : "bg-surface text-white/60 hover:text-white"
+              }`}
+            >
+              Historico diario
+            </button>
+          </div>
+          <MemberSelector members={members} selected={memberId} onSelect={setMemberId} />
+        </div>
 
         {loading && <p className="text-white/60">Carregando...</p>}
         {error && <p className="text-red-400">{error}</p>}
 
-        {!loading && !error && (
-          <div className="overflow-hidden rounded-2xl bg-surface">
-            <table className="w-full text-left text-sm text-white">
-              <thead className="bg-black/20 text-white/60">
-                <tr>
-                  <th className="px-4 py-3">Integrante</th>
-                  <th className="px-4 py-3">Matricula</th>
-                  <th className="px-4 py-3">Total</th>
-                  <th className="px-4 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {members.map((m) => (
-                  <tr key={m.id} className="border-t border-white/5">
-                    <td className="px-4 py-3">{m.name}</td>
-                    <td className="px-4 py-3 text-white/60">{m.matricula ?? "-"}</td>
-                    <td className="px-4 py-3">{formatHours(m.totalSeconds)}</td>
-                    <td className="px-4 py-3">
-                      {m.present ? (
-                        <span className="rounded-full bg-green-500/20 px-2 py-1 text-xs text-green-400">
-                          No lab
-                        </span>
-                      ) : (
-                        <span className="text-xs text-white/40">Fora</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {!loading && !error && (view === "totals" ? <TotalsTable rows={totals} /> : <DailyHistory days={days} />)}
       </div>
     </div>
   );

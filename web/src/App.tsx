@@ -2,9 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
 import { RequireAuth } from "./auth/RequireAuth";
 import { Login } from "./pages/Login";
-import { Cadastro } from "./pages/Cadastro";
 import { Dashboard } from "./pages/Dashboard";
-import { Kiosk } from "./pages/Kiosk";
 
 const basename = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -19,22 +17,6 @@ export function App() {
             element={
               <RequireAuth>
                 <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/cadastro"
-            element={
-              <RequireAuth ownerOnly>
-                <Cadastro />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/kiosk"
-            element={
-              <RequireAuth ownerOnly>
-                <Kiosk />
               </RequireAuth>
             }
           />
