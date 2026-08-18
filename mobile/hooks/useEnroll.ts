@@ -1,22 +1,26 @@
 import { useCallback, useState } from "react";
 import { enrollStudent, type EnrollResult, type UploadFile } from "@/lib/api";
 
+export type EnrollOutcome =
+  | { ok: true; data: EnrollResult }
+  | { ok: false; message: string };
+
 export function useEnroll() {
-  const [result, setResult] = useState<EnrollResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const enroll = useCallback(
-    async (name: string, matricula: string, consent: boolean, frames: UploadFile[]) => {
+    async (
+      name: string,
+      matricula: string,
+      consent: boolean,
+      frames: UploadFile[]
+    ): Promise<EnrollOutcome> => {
       setLoading(true);
-      setError(null);
       try {
-        const res = await enrollStudent(name, matricula, consent, frames);
-        setResult(res);
-        return res;
+        const data = await enrollStudent(name, matricula, consent, frames);
+        return { ok: true, data };
       } catch (err: any) {
-        setError(err.message ?? "Erro desconhecido");
-        return null;
+        return { ok: false, message: err?.message ?? "Erro desconhecido" };
       } finally {
         setLoading(false);
       }
@@ -24,5 +28,5 @@ export function useEnroll() {
     []
   );
 
-  return { enroll, result, loading, error };
+  return { enroll, loading };
 }

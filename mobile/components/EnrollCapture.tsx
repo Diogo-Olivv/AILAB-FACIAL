@@ -11,9 +11,9 @@ import {
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useIsFocused } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEnroll } from "@/hooks/useEnroll";
+import { useCameraFocus } from "@/hooks/useCameraFocus";
 import { ENROLL_PHOTO_COUNT } from "@/lib/config";
 
 interface Shot {
@@ -24,7 +24,7 @@ export function EnrollCapture() {
   const [permission, requestPermission] = useCameraPermissions();
   const { enroll, loading } = useEnroll();
   const cameraRef = useRef<CameraView>(null);
-  const isFocused = useIsFocused();
+  const { active, cameraKey } = useCameraFocus();
   const insets = useSafeAreaInsets();
 
   const [name, setName] = useState("");
@@ -54,20 +54,21 @@ export function EnrollCapture() {
 
   const submit = useCallback(async () => {
     setFeedback(null);
-    const res = await enroll(
+    const outcome = await enroll(
       name.trim(),
       matricula.trim(),
       consent,
       shots.map((s, i) => ({ uri: s.uri, name: `frame_${i}.jpg`, type: "image/jpeg" }))
     );
-    if (res) {
-      setFeedback({ ok: true, text: `${res.name} cadastrado(a) com ${res.photos_used} fotos.` });
+    if (outcome.ok) {
+      const { name: enrolledName, photos_used } = outcome.data;
+      setFeedback({ ok: true, text: `${enrolledName} cadastrado(a) com ${photos_used} fotos.` });
       setName("");
       setMatricula("");
       setConsent(false);
       setShots([]);
     } else {
-      setFeedback({ ok: false, text: "Falha no cadastro. Verifique os dados e tente de novo." });
+      setFeedback({ ok: false, text: outcome.message });
     }
   }, [enroll, name, matricula, consent, shots]);
 
@@ -97,8 +98,8 @@ export function EnrollCapture() {
       ]}
     >
       <View style={styles.cameraWrapper}>
-        {isFocused && (
-          <CameraView ref={cameraRef} style={styles.camera} facing="front" />
+        {active && (
+          <CameraView key={cameraKey} ref={cameraRef} style={styles.camera} facing="front" />
         )}
       </View>
 

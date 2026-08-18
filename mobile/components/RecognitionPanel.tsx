@@ -8,8 +8,8 @@ import {
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useIsFocused } from "expo-router";
 import { useRecognize } from "@/hooks/useRecognize";
+import { useCameraFocus } from "@/hooks/useCameraFocus";
 import type { RecognitionAction } from "@/lib/api";
 
 const FEEDBACK: Record<RecognitionAction, (min?: number) => string> = {
@@ -25,7 +25,7 @@ export function RecognitionPanel() {
   const { recognize, loading } = useRecognize();
   const cameraRef = useRef<CameraView>(null);
   const [busy, setBusy] = useState(false);
-  const isFocused = useIsFocused();
+  const { active, cameraKey } = useCameraFocus();
 
   const capture = useCallback(
     async (action: "check_in" | "check_out") => {
@@ -80,8 +80,8 @@ export function RecognitionPanel() {
   return (
     <View style={styles.container}>
       <View style={styles.cameraWrapper}>
-        {isFocused && (
-          <CameraView ref={cameraRef} style={styles.camera} facing="front" />
+        {active && (
+          <CameraView key={cameraKey} ref={cameraRef} style={styles.camera} facing="front" />
         )}
         {disabled && (
           <View style={styles.overlay}>
