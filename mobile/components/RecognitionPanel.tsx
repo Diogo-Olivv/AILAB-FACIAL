@@ -16,8 +16,8 @@ import { GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 const FEEDBACK: Record<RecognitionAction, (min?: number) => string> = {
   check_in: () => "Entrada registrada.",
   check_out: (min) => `Saida registrada.${min != null ? ` (${min} min)` : ""}`,
-  already_in: () => "Ja estava presente.",
-  not_in: () => "Nao havia entrada aberta.",
+  already_in: () => "Usuário já presente no laboratório.",
+  not_in: () => "O usuário não deu entrada no laboratório.",
   debounced: () => "Aguarde alguns segundos e tente de novo.",
 };
 

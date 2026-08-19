@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     supabase_service_key: str
 
     # Face recognition
-    face_threshold: float = 0.55
-    debounce_seconds: int = 60
+    face_threshold: float = 1.0
+    debounce_seconds: int = 0
     insightface_root: str = "~/.insightface"  # onde o pacote buffalo_s fica salvo
 
     # API
