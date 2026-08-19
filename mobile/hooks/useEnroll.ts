@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { enrollStudent, type EnrollResult, type UploadFile } from "@/lib/api";
+import { GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 
 export type EnrollOutcome =
   | { ok: true; data: EnrollResult }
@@ -19,8 +20,8 @@ export function useEnroll() {
       try {
         const data = await enrollStudent(name, matricula, consent, frames);
         return { ok: true, data };
-      } catch (err: any) {
-        return { ok: false, message: err?.message ?? "Erro desconhecido" };
+      } catch {
+        return { ok: false, message: GENERIC_ERROR_MESSAGE };
       } finally {
         setLoading(false);
       }

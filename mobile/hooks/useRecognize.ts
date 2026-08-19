@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { recognizeFrame, type RecognizeResult, type UploadFile } from "@/lib/api";
+import { GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 
 export function useRecognize() {
   const [result, setResult] = useState<RecognizeResult | null>(null);
@@ -20,10 +21,9 @@ export function useRecognize() {
       setResult(res);
       return res;
     } catch (err: any) {
-      if (err.name !== "AbortError") {
-        setError(err.message ?? "Erro desconhecido");
-      }
-      return null;
+      if (err?.name === "AbortError") return null;
+      setError(GENERIC_ERROR_MESSAGE);
+      throw err;
     } finally {
       setLoading(false);
     }

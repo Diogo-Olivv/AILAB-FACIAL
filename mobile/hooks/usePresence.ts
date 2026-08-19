@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,8 @@ export function usePresence() {
       .order("check_in", { ascending: true });
 
     if (err) {
-      setError(err.message);
+      console.warn(`Presence fetch failed: ${err.message}`);
+      setError(GENERIC_ERROR_MESSAGE);
       return;
     }
 

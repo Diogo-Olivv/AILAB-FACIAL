@@ -1,5 +1,12 @@
+import { File } from "expo-file-system";
+import { ApiError } from "@/lib/errors";
+
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 const API_KEY = process.env.EXPO_PUBLIC_API_KEY ?? "";
+
+function appendUpload(form: FormData, field: string, upload: UploadFile) {
+  form.append(field, new File(upload.uri) as unknown as Blob, upload.name);
+}
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -11,7 +18,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`API ${res.status}: ${body}`);
+    console.warn(`API ${res.status} ${path}: ${body}`);
+    throw new ApiError(res.status, body);
   }
   return res.json() as Promise<T>;
 }
@@ -64,7 +72,7 @@ export async function recognizeFrame(
   action?: "check_in" | "check_out"
 ): Promise<RecognizeResult> {
   const form = new FormData();
-  form.append("frame", frame as any);
+  appendUpload(form, "frame", frame);
   if (action) form.append("action", action);
   return request<RecognizeResult>("/api/v1/recognize", {
     method: "POST",
@@ -94,7 +102,7 @@ export async function enrollStudent(
   form.append("name", name);
   form.append("matricula", matricula);
   form.append("consent", String(consent));
-  frames.forEach((frame) => form.append("frames", frame as any));
+  frames.forEach((frame) => appendUpload(form, "frames", frame));
   return request<EnrollResult>("/api/v1/enroll", {
     method: "POST",
     body: form,

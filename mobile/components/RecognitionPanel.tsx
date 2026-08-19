@@ -11,6 +11,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRecognize } from "@/hooks/useRecognize";
 import { useCameraFocus } from "@/hooks/useCameraFocus";
 import type { RecognitionAction } from "@/lib/api";
+import { GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 
 const FEEDBACK: Record<RecognitionAction, (min?: number) => string> = {
   check_in: () => "Entrada registrada.",
@@ -53,8 +54,8 @@ export function RecognitionPanel() {
             FEEDBACK[res.event.action](res.event.duration_minutes)
           );
         }
-      } catch (err: any) {
-        Alert.alert("Erro", err?.message ?? "Falha ao capturar.");
+      } catch {
+        Alert.alert("Erro", GENERIC_ERROR_MESSAGE);
       } finally {
         setBusy(false);
       }
