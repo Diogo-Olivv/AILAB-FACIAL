@@ -5,9 +5,19 @@ export type PeriodKey = "day" | "week" | "month" | "custom";
 export const PERIOD_LABELS: Record<PeriodKey, string> = {
   day: "Hoje",
   week: "Esta semana",
-  month: "Este mes",
-  custom: "Periodo",
+  month: "Este mês",
+  custom: "Período",
 };
+
+function formatDay(date: Date): string {
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
+export function formatRange(range: DateRange): string {
+  const from = formatDay(range.from);
+  const to = formatDay(range.to);
+  return from === to ? from : `${from} a ${to}`;
+}
 
 function startOfDay(date: Date): Date {
   const result = new Date(date);
@@ -45,8 +55,10 @@ export function rangeFor(key: PeriodKey, customFrom = "", customTo = ""): DateRa
     return { from, to: endOfDay(now) };
   }
 
-  return {
-    from: startOfDay(fromDateInput(customFrom, now)),
-    to: endOfDay(fromDateInput(customTo, now)),
-  };
+  const from = startOfDay(fromDateInput(customFrom, now));
+  const to = endOfDay(fromDateInput(customTo, now));
+  if (from > to) {
+    return { from: startOfDay(to), to: endOfDay(from) };
+  }
+  return { from, to };
 }

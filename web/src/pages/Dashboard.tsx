@@ -13,6 +13,7 @@ import { PeriodSelector } from "../components/PeriodSelector";
 import { MemberSelector } from "../components/MemberSelector";
 import { TotalsTable } from "../components/TotalsTable";
 import { DailyHistory } from "../components/DailyHistory";
+import logo from "../ailab_makers.jpeg";
 
 type View = "totals" | "history";
 
@@ -35,8 +36,12 @@ export function Dashboard() {
       .catch((e) => setError(e instanceof Error ? e.message : "Falha ao carregar integrantes."));
   }, []);
 
+  const range = useMemo(
+    () => rangeFor(period, customFrom, customTo),
+    [period, customFrom, customTo],
+  );
+
   useEffect(() => {
-    const range = rangeFor(period, customFrom, customTo);
     setLoading(true);
     setError("");
     Promise.all([fetchSessions(range), fetchPresentIds()])
@@ -44,9 +49,9 @@ export function Dashboard() {
         setSessions(nextSessions);
         setPresentIds(nextPresent);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "Falha ao carregar sessoes."))
+      .catch((e) => setError(e instanceof Error ? e.message : "Falha ao carregar sessões."))
       .finally(() => setLoading(false));
-  }, [period, customFrom, customTo]);
+  }, [range]);
 
   const filtered = useMemo(
     () => (memberId ? sessions.filter((s) => s.profileId === memberId) : sessions),
@@ -63,18 +68,29 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-cream px-4 py-8">
       <div className="mx-auto max-w-3xl space-y-6">
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-ink">Tempo de permanencia</h1>
-            <p className="text-sm text-muted">Painel de acompanhamento do laboratorio.</p>
+        <header className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <img
+              src={logo}
+              alt="Maker Foundation"
+              className="h-12 w-12 rounded-full border border-line object-cover"
+            />
+            <div>
+              <h1 className="text-2xl font-semibold text-ink">Tempo de permanência</h1>
+              <p className="text-sm text-muted">Painel de acompanhamento do laboratório.</p>
+            </div>
           </div>
-          <button onClick={signOut} className="text-sm text-muted hover:text-ink">
+          <button
+            onClick={signOut}
+            className="rounded-lg border border-warn/20 bg-warn/10 px-4 py-2 text-sm font-medium text-warn transition hover:bg-warn/20"
+          >
             Sair
           </button>
         </header>
 
         <PeriodSelector
           period={period}
+          range={range}
           customFrom={customFrom}
           customTo={customTo}
           onPeriod={setPeriod}
@@ -82,13 +98,13 @@ export function Dashboard() {
           onCustomTo={setCustomTo}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-green/20 bg-green/5 p-3">
           <div className="flex gap-2">
             <button
               onClick={() => setView("totals")}
-              className={`rounded-lg px-4 py-2 text-sm ${
+              className={`rounded-lg px-4 py-2 text-sm transition ${
                 view === "totals"
-                  ? "bg-navy text-white"
+                  ? "bg-green text-white"
                   : "border border-line bg-card text-muted hover:text-ink"
               }`}
             >
@@ -96,13 +112,13 @@ export function Dashboard() {
             </button>
             <button
               onClick={() => setView("history")}
-              className={`rounded-lg px-4 py-2 text-sm ${
+              className={`rounded-lg px-4 py-2 text-sm transition ${
                 view === "history"
-                  ? "bg-navy text-white"
+                  ? "bg-green text-white"
                   : "border border-line bg-card text-muted hover:text-ink"
               }`}
             >
-              Historico diario
+              Histórico diário
             </button>
           </div>
           <MemberSelector members={members} selected={memberId} onSelect={setMemberId} />
