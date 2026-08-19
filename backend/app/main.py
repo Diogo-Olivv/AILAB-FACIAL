@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.db.schema_check import validate_schema
 from app.routers import enroll, health, recognize
 from app.services.face_service import warmup
 
@@ -20,6 +21,10 @@ log = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    try:
+        validate_schema()
+    except Exception as exc:  # noqa: BLE001
+        log.error("Schema do Supabase invalido no startup: %s", exc)
     try:
         warmup()
     except Exception as exc:  # noqa: BLE001
