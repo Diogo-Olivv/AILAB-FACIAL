@@ -32,5 +32,6 @@ COPY . .
 
 EXPOSE 8000
 
+# Honra $PORT (Cloud Run injeta 8080); cai para 8000 em ambiente local/Render
 # --workers 1 porque InsightFace não é fork-safe sem cuidado extra
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--log-level", "info"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --log-level info"]
