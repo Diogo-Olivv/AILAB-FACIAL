@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { CameraView } from "expo-camera";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ENROLL_CAPTURE_INTERVAL_MS, ENROLL_PHOTO_COUNT } from "@/lib/config";
 
 interface Props {
@@ -28,6 +29,7 @@ function delayWithCountdown(ms: number, onTick: (msLeft: number) => void): Promi
 
 export function SequentialCamera({ visible, onComplete, onCancel }: Props) {
   const cameraRef = useRef<CameraView>(null);
+  const insets = useSafeAreaInsets();
   const [ready, setReady] = useState(false);
   const [running, setRunning] = useState(false);
   const [captured, setCaptured] = useState(0);
@@ -60,6 +62,8 @@ export function SequentialCamera({ visible, onComplete, onCancel }: Props) {
     onCancel();
   }, [running, onCancel]);
 
+  const topInset = Math.max(insets.top, StatusBar.currentHeight ?? 0, 12);
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={cancel}>
       <View style={styles.container}>
@@ -70,7 +74,31 @@ export function SequentialCamera({ visible, onComplete, onCancel }: Props) {
           onCameraReady={() => setReady(true)}
         />
 
-        <View style={styles.overlay}>
+        <View
+          style={[
+            styles.topBar,
+            { paddingTop: topInset + 8, paddingRight: insets.right + 16, paddingLeft: insets.left + 16 },
+          ]}
+        >
+          <TouchableOpacity
+            style={[styles.cancelBtn, running && styles.disabled]}
+            onPress={cancel}
+            disabled={running}
+          >
+            <Text style={styles.cancelText}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.shootBtn, (!ready || running) && styles.disabled]}
+            onPress={run}
+            disabled={!ready || running}
+          >
+            <Text style={styles.shootText}>
+              {running ? "Capturando..." : `Tirar ${ENROLL_PHOTO_COUNT} fotos`}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.overlay, { paddingBottom: insets.bottom + 24 }]}>
           <View style={styles.dots}>
             {Array.from({ length: ENROLL_PHOTO_COUNT }).map((_, i) => (
               <View key={i} style={[styles.dot, i < captured && styles.dotFilled]} />
@@ -88,25 +116,6 @@ export function SequentialCamera({ visible, onComplete, onCancel }: Props) {
               {ready ? "Pronto para capturar" : "Iniciando camera..."}
             </Text>
           )}
-
-          <View style={styles.buttons}>
-            <TouchableOpacity
-              style={[styles.cancelBtn, running && styles.disabled]}
-              onPress={cancel}
-              disabled={running}
-            >
-              <Text style={styles.cancelText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.shootBtn, (!ready || running) && styles.disabled]}
-              onPress={run}
-              disabled={!ready || running}
-            >
-              <Text style={styles.shootText}>
-                {running ? "Capturando..." : `Tirar ${ENROLL_PHOTO_COUNT} fotos`}
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </Modal>
@@ -116,12 +125,22 @@ export function SequentialCamera({ visible, onComplete, onCancel }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
   camera: { flex: 1 },
+  topBar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+    paddingBottom: 12,
+  },
   overlay: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    padding: 24,
+    paddingHorizontal: 24,
     gap: 16,
     alignItems: "center",
     backgroundColor: "#00000066",
@@ -137,22 +156,21 @@ const styles = StyleSheet.create({
   },
   dotFilled: { backgroundColor: "#166534", borderColor: "#166534" },
   status: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  buttons: { flexDirection: "row", gap: 14, width: "100%" },
   cancelBtn: {
-    flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 14,
     alignItems: "center",
     backgroundColor: "#DC2626",
   },
-  cancelText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  cancelText: { color: "#fff", fontWeight: "800", fontSize: 15 },
   shootBtn: {
-    flex: 2,
-    paddingVertical: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 14,
     alignItems: "center",
     backgroundColor: "#1E2D5F",
   },
-  shootText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  shootText: { color: "#fff", fontWeight: "800", fontSize: 15 },
   disabled: { opacity: 0.4 },
 });
