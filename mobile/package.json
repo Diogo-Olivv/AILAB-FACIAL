@@ -7,6 +7,7 @@
     "@supabase/supabase-js": "^2.46.2",
     "expo": "~57.0.14",
     "expo-camera": "~57.0.3",
+    "expo-file-system": "~57.0.4",
     "expo-router": "~57.0.14",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
@@ -21,8 +22,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "build:preview": "eas build --platform android --profile preview",
     "build:prod": "eas build --platform android --profile production"

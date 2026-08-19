@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -10,47 +10,43 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { useCameraPermissions } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEnroll } from "@/hooks/useEnroll";
-import { useCameraFocus } from "@/hooks/useCameraFocus";
-import { ENROLL_PHOTO_COUNT } from "@/lib/config";
-
-interface Shot {
-  uri: string;
-}
+import { SequentialCamera } from "@/components/SequentialCamera";
+import { ENROLL_PHOTO_COUNT, MATRICULA_LENGTH } from "@/lib/config";
 
 export function EnrollCapture() {
   const [permission, requestPermission] = useCameraPermissions();
   const { enroll, loading } = useEnroll();
-  const cameraRef = useRef<CameraView>(null);
-  const { active, cameraKey } = useCameraFocus();
   const insets = useSafeAreaInsets();
 
   const [name, setName] = useState("");
   const [matricula, setMatricula] = useState("");
   const [consent, setConsent] = useState(false);
-  const [shots, setShots] = useState<Shot[]>([]);
-  const [capturing, setCapturing] = useState(false);
+  const [shots, setShots] = useState<string[]>([]);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const remaining = ENROLL_PHOTO_COUNT - shots.length;
-  const canSubmit = name.trim().length > 0 && consent && shots.length === ENROLL_PHOTO_COUNT;
+  const matriculaValid = new RegExp(`^\\d{${MATRICULA_LENGTH}}$`).test(matricula);
+  const canSubmit =
+    name.trim().length > 0 &&
+    matriculaValid &&
+    consent &&
+    shots.length === ENROLL_PHOTO_COUNT;
 
-  const shoot = useCallback(async () => {
-    if (!cameraRef.current || capturing || remaining <= 0) return;
-    setCapturing(true);
-    try {
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
-        skipProcessing: true,
-      });
-      if (!photo?.uri) return;
-      setShots((prev) => [...prev, { uri: photo.uri }]);
-    } finally {
-      setCapturing(false);
+  const openCamera = useCallback(async () => {
+    if (!permission?.granted) {
+      const res = await requestPermission();
+      if (!res.granted) return;
     }
-  }, [capturing, remaining]);
+    setCameraOpen(true);
+  }, [permission, requestPermission]);
+
+  const onCaptured = useCallback((uris: string[]) => {
+    setShots(uris);
+    setCameraOpen(false);
+  }, []);
 
   const submit = useCallback(async () => {
     setFeedback(null);
@@ -58,7 +54,7 @@ export function EnrollCapture() {
       name.trim(),
       matricula.trim(),
       consent,
-      shots.map((s, i) => ({ uri: s.uri, name: `frame_${i}.jpg`, type: "image/jpeg" }))
+      shots.map((uri, i) => ({ uri, name: `frame_${i}.jpg`, type: "image/jpeg" }))
     );
     if (outcome.ok) {
       const { name: enrolledName, photos_used } = outcome.data;
@@ -72,19 +68,6 @@ export function EnrollCapture() {
     }
   }, [enroll, name, matricula, consent, shots]);
 
-  if (!permission) return <View style={styles.container} />;
-
-  if (!permission.granted) {
-    return (
-      <View style={styles.permContainer}>
-        <Text style={styles.permText}>Camera necessaria para o cadastro.</Text>
-        <TouchableOpacity style={styles.btn} onPress={requestPermission}>
-          <Text style={styles.btnText}>Permitir acesso</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
     <ScrollView
       style={styles.container}
@@ -97,57 +80,49 @@ export function EnrollCapture() {
         },
       ]}
     >
-      <View style={styles.cameraWrapper}>
-        {active && (
-          <CameraView key={cameraKey} ref={cameraRef} style={styles.camera} facing="front" />
-        )}
+      <View style={styles.row}>
+        <View style={styles.col}>
+          <Text style={styles.label}>Nome completo</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Nome completo"
+            placeholderTextColor="#6B6F82"
+            value={name}
+            onChangeText={setName}
+          />
+        </View>
+        <View style={styles.col}>
+          <Text style={styles.label}>Matricula</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="9 digitos"
+            placeholderTextColor="#6B6F82"
+            value={matricula}
+            onChangeText={(t) => setMatricula(t.replace(/\D/g, "").slice(0, MATRICULA_LENGTH))}
+            keyboardType="number-pad"
+            maxLength={MATRICULA_LENGTH}
+          />
+          {matricula.length > 0 && !matriculaValid && (
+            <Text style={styles.hint}>Informe {MATRICULA_LENGTH} numeros.</Text>
+          )}
+        </View>
       </View>
 
-      <TouchableOpacity
-        style={[styles.captureBtn, (capturing || remaining <= 0) && styles.disabled]}
-        onPress={shoot}
-        disabled={capturing || remaining <= 0}
-      >
-        {capturing ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.captureBtnText}>
-            {remaining > 0 ? `Capturar foto (${shots.length}/${ENROLL_PHOTO_COUNT})` : "Fotos completas"}
-          </Text>
-        )}
+      <TouchableOpacity style={styles.captureBtn} onPress={openCamera}>
+        <Text style={styles.captureBtnText}>
+          {shots.length === ENROLL_PHOTO_COUNT
+            ? "Refazer fotos"
+            : `Tirar ${ENROLL_PHOTO_COUNT} fotos`}
+        </Text>
       </TouchableOpacity>
 
       {shots.length > 0 && (
         <View style={styles.thumbs}>
-          {shots.map((s, i) => (
-            <View key={i} style={styles.thumbWrapper}>
-              <Image source={{ uri: s.uri }} style={styles.thumb} />
-              <TouchableOpacity
-                style={styles.removeThumb}
-                onPress={() => setShots((prev) => prev.filter((_, j) => j !== i))}
-              >
-                <Text style={styles.removeThumbText}>x</Text>
-              </TouchableOpacity>
-            </View>
+          {shots.map((uri, i) => (
+            <Image key={i} source={{ uri }} style={styles.thumb} />
           ))}
         </View>
       )}
-
-      <TextInput
-        style={styles.input}
-        placeholder="Nome completo"
-        placeholderTextColor="#6B6F82"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Matricula (opcional)"
-        placeholderTextColor="#6B6F82"
-        value={matricula}
-        onChangeText={setMatricula}
-        autoCapitalize="characters"
-      />
 
       <View style={styles.consentRow}>
         <Switch
@@ -178,20 +153,23 @@ export function EnrollCapture() {
           {feedback.text}
         </Text>
       )}
+
+      <SequentialCamera
+        visible={cameraOpen}
+        onComplete={onCaptured}
+        onCancel={() => setCameraOpen(false)}
+      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F4EFE4" },
-  content: { padding: 16, gap: 12, paddingBottom: 40 },
-  cameraWrapper: {
-    height: 440,
-    borderRadius: 16,
-    overflow: "hidden",
-    backgroundColor: "#000",
-  },
-  camera: { flex: 1 },
+  content: { padding: 16, gap: 14, paddingBottom: 40 },
+  row: { flexDirection: "row", gap: 12 },
+  col: { flex: 1, gap: 6 },
+  label: { color: "#141A33", fontSize: 13, fontWeight: "700" },
+  hint: { color: "#DC2626", fontSize: 12 },
   captureBtn: {
     backgroundColor: "#1E2D5F",
     padding: 14,
@@ -200,21 +178,8 @@ const styles = StyleSheet.create({
   },
   captureBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   disabled: { opacity: 0.4 },
-  thumbs: { flexDirection: "row", gap: 10 },
-  thumbWrapper: { position: "relative" },
+  thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
   thumb: { width: 60, height: 60, borderRadius: 10 },
-  removeThumb: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#DC2626",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  removeThumbText: { color: "#fff", fontSize: 12, fontWeight: "700" },
   input: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
@@ -234,16 +199,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   submitBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
-  permContainer: {
-    flex: 1,
-    backgroundColor: "#F4EFE4",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-  },
-  permText: { color: "#141A33", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
-  btn: { backgroundColor: "#1E2D5F", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
-  btnText: { color: "#fff", fontWeight: "700" },
   feedback: { fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 4 },
   feedbackOk: { color: "#166534" },
   feedbackErr: { color: "#DC2626" },
