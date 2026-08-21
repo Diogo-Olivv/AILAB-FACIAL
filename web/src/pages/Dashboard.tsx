@@ -102,7 +102,7 @@ export function Dashboard() {
           <div className="flex gap-2">
             <button
               onClick={() => setView("totals")}
-              className={`rounded-lg px-4 py-2 text-sm transition ${
+              className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm transition ${
                 view === "totals"
                   ? "bg-green text-white"
                   : "border border-line bg-card text-muted hover:text-ink"
@@ -112,7 +112,7 @@ export function Dashboard() {
             </button>
             <button
               onClick={() => setView("history")}
-              className={`rounded-lg px-4 py-2 text-sm transition ${
+              className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm transition ${
                 view === "history"
                   ? "bg-green text-white"
                   : "border border-line bg-card text-muted hover:text-ink"

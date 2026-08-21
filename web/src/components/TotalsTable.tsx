@@ -14,8 +14,8 @@ export function TotalsTable({ rows }: { rows: MemberTotal[] }) {
             <th className="px-3 py-3 font-medium sm:px-4">Integrante</th>
             <th className="hidden px-3 py-3 font-medium sm:table-cell sm:px-4">Matrícula</th>
             <th className="hidden px-3 py-3 font-medium sm:table-cell sm:px-4">Sessões</th>
-            <th className="px-3 py-3 font-medium sm:px-4">Total</th>
-            <th className="px-3 py-3 font-medium sm:px-4">Status</th>
+            <th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">Total</th>
+            <th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -26,14 +26,14 @@ export function TotalsTable({ rows }: { rows: MemberTotal[] }) {
                 {row.member.matricula ?? "-"}
               </td>
               <td className="hidden px-3 py-3 text-muted sm:table-cell sm:px-4">{row.sessionCount}</td>
-              <td className="px-3 py-3 sm:px-4">{formatDuration(row.totalSeconds)}</td>
+              <td className="whitespace-nowrap px-3 py-3 sm:px-4">{formatDuration(row.totalSeconds)}</td>
               <td className="px-3 py-3 sm:px-4">
                 {row.present ? (
-                  <span className="rounded-full bg-green/15 px-2 py-1 text-xs font-medium text-green">
+                  <span className="inline-block whitespace-nowrap rounded-full bg-green/15 px-2 py-1 text-xs font-medium text-green">
                     No lab
                   </span>
                 ) : (
-                  <span className="rounded-full bg-muted/15 px-2 py-1 text-xs font-medium text-muted">
+                  <span className="inline-block whitespace-nowrap rounded-full bg-muted/15 px-2 py-1 text-xs font-medium text-muted">
                     Fora
                   </span>
                 )}

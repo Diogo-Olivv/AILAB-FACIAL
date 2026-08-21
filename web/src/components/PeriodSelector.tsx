@@ -31,7 +31,7 @@ export function PeriodSelector({
             <button
               key={key}
               onClick={() => onPeriod(key)}
-              className={`rounded-full px-4 py-2 text-sm transition ${
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm transition ${
                 period === key
                   ? "bg-navy text-white"
                   : "border border-line bg-card text-muted hover:text-ink"
@@ -41,7 +41,7 @@ export function PeriodSelector({
             </button>
           ))}
         </div>
-        <span className="rounded-full border border-navy/20 bg-card px-3 py-1 text-xs font-medium text-navy">
+        <span className="whitespace-nowrap rounded-full border border-navy/20 bg-card px-3 py-1 text-xs font-medium text-navy">
           {formatRange(range)}
         </span>
       </div>
