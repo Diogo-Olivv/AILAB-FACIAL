@@ -74,24 +74,25 @@ def extract_embedding(image_bytes: bytes) -> np.ndarray | None:
     return enc / norm
 
 
-def _load_embeddings() -> tuple[list[str], np.ndarray] | None:
+def _load_embeddings() -> tuple[list[str], list[str], np.ndarray] | None:
     """Carrega embeddings de integrantes ativos da tabela isolada."""
     rows = (
         get_client()
         .table("face_embeddings")
-        .select("profile_id, embedding, profiles!inner(active)")
+        .select("profile_id, embedding, profiles!inner(active, name)")
         .eq("profiles.active", True)
         .execute()
     ).data or []
     if not rows:
         return None
     ids = [r["profile_id"] for r in rows]
+    names = [r["profiles"]["name"] for r in rows]
     matrix = np.array([r["embedding"] for r in rows], dtype=np.float64)
-    return ids, matrix
+    return ids, names, matrix
 
 
 def identify(image_bytes: bytes) -> dict | None:
-    """Retorna {profile_id, confidence} do integrante reconhecido, ou None."""
+    """Retorna {profile_id, name, confidence} do integrante reconhecido, ou None."""
     enc = extract_embedding(image_bytes)
     if enc is None:
         return None
@@ -99,7 +100,7 @@ def identify(image_bytes: bytes) -> dict | None:
     loaded = _load_embeddings()
     if loaded is None:
         return None
-    ids, matrix = loaded
+    ids, names, matrix = loaded
 
     dists = np.linalg.norm(matrix - enc, axis=1)
     idx = int(np.argmin(dists))
@@ -110,5 +111,6 @@ def identify(image_bytes: bytes) -> dict | None:
 
     return {
         "profile_id": ids[idx],
+        "name": names[idx],
         "confidence": round(float(1.0 - dist / settings.face_threshold), 4),
     }

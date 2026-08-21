@@ -42,6 +42,7 @@ export type RecognitionAction =
 export interface RecognizeResult {
   recognized: boolean;
   profile_id?: string;
+  name?: string;
   confidence?: number;
   event?: {
     action: RecognitionAction;

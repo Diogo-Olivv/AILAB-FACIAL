@@ -13,9 +13,9 @@ import { useCameraFocus } from "@/hooks/useCameraFocus";
 import type { RecognitionAction } from "@/lib/api";
 import { GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 
-const FEEDBACK: Record<RecognitionAction, (min?: number) => string> = {
-  check_in: () => "Entrada registrada.",
-  check_out: (min) => `Saida registrada.${min != null ? ` (${min} min)` : ""}`,
+const FEEDBACK: Record<RecognitionAction, (name?: string, min?: number) => string> = {
+  check_in: (name) => `Entrada Registrada: ${name ?? ""}`.trimEnd(),
+  check_out: (_name, min) => `Saida registrada.${min != null ? ` (${min} min)` : ""}`,
   already_in: () => "Usuário já presente no laboratório.",
   not_in: () => "O usuário não deu entrada no laboratório.",
   debounced: () => "Aguarde alguns segundos e tente de novo.",
@@ -51,7 +51,7 @@ export function RecognitionPanel() {
         } else {
           Alert.alert(
             action === "check_in" ? "Entrada" : "Saida",
-            FEEDBACK[res.event.action](res.event.duration_minutes)
+            FEEDBACK[res.event.action](res.name, res.event.duration_minutes)
           );
         }
       } catch {
