@@ -64,6 +64,19 @@ npx expo start
 
 `render.yaml` define o serviço Docker `ailab-facial-api`. As variáveis `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` e `API_KEY` entram como secrets no painel do Render (`sync: false`); `FACE_THRESHOLD` e `DEBOUNCE_SECONDS` têm default no arquivo.
 
+### Manter o backend acordado (keep-alive)
+
+O Cloud Run escala para zero sem tráfego, então o primeiro acesso após ociosidade sofre cold start (~17s). Para evitar isso durante o horário de uso, um ping periódico no `/health` mantém a instância aquecida.
+
+Configurado no [cron-job.org](https://cron-job.org) (grátis), com o fuso da conta em `America/Sao_Paulo`:
+
+- **URL:** `https://ailab-facial-api-qpzev7qaoq-rj.a.run.app/health`
+- **Método:** GET
+- **Agenda:** `*/15 7-21 * * *` (a cada 15 min, das 7h às 21h)
+- **Timeout:** 30s (o cold start do primeiro ping pode chegar a ~17s)
+
+Fora dessa janela o servidor volta a dormir, o que é esperado. Para eliminar o cold start por completo seria preciso `min-instances=1` no Cloud Run, o que sai da faixa gratuita.
+
 ### Web (GitHub Pages)
 
 O workflow `.github/workflows/deploy-pages.yml` builda `web/` com base `/AILAB-FACIAL/` e publica no GitHub Pages a cada push na `master`. As `VITE_*` são secrets do repositório. O SPA usa fallback `404.html` para as rotas do react-router.
