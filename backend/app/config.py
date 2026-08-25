@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     # Face recognition
     face_threshold: float = 1.0
     debounce_seconds: int = 0
+
+    # Sessões: acima deste limite a sessão é considerada saída esquecida e descartada.
+    max_session_hours: int = 10
     insightface_root: str = "~/.insightface"  # onde o pacote buffalo_s fica salvo
 
     # API

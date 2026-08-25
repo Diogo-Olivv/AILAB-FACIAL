@@ -34,6 +34,24 @@ def _open_session(profile_id: str) -> dict[str, Any] | None:
     return row.data[0] if row.data else None
 
 
+def _parse_ts(value: str) -> datetime:
+    """Converte timestamp ISO do banco em datetime timezone-aware (UTC)."""
+    dt = datetime.fromisoformat(value)
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+
+
+def _is_stale(check_in_iso: str, now: datetime) -> bool:
+    """True se a sessão passou de max_session_hours (saída esquecida)."""
+    return (now - _parse_ts(check_in_iso)) >= timedelta(hours=settings.max_session_hours)
+
+
+def _void_session(sess_id: int, check_in_iso: str) -> None:
+    """Descarta uma sessão de saída esquecida: fecha com duração zero e marca voided_at."""
+    get_client().table("sessions").update(
+        {"check_out": check_in_iso, "voided_at": datetime.now(UTC).isoformat()}
+    ).eq("id", sess_id).execute()
+
+
 def _last_event_ts(profile_id: str) -> datetime | None:
     """Chama RPC last_event_time para debounce eficiente."""
     row = (
@@ -76,6 +94,11 @@ def register_event(profile_id: str, action: str | None = None) -> dict[str, Any]
 
     open_sess = _open_session(profile_id)
 
+    if open_sess is not None and _is_stale(open_sess["check_in"], now):
+        # Saída esquecida: descarta a sessão antiga e trata este evento como entrada nova.
+        _void_session(open_sess["id"], open_sess["check_in"])
+        open_sess = None
+
     if action == "check_in" and open_sess is not None:
         return {"action": "already_in", "profile_id": profile_id}
     if action == "check_out" and open_sess is None:
@@ -109,18 +132,40 @@ def register_event(profile_id: str, action: str | None = None) -> dict[str, Any]
     }
 
 
+def close_stale_sessions() -> dict[str, int]:
+    """Descarta sessões abertas há mais de max_session_hours (saídas esquecidas).
+
+    Pensado para um sweep periódico (ex.: à meia-noite) limpar a lista de presentes.
+    """
+    now = datetime.now(UTC)
+    cutoff = now - timedelta(hours=settings.max_session_hours)
+    rows = (
+        get_client()
+        .table("sessions")
+        .select("id, check_in")
+        .is_("check_out", "null")
+        .lt("check_in", cutoff.isoformat())
+        .execute()
+        .data
+    )
+    for r in rows:
+        _void_session(r["id"], r["check_in"])
+    return {"voided": len(rows)}
+
+
 def total_hours(
     profile_id: str,
     year: int | None = None,
     month: int | None = None,
 ) -> float:
-    """Soma de horas de todas as sessões fechadas, opcionalmente filtrado por mês."""
+    """Soma de horas das sessões fechadas e válidas, opcionalmente filtrado por mês."""
     db = get_client()
     q = (
         db.table("sessions")
         .select("check_in, check_out")
         .eq("profile_id", profile_id)
         .not_.is_("check_out", "null")
+        .is_("voided_at", "null")
     )
     if year and month:
         prefix = f"{year:04d}-{month:02d}"

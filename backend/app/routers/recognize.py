@@ -8,7 +8,11 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from app.db.supabase_client import get_client
 from app.deps import validate_image, verify_api_key
 from app.services.face_service import identify
-from app.services.session_service import register_event, total_hours
+from app.services.session_service import (
+    close_stale_sessions,
+    register_event,
+    total_hours,
+)
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["recognize"])
@@ -51,6 +55,12 @@ def open_sessions():
         .execute()
     )
     return rows.data
+
+
+@router.post("/sessions/close-stale", dependencies=[Depends(verify_api_key)])
+def close_stale():
+    """Fecha sessões de saída esquecida. Alvo do sweep diário (cron-job.org à meia-noite)."""
+    return close_stale_sessions()
 
 
 @router.get("/sessions/stats/{profile_id}")

@@ -13,6 +13,6 @@ EXPECTED_COLUMNS: dict[str, list[str]] = {
         "created_at",
     ],
     "face_embeddings": ["id", "profile_id", "embedding", "created_at"],
-    "sessions": ["id", "profile_id", "check_in", "check_out"],
+    "sessions": ["id", "profile_id", "check_in", "check_out", "voided_at"],
     "face_logs": ["id", "profile_id", "confidence", "created_at"],
 }

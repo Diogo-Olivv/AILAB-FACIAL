@@ -26,7 +26,8 @@ create table if not exists public.sessions (
   id bigint generated always as identity primary key,
   profile_id uuid not null references public.profiles(id) on delete cascade,
   check_in timestamptz not null,
-  check_out timestamptz
+  check_out timestamptz,
+  voided_at timestamptz  -- saída esquecida (sessão > max_session_hours): não conta horas
 );
 
 create table if not exists public.face_logs (
@@ -46,6 +47,8 @@ alter table public.profiles add column if not exists created_at timestamptz not 
 
 -- Embedding vive em face_embeddings; coluna homonima em profiles e vestigial.
 alter table public.profiles drop column if exists embedding;
+
+alter table public.sessions add column if not exists voided_at timestamptz;
 
 -- ── Indices ─────────────────────────────────────────────────────────────────────
 
