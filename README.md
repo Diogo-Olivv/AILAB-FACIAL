@@ -60,9 +60,9 @@ npx expo start
 
 ## Deploy
 
-### Backend (Render)
+### Backend (Cloud Run)
 
-`render.yaml` define o serviço Docker `ailab-facial-api`. As variáveis `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` e `API_KEY` entram como secrets no painel do Render (`sync: false`); `FACE_THRESHOLD` e `DEBOUNCE_SECONDS` têm default no arquivo.
+O workflow `.github/workflows/deploy-backend.yml` builda `backend/` a partir do source e publica no Cloud Run (serviço `ailab-facial-api`, região `southamerica-east1`) a cada push na `master` que toque em `backend/**`. A autenticação usa o secret `GCP_SA_KEY` (chave JSON de uma service account com papéis de Cloud Run, Cloud Build, Artifact Registry e Storage). As variáveis `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `API_KEY`, `FACE_THRESHOLD`, `DEBOUNCE_SECONDS` e `MAX_SESSION_HOURS` são definidas no serviço do Cloud Run.
 
 ### Manter o backend acordado (keep-alive)
 
@@ -76,6 +76,20 @@ Configurado no [cron-job.org](https://cron-job.org) (grátis), com o fuso da con
 - **Timeout:** 30s (o cold start do primeiro ping pode chegar a ~17s)
 
 Fora dessa janela o servidor volta a dormir, o que é esperado. Para eliminar o cold start por completo seria preciso `min-instances=1` no Cloud Run, o que sai da faixa gratuita.
+
+### Limite de sessão e sweep de saídas esquecidas
+
+Se alguém esquece de registrar a saída, a sessão fica aberta indefinidamente. Para evitar horas infladas e "fantasmas" na lista de presentes, sessões abertas por mais de `MAX_SESSION_HOURS` (default 10) são consideradas saída esquecida e descartadas: a coluna `voided_at` é marcada e a sessão não conta horas (0h). O descarte acontece de duas formas:
+
+- **Na chegada:** ao voltar ao lab, uma sessão antiga aberta há mais de 10h é descartada e o evento vira uma entrada nova.
+- **Sweep diário:** um segundo job no [cron-job.org](https://cron-job.org) chama a rota abaixo à meia-noite para limpar as esquecidas do dia.
+
+- **URL:** `https://ailab-facial-api-qpzev7qaoq-rj.a.run.app/api/v1/sessions/close-stale`
+- **Método:** POST
+- **Header:** `X-API-Key: <API_KEY do backend>`
+- **Agenda:** `0 0 * * *` (todo dia à meia-noite)
+
+Retorna `{"voided": N}` com quantas sessões foram descartadas. A rota é protegida por API key; sem o header responde `401`.
 
 ### Web (GitHub Pages)
 
