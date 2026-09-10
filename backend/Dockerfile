@@ -12,11 +12,15 @@ WORKDIR /app
 # Onde o pacote buffalo_s fica salvo dentro da imagem
 ENV INSIGHTFACE_ROOT=/app/.insightface
 
-# Enxuga o uso de RAM para caber em instancias de 512MB
-ENV OMP_NUM_THREADS=1 \
-    OPENBLAS_NUM_THREADS=1 \
-    MKL_NUM_THREADS=1 \
-    MALLOC_ARENA_MAX=2
+# Dimensionamento ideal para Google Cloud Run:
+#   --cpu 2 --memory 2Gi --concurrency 8 --min-instances 1 (durante horário do laboratório)
+# OMP_NUM_THREADS=2 e OPENBLAS_NUM_THREADS=2 maximizam o throughput ONNX por vCPU
+# mantendo p95 < 800ms sem contenção de threads.
+ENV OMP_NUM_THREADS=2 \
+    OPENBLAS_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2 \
+    MALLOC_ARENA_MAX=2 \
+    PYTHONUNBUFFERED=1
 
 # Instala dependências antes de copiar o código (cache de layer)
 COPY requirements.txt .

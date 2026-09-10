@@ -5,6 +5,7 @@ import { useAuth } from "../auth/useAuth";
 export function Login() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -14,10 +15,10 @@ export function Login() {
     setBusy(true);
     setError("");
     try {
-      await signIn(password);
+      await signIn(password, email);
       navigate("/dashboard", { replace: true });
     } catch {
-      setError("Senha invalida.");
+      setError("Credenciais inválidas.");
     } finally {
       setBusy(false);
     }
@@ -30,16 +31,31 @@ export function Login() {
         className="w-full max-w-sm space-y-4 rounded-2xl border border-line bg-card p-8 shadow-sm"
       >
         <h1 className="text-2xl font-semibold text-ink">AILAB Facial</h1>
-        <p className="text-sm text-muted">Digite a senha para acessar o painel.</p>
-        <input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoFocus
-          className="w-full rounded-lg border border-line bg-white px-4 py-3 text-ink outline-none focus:ring-2 focus:ring-navy"
-        />
+        <p className="text-sm text-muted">Acesso de tutores e coordenadores.</p>
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-ink">E-mail institucional</label>
+          <input
+            type="email"
+            placeholder="tutor@ailab.org (ou padrão)"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-lg border border-line bg-white px-4 py-3 text-ink outline-none focus:ring-2 focus:ring-navy text-sm"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-ink">Senha</label>
+          <input
+            type="password"
+            placeholder="Senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full rounded-lg border border-line bg-white px-4 py-3 text-ink outline-none focus:ring-2 focus:ring-navy"
+          />
+        </div>
+
         {error && <p className="text-sm text-warn">{error}</p>}
         <button
           type="submit"

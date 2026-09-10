@@ -1,23 +1,28 @@
 """Lógica de sessões check-in/check-out sobre Supabase (PostgreSQL).
 
-Porta a lógica de attendance/logic.py do SQLite para Supabase,
-mantendo: debounce configurável, alternância check-in/check-out,
-cálculo de total_hours filtrável por ano/mês.
+Implementa:
+1. Controle de concorrência com índice parcial único e histerese (anti-flip-flop).
+2. Tratamento gracioso de colisão (unique violation 23505).
+3. Encerramento justo de saídas esquecidas com teto e flag auto_closed.
+4. Consulta temporal robusta de total_hours em UTC contínuo (sem erro de dia 32).
 """
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import logging
 from typing import Any
 
 from app.config import settings
 from app.db.supabase_client import get_client
 
+log = logging.getLogger(__name__)
 UTC = timezone.utc
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers internos
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def _open_session(profile_id: str) -> dict[str, Any] | None:
     """Retorna a sessão aberta mais recente do perfil, ou None."""
@@ -45,23 +50,49 @@ def _is_stale(check_in_iso: str, now: datetime) -> bool:
     return (now - _parse_ts(check_in_iso)) >= timedelta(hours=settings.max_session_hours)
 
 
-def _void_session(sess_id: int, check_in_iso: str) -> None:
-    """Descarta uma sessão de saída esquecida: fecha com duração zero e marca voided_at."""
-    get_client().table("sessions").update(
-        {"check_out": check_in_iso, "voided_at": datetime.now(UTC).isoformat()}
-    ).eq("id", sess_id).execute()
+def _close_stale_session(sess_id: int, check_in_iso: str) -> None:
+    """Fecha uma sessão esquecida aplicando o teto configurado e marcando auto_closed."""
+    check_in_dt = _parse_ts(check_in_iso)
+    capped_checkout = check_in_dt + timedelta(hours=settings.max_session_cap_hours)
+    get_client().table("sessions").update({
+        "check_out": capped_checkout.isoformat(),
+        "auto_closed": True,
+    }).eq("id", sess_id).execute()
+    log.info(
+        "Sessão %s encerrada automaticamente pelo sweep com teto de %dh.",
+        sess_id,
+        settings.max_session_cap_hours,
+    )
 
 
 def _last_event_ts(profile_id: str) -> datetime | None:
-    """Chama RPC last_event_time para debounce eficiente."""
-    row = (
-        get_client()
-        .rpc("last_event_time", {"p_profile_id": profile_id})
-        .execute()
-    )
-    val = row.data
-    if val:
-        return datetime.fromisoformat(str(val)).replace(tzinfo=UTC)
+    """Obtém o timestamp do último evento do membro (para histerese)."""
+    try:
+        # Tenta RPC se disponível
+        row = get_client().rpc("last_event_time", {"p_profile_id": profile_id}).execute()
+        val = row.data
+        if val:
+            return _parse_ts(str(val))
+    except Exception:
+        pass
+
+    # Fallback por query direta indexada
+    try:
+        last = (
+            get_client()
+            .table("sessions")
+            .select("check_in, check_out")
+            .eq("profile_id", profile_id)
+            .order("check_in", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if last.data:
+            ts_str = last.data[0]["check_out"] or last.data[0]["check_in"]
+            return _parse_ts(ts_str)
+    except Exception as exc:
+        log.warning("Falha ao consultar último evento: %s", exc)
+
     return None
 
 
@@ -69,60 +100,83 @@ def _last_event_ts(profile_id: str) -> datetime | None:
 # API pública
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def register_event(profile_id: str, action: str | None = None) -> dict[str, Any]:
-    """Registra entrada/saida com debounce.
+    """Registra entrada/saída com controle atômico e histerese anti-flip-flop.
 
     Args:
-        action: quando ``check_in`` ou ``check_out``, forca a direcao; caso
-            contrario alterna conforme a sessao aberta.
+        profile_id: UUID do integrante.
+        action: 'check_in', 'check_out' ou None (alternância automática).
 
     Returns:
-        dict com campo ``action`` em
+        dict com campo 'action' em
         {check_in, check_out, already_in, not_in, debounced}.
     """
     now = datetime.now(UTC)
-    db = get_client()
 
+    # 1. Histerese de segurança geral
     last = _last_event_ts(profile_id)
     if last and (now - last) < timedelta(seconds=settings.debounce_seconds):
         wait = settings.debounce_seconds - int((now - last).total_seconds())
         return {
             "action": "debounced",
             "profile_id": profile_id,
-            "wait_seconds": wait,
+            "wait_seconds": max(1, wait),
         }
 
     open_sess = _open_session(profile_id)
 
+    # 2. Tratamento de saída esquecida em aberto
     if open_sess is not None and _is_stale(open_sess["check_in"], now):
-        # Saída esquecida: descarta a sessão antiga e trata este evento como entrada nova.
-        _void_session(open_sess["id"], open_sess["check_in"])
+        _close_stale_session(open_sess["id"], open_sess["check_in"])
         open_sess = None
 
+    # Validação de intenção explícita
     if action == "check_in" and open_sess is not None:
         return {"action": "already_in", "profile_id": profile_id}
     if action == "check_out" and open_sess is None:
         return {"action": "not_in", "profile_id": profile_id}
 
+    # 3. CHECK-IN
     if open_sess is None:
-        # ── CHECK-IN ──────────────────────────────────────────────────────────
-        res = (
-            db.table("sessions")
-            .insert({"profile_id": profile_id, "check_in": now.isoformat()})
-            .execute()
-        )
+        db = get_client()
+        try:
+            res = (
+                db.table("sessions")
+                .insert({"profile_id": profile_id, "check_in": now.isoformat()})
+                .execute()
+            )
+            return {
+                "action": "check_in",
+                "profile_id": profile_id,
+                "session_id": res.data[0]["id"],
+                "timestamp": now.isoformat(),
+            }
+        except Exception as exc:
+            err_msg = str(exc)
+            # Concorrência tratada: intercepta colisão no índice parcial UNIQUE
+            if "23505" in err_msg or "idx_sessions_profile_single_open" in err_msg or "unique" in err_msg.lower():
+                log.info("Colisão de concorrência mitigada: sessão já aberta para %s", profile_id)
+                return {"action": "already_in", "profile_id": profile_id}
+            raise
+
+    # 4. CHECK-OUT
+    check_in_dt = _parse_ts(open_sess["check_in"])
+
+    # Histerese de checkout: impede checkout imediato (acidental) se acabou de entrar
+    if action is None and (now - check_in_dt) < timedelta(seconds=settings.debounce_seconds):
+        wait = settings.debounce_seconds - int((now - check_in_dt).total_seconds())
         return {
-            "action": "check_in",
+            "action": "debounced",
             "profile_id": profile_id,
-            "session_id": res.data[0]["id"],
-            "timestamp": now.isoformat(),
+            "wait_seconds": max(1, wait),
         }
 
-    # ── CHECK-OUT ─────────────────────────────────────────────────────────────
     sess_id = open_sess["id"]
+    db = get_client()
     db.table("sessions").update({"check_out": now.isoformat()}).eq("id", sess_id).execute()
-    check_in_dt = datetime.fromisoformat(open_sess["check_in"]).replace(tzinfo=UTC)
     duration_min = round((now - check_in_dt).total_seconds() / 60, 1)
+
     return {
         "action": "check_out",
         "profile_id": profile_id,
@@ -133,10 +187,7 @@ def register_event(profile_id: str, action: str | None = None) -> dict[str, Any]
 
 
 def close_stale_sessions() -> dict[str, int]:
-    """Descarta sessões abertas há mais de max_session_hours (saídas esquecidas).
-
-    Pensado para um sweep periódico (ex.: à meia-noite) limpar a lista de presentes.
-    """
+    """Fecha sessões esquecidas aplicando teto justo configurado (max_session_cap_hours)."""
     now = datetime.now(UTC)
     cutoff = now - timedelta(hours=settings.max_session_hours)
     rows = (
@@ -147,10 +198,11 @@ def close_stale_sessions() -> dict[str, int]:
         .lt("check_in", cutoff.isoformat())
         .execute()
         .data
-    )
+    ) or []
+
     for r in rows:
-        _void_session(r["id"], r["check_in"])
-    return {"voided": len(rows)}
+        _close_stale_session(r["id"], r["check_in"])
+    return {"auto_closed": len(rows)}
 
 
 def total_hours(
@@ -158,7 +210,7 @@ def total_hours(
     year: int | None = None,
     month: int | None = None,
 ) -> float:
-    """Soma de horas das sessões fechadas e válidas, opcionalmente filtrado por mês."""
+    """Soma de horas das sessões fechadas e válidas em UTC contínuo (sem erro de dia 32)."""
     db = get_client()
     q = (
         db.table("sessions")
@@ -167,22 +219,22 @@ def total_hours(
         .not_.is_("check_out", "null")
         .is_("voided_at", "null")
     )
+
     if year and month:
-        prefix = f"{year:04d}-{month:02d}"
-        q = q.gte("check_in", f"{prefix}-01").lt(
-            "check_in", f"{prefix}-32"
-        )
-    rows = q.execute().data
+        start_ts = f"{year:04d}-{month:02d}-01T00:00:00Z"
+        if month == 12:
+            end_ts = f"{year + 1:04d}-01-01T00:00:00Z"
+        else:
+            end_ts = f"{year:04d}-{month + 1:02d}-01T00:00:00Z"
+        q = q.gte("check_in", start_ts).lt("check_in", end_ts)
+
+    rows = q.execute().data or []
 
     total = timedelta()
     for r in rows:
-        ci = datetime.fromisoformat(r["check_in"])
-        co = datetime.fromisoformat(r["check_out"])
-        # Garante timezone-aware
-        if ci.tzinfo is None:
-            ci = ci.replace(tzinfo=UTC)
-        if co.tzinfo is None:
-            co = co.replace(tzinfo=UTC)
-        total += co - ci
+        ci = _parse_ts(r["check_in"])
+        co = _parse_ts(r["check_out"])
+        if co > ci:
+            total += co - ci
 
     return round(total.total_seconds() / 3600, 2)

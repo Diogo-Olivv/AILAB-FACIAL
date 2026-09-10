@@ -47,10 +47,29 @@ export function RecognitionPanel() {
         if (!res) {
           Alert.alert("Erro", "Falha ao comunicar com o servidor.");
         } else if (!res.recognized || !res.event) {
-          Alert.alert("Nao reconhecido", "Rosto nao encontrado na base.");
+          const title =
+            res.status === "spoof_detected"
+              ? "Aviso de Segurança"
+              : res.status === "blur_detected"
+              ? "Imagem Borrada"
+              : res.status === "face_too_small"
+              ? "Aproxime-se"
+              : "Não Reconhecido";
+
+          const detail =
+            res.message ||
+            (res.status === "spoof_detected"
+              ? "Falha na verificação de vivacidade presencial."
+              : res.status === "blur_detected"
+              ? "Mantenha o tablet estável e olhe para a câmera."
+              : res.status === "face_too_small"
+              ? "Posicione o rosto mais perto do centro da tela."
+              : "Rosto não encontrado na base de dados.");
+
+          Alert.alert(title, detail);
         } else {
           Alert.alert(
-            action === "check_in" ? "Entrada" : "Saida",
+            action === "check_in" ? "Entrada" : "Saída",
             FEEDBACK[res.event.action](res.name, res.event.duration_minutes)
           );
         }

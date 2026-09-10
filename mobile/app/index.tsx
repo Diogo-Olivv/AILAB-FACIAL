@@ -1,15 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { RecognitionPanel } from "@/components/RecognitionPanel";
 import { PresenceSidebar } from "@/components/PresenceSidebar";
+import { TutorPinModal } from "@/components/TutorPinModal";
 
 const logo = require("../assets/ailab_makers.jpeg");
 
 export default function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [pinModalVisible, setPinModalVisible] = useState(false);
 
   return (
     <View style={styles.safe}>
@@ -27,7 +29,7 @@ export default function Home() {
           <Image source={logo} style={styles.brandLogo} />
           <Text style={styles.title}>AILAB Makers</Text>
         </View>
-        <TouchableOpacity style={styles.registerBtn} onPress={() => router.push("/enroll")}>
+        <TouchableOpacity style={styles.registerBtn} onPress={() => setPinModalVisible(true)}>
           <Text style={styles.registerBtnText}>Cadastrar</Text>
         </TouchableOpacity>
       </View>
@@ -43,6 +45,15 @@ export default function Home() {
         </View>
         <PresenceSidebar />
       </View>
+
+      <TutorPinModal
+        visible={pinModalVisible}
+        onSuccess={() => {
+          setPinModalVisible(false);
+          router.push("/enroll");
+        }}
+        onCancel={() => setPinModalVisible(false)}
+      />
     </View>
   );
 }

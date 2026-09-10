@@ -4,6 +4,7 @@ venv/
 env/
 __pycache__/
 *.pyc
+.pytest_cache/
 .ipynb_checkpoints/
 node_modules/
 
@@ -41,3 +42,9 @@ mobile/dist/
 mobile/android/
 mobile/ios/
 mobile/.env.local
+
+# Web
+web/.env
+web/.env.local
+web/dist/
+web/node_modules/

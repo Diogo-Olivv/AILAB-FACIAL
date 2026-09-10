@@ -1,6 +1,7 @@
 """Router de reconhecimento facial e eventos de sessao."""
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
@@ -27,9 +28,14 @@ async def recognize(
     data = await frame.read()
     validate_image(frame.content_type, len(data))
 
-    result = identify(data)
-    if result is None:
-        return {"recognized": False}
+    # Offload de inferência CPU para não bloquear o event loop do asyncio
+    result = await asyncio.to_thread(identify, data)
+    if not result or not result.get("recognized"):
+        return result or {
+            "recognized": False,
+            "status": "not_recognized",
+            "message": "Rosto não reconhecido na base.",
+        }
 
     try:
         get_client().table("face_logs").insert({
@@ -43,7 +49,7 @@ async def recognize(
     return {"recognized": True, **result, "event": event}
 
 
-@router.get("/sessions/open")
+@router.get("/sessions/open", dependencies=[Depends(verify_api_key)])
 def open_sessions():
     """Lista membros atualmente no laboratorio (sessoes sem check-out)."""
     rows = (
@@ -63,7 +69,7 @@ def close_stale():
     return close_stale_sessions()
 
 
-@router.get("/sessions/stats/{profile_id}")
+@router.get("/sessions/stats/{profile_id}", dependencies=[Depends(verify_api_key)])
 def session_stats(
     profile_id: str,
     year: int | None = None,

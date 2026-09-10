@@ -1,9 +1,19 @@
 """Router de cadastro biometrico de integrantes."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from postgrest.exceptions import APIError
+import asyncio
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+
+try:
+    from postgrest.exceptions import APIError
+except ImportError:
+    class APIError(Exception):  # type: ignore
+        message = ""
+        details = ""
+        hint = ""
+
+from app.config import settings
 from app.deps import validate_image, verify_api_key
 from app.services.enroll_service import EnrollError, enroll
 
@@ -23,6 +33,17 @@ async def enroll_route(
     frames: list[UploadFile] = File(...),
 ):
     """Recebe nome, consentimento e fotos; extrai e persiste o embedding."""
+    if len(frames) > settings.max_enroll_frames:
+        raise HTTPException(
+            400,
+            f"Excesso de fotos enviadas. O limite máximo é de {settings.max_enroll_frames} fotos por cadastro.",
+        )
+    if len(frames) < 3:
+        raise HTTPException(
+            400,
+            "Quantidade insuficiente de fotos. Envie ao menos 3 fotos para cadastro.",
+        )
+
     images: list[bytes] = []
     for frame in frames:
         data = await frame.read()
@@ -30,7 +51,7 @@ async def enroll_route(
         images.append(data)
 
     try:
-        return enroll(name, matricula, images, consent)
+        return await asyncio.to_thread(enroll, name, matricula, images, consent)
     except EnrollError as exc:
         raise HTTPException(422, str(exc)) from exc
     except APIError as exc:

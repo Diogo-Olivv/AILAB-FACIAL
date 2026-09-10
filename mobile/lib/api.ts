@@ -1,7 +1,10 @@
 import { File } from "expo-file-system";
 import { ApiError } from "@/lib/errors";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL ??
+  process.env.EXPO_PUBLIC_API_URL ??
+  "http://localhost:8000";
 const API_KEY = process.env.EXPO_PUBLIC_API_KEY ?? "";
 
 function appendUpload(form: FormData, field: string, upload: UploadFile) {
@@ -44,6 +47,10 @@ export interface RecognizeResult {
   profile_id?: string;
   name?: string;
   confidence?: number;
+  distance?: number;
+  cosine_similarity?: number;
+  status?: string;
+  message?: string;
   event?: {
     action: RecognitionAction;
     session_id?: number;

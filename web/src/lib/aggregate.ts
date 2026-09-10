@@ -12,6 +12,12 @@ export function formatTime(iso: string): string {
 
 function sessionSeconds(session: SessionRecord, now: Date): number {
   if (session.durationS != null) return session.durationS;
+  if (session.checkOut != null) {
+    const closedElapsed = Math.floor(
+      (new Date(session.checkOut).getTime() - new Date(session.checkIn).getTime()) / 1000
+    );
+    return Math.max(0, closedElapsed);
+  }
   const elapsed = Math.floor((now.getTime() - new Date(session.checkIn).getTime()) / 1000);
   return Math.max(0, elapsed);
 }

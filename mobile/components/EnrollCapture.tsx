@@ -124,16 +124,25 @@ export function EnrollCapture() {
         </View>
       )}
 
-      <View style={styles.consentRow}>
-        <Switch
-          value={consent}
-          onValueChange={setConsent}
-          trackColor={{ true: "#166534", false: "#C9C4B6" }}
-          thumbColor="#fff"
-        />
-        <Text style={styles.consentText}>
-          Autorizo o uso da minha imagem para reconhecimento facial (LGPD).
+      <View style={styles.consentCard}>
+        <Text style={styles.consentTitle}>Termo de Consentimento Biométrico (LGPD - v1.0)</Text>
+        <Text style={styles.consentBody}>
+          Autorizo expressamente o tratamento dos meus dados biométricos faciais exclusivamente para
+          controle de frequência acadêmica e presença no AILAB Makers. As fotos capturadas são
+          convertidas em vetor numérico e descartadas. O titular pode revogar este consentimento ou
+          solicitar a exclusão definitiva a qualquer momento.
         </Text>
+        <View style={styles.consentSwitchRow}>
+          <Switch
+            value={consent}
+            onValueChange={setConsent}
+            trackColor={{ true: "#166534", false: "#C9C4B6" }}
+            thumbColor="#fff"
+          />
+          <Text style={styles.consentSwitchLabel}>
+            Li e concordo com os termos de uso de biometria facial
+          </Text>
+        </View>
       </View>
 
       <TouchableOpacity
@@ -189,8 +198,38 @@ const styles = StyleSheet.create({
     color: "#141A33",
     fontSize: 15,
   },
-  consentRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  consentText: { flex: 1, color: "#6B6F82", fontSize: 13 },
+  consentCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(30,45,95,.14)",
+    gap: 10,
+  },
+  consentTitle: {
+    color: "#141A33",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  consentBody: {
+    color: "#6B6F82",
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  consentSwitchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(30,45,95,.08)",
+  },
+  consentSwitchLabel: {
+    flex: 1,
+    color: "#141A33",
+    fontSize: 13,
+    fontWeight: "600",
+  },
   submitBtn: {
     backgroundColor: "#166534",
     padding: 16,

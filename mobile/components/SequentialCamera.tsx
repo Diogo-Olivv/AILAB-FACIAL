@@ -108,14 +108,19 @@ export function SequentialCamera({ visible, onComplete, onCancel }: Props) {
           {running ? (
             <Text style={styles.status}>
               {countdown > 0
-                ? `Proxima foto em ${(countdown / 1000).toFixed(1)}s`
+                ? `Próxima foto em ${(countdown / 1000).toFixed(1)}s`
                 : `Capturando ${captured}/${ENROLL_PHOTO_COUNT}`}
             </Text>
           ) : (
             <Text style={styles.status}>
-              {ready ? "Pronto para capturar" : "Iniciando camera..."}
+              {ready ? "Pronto para capturar" : "Iniciando câmera..."}
             </Text>
           )}
+          <Text style={styles.substatus}>
+            {running
+              ? "Mantenha a posição e olhe diretamente para a câmera"
+              : "Posicione o rosto de frente e centralizado"}
+          </Text>
         </View>
       </View>
     </Modal>
@@ -156,6 +161,7 @@ const styles = StyleSheet.create({
   },
   dotFilled: { backgroundColor: "#166534", borderColor: "#166534" },
   status: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  substatus: { color: "rgba(255,255,255,0.8)", fontSize: 13, textAlign: "center" },
   cancelBtn: {
     paddingVertical: 12,
     paddingHorizontal: 20,

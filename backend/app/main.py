@@ -1,6 +1,7 @@
 """FastAPI application factory."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -8,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.schema_check import validate_schema
-from app.routers import enroll, health, recognize
+from app.routers import enroll, health, maintenance, profiles, recognize
 from app.services.face_service import warmup
 
 logging.basicConfig(
@@ -26,7 +27,7 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # noqa: BLE001
         log.error("Schema do Supabase invalido no startup: %s", exc)
     try:
-        warmup()
+        await asyncio.to_thread(warmup)
     except Exception as exc:  # noqa: BLE001
         log.warning("Falha ao aquecer o modelo no startup: %s", exc)
     yield
@@ -49,3 +50,6 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(recognize.router)
 app.include_router(enroll.router)
+app.include_router(profiles.router)
+app.include_router(maintenance.router)
+
