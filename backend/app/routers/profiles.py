@@ -1,13 +1,16 @@
 """Router de gestão de perfis e direitos do titular LGPD (Art. 18 e Art. 8 § 5º)."""
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
+from app.config import settings
 from app.db.supabase_client import get_client
-from app.deps import verify_api_key
+from app.deps import validate_image, verify_api_key
+from app.services.enroll_service import EnrollError, ProfileNotFound, refresh_embedding
 from app.services.face_service import invalidate_embeddings_cache
 
 log = logging.getLogger(__name__)
@@ -30,6 +33,34 @@ def get_profile(profile_id: str):
     if not res.data:
         raise HTTPException(status_code=404, detail="Perfil não encontrado.")
     return res.data[0]
+
+
+@router.post("/{profile_id}/refresh-embedding", dependencies=[Depends(verify_api_key)])
+async def refresh_embedding_route(
+    profile_id: str,
+    frames: list[UploadFile] = File(...),
+):
+    """Atualiza o vetor biométrico do perfil com novas fotos, mantendo id e histórico."""
+    if len(frames) > settings.max_enroll_frames:
+        raise HTTPException(
+            400,
+            f"Excesso de fotos enviadas. O limite máximo é de {settings.max_enroll_frames} fotos.",
+        )
+    if len(frames) < 3:
+        raise HTTPException(400, "Envie ao menos 3 fotos para atualizar a biometria.")
+
+    images: list[bytes] = []
+    for frame in frames:
+        data = await frame.read()
+        validate_image(frame.content_type, len(data))
+        images.append(data)
+
+    try:
+        return await asyncio.to_thread(refresh_embedding, profile_id, images)
+    except ProfileNotFound as exc:
+        raise HTTPException(404, "Perfil não encontrado.") from exc
+    except EnrollError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 @router.post("/{profile_id}/revoke-consent", dependencies=[Depends(verify_api_key)])
