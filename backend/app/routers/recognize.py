@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from app.db.supabase_client import get_client
 from app.deps import validate_image, verify_api_key
-from app.services.face_service import identify
+from app.services.face_service import identify, identify_frames
 from app.services.session_service import (
     close_stale_sessions,
     register_event,
@@ -21,15 +21,32 @@ router = APIRouter(prefix="/api/v1", tags=["recognize"])
 
 @router.post("/recognize", dependencies=[Depends(verify_api_key)])
 async def recognize(
-    frame: UploadFile = File(...),
+    frame: UploadFile | None = File(None),
+    frames: list[UploadFile] | None = File(None),
     action: str | None = Form(None),
 ):
-    """Recebe um frame da camera, identifica o rosto e registra o evento."""
-    data = await frame.read()
-    validate_image(frame.content_type, len(data))
+    """Recebe frame(s) da camera, identifica o rosto e registra o evento."""
+    uploads: list[UploadFile] = []
+    if frames:
+        uploads.extend(frames)
+    elif frame:
+        uploads.append(frame)
+
+    if not uploads:
+        return {
+            "recognized": False,
+            "status": "no_face",
+            "message": "Nenhum frame de imagem fornecido.",
+        }
+
+    raw_images: list[bytes] = []
+    for f in uploads[:5]:
+        b = await f.read()
+        validate_image(f.content_type, len(b))
+        raw_images.append(b)
 
     # Offload de inferência CPU para não bloquear o event loop do asyncio
-    result = await asyncio.to_thread(identify, data)
+    result = await asyncio.to_thread(identify_frames, raw_images)
     if not result or not result.get("recognized"):
         return result or {
             "recognized": False,

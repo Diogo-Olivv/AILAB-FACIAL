@@ -110,7 +110,7 @@ def enroll(name: str, matricula: str | None, images: list[bytes], consent: bool)
         _, enc, status, message = extract_primary_face_data(
             img,
             check_quality=True,
-            check_pad=False,  # No cadastro em ambiente controlado pelo app
+            check_pad=True,
         )
         if enc is not None:
             valid_encs.append(enc)
@@ -205,7 +205,7 @@ def refresh_embedding(profile_id: str, images: list[bytes]) -> dict:
     valid_encs: list[np.ndarray] = []
     errors_detail: list[str] = []
     for idx, img in enumerate(images):
-        _, enc, _, message = extract_primary_face_data(img, check_quality=True, check_pad=False)
+        _, enc, _, message = extract_primary_face_data(img, check_quality=True, check_pad=True)
         if enc is not None:
             valid_encs.append(enc)
         else:

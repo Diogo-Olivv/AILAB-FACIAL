@@ -48,30 +48,30 @@ def test_cosine_to_euclidean_relationship():
     expected_euclidean = np.sqrt(max(0.0, 2.0 - 2.0 * cosine_sim))
     assert np.isclose(euclidean_dist, expected_euclidean, atol=1e-6)
 
-    # Limiar configurado face_threshold=0.80 deve corresponder a cos_theta ~ 0.68
+    # Limiar configurado face_threshold=1.00 deve corresponder a cos_theta = 0.50
     threshold_cos = 1.0 - (settings.face_threshold**2) / 2.0
     assert np.isclose(threshold_cos, settings.face_min_cosine, atol=0.01)
 
 
 def test_calibrated_confidence_sigmoid():
     """Valida a calibração de confiança sigmoidal via Platt Scaling."""
-    # No ponto de inflexão (cos_theta = 0.70), confiança deve ser ~ 50%
-    conf_mid = compute_calibrated_confidence(0.70)
+    # No ponto de inflexão operacional (cos_theta = 0.50), confiança deve ser ~ 50%
+    conf_mid = compute_calibrated_confidence(0.50)
     assert 0.48 <= conf_mid <= 0.52
 
-    # Match de alta confiança (cos_theta = 0.85) deve ser > 95%
-    conf_high = compute_calibrated_confidence(0.85)
+    # Match de alta confiança (cos_theta = 0.75) deve ser > 95%
+    conf_high = compute_calibrated_confidence(0.75)
     assert conf_high > 0.95
 
-    # Match de baixa similaridade (cos_theta = 0.55) deve ser < 5%
-    conf_low = compute_calibrated_confidence(0.55)
-    assert conf_low < 0.05
+    # Match de baixa similaridade (cos_theta = 0.30) deve ser < 10%
+    conf_low = compute_calibrated_confidence(0.30)
+    assert conf_low < 0.10
 
     # Monotonicidade estrita
     assert (
-        compute_calibrated_confidence(0.60)
+        compute_calibrated_confidence(0.40)
+        < compute_calibrated_confidence(0.50)
         < compute_calibrated_confidence(0.70)
-        < compute_calibrated_confidence(0.80)
     )
 
 
@@ -98,8 +98,8 @@ def test_laplacian_variance_sharp_vs_blur():
 
 def test_check_image_quality():
     """Testa aprovação e rejeição de qualidade facial (FIQA)."""
-    # 1. Face muito pequena
-    small_face = np.ones((50, 50, 3), dtype=np.uint8) * 120
+    # 1. Face muito pequena (< min_face_size = 40)
+    small_face = np.ones((30, 30, 3), dtype=np.uint8) * 120
     ok, score, reason = check_image_quality(small_face)
     assert not ok
     assert reason == "face_too_small"
@@ -234,3 +234,59 @@ def test_verify_liveness_greyscale_paper_spoof():
     is_live, score, reason = verify_liveness(bw_face)
     assert is_live is False
     assert reason == "spoof_detected"
+
+
+def test_lbp_texture_analysis():
+    """Valida que textura rica com micro-relevo tem entropia LBP superior a superfície lisa."""
+    from app.services.liveness_service import _analyze_lbp_texture
+
+    flat = np.ones((64, 64), dtype=np.float32) * 128.0
+    rng = np.random.default_rng(42)
+    textured = rng.integers(50, 200, size=(64, 64)).astype(np.float32)
+
+    score_flat = _analyze_lbp_texture(flat)
+    score_textured = _analyze_lbp_texture(textured)
+
+    assert score_textured > score_flat
+    assert score_flat == 0.0
+
+
+def test_identify_frames_multi_picks_best_candidate():
+    """Valida que identify_frames escolhe o frame com maior confiança quando múltiplos passam."""
+    from app.services.face_service import identify_frames
+
+    mock_frame1 = {"recognized": True, "profile_id": "p1", "name": "Ana", "confidence": 0.62}
+    mock_frame2 = {"recognized": True, "profile_id": "p1", "name": "Ana", "confidence": 0.88}
+    mock_frame3 = {"recognized": False, "status": "blur_detected", "message": "Imagem borrada."}
+
+    def mock_identify(img_bytes):
+        if img_bytes == b"f1":
+            return mock_frame1
+        if img_bytes == b"f2":
+            return mock_frame2
+        return mock_frame3
+
+    with patch("app.services.face_service.identify", side_effect=mock_identify):
+        best = identify_frames([b"f1", b"f2", b"f3"])
+        assert best["recognized"] is True
+        assert best["name"] == "Ana"
+        assert best["confidence"] == 0.88
+
+
+def test_identify_frames_multi_rejects_on_spoof():
+    """Se qualquer frame indicar spoof_detected, todo o lote multi-frame deve ser rejeitado."""
+    from app.services.face_service import identify_frames
+
+    mock_ok = {"recognized": True, "profile_id": "p1", "name": "Ana", "confidence": 0.90}
+    mock_spoof = {"recognized": False, "status": "spoof_detected", "message": "Falha na vivacidade."}
+
+    def mock_identify(img_bytes):
+        if img_bytes == b"live_face":
+            return mock_ok
+        return mock_spoof
+
+    with patch("app.services.face_service.identify", side_effect=mock_identify):
+        res = identify_frames([b"live_face", b"spoof_photo"])
+        assert res["recognized"] is False
+        assert res["status"] == "spoof_detected"
+

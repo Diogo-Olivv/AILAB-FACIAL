@@ -76,11 +76,19 @@ export interface EnrollResult {
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 
 export async function recognizeFrame(
-  frame: UploadFile,
+  frameOrFrames: UploadFile | UploadFile[],
   action?: "check_in" | "check_out"
 ): Promise<RecognizeResult> {
   const form = new FormData();
-  appendUpload(form, "frame", frame);
+  if (Array.isArray(frameOrFrames)) {
+    if (frameOrFrames.length > 0) {
+      appendUpload(form, "frame", frameOrFrames[0]);
+    }
+    frameOrFrames.forEach((f) => appendUpload(form, "frames", f));
+  } else {
+    appendUpload(form, "frame", frameOrFrames);
+    appendUpload(form, "frames", frameOrFrames);
+  }
   if (action) form.append("action", action);
   return request<RecognizeResult>("/api/v1/recognize", {
     method: "POST",

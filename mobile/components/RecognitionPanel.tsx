@@ -33,16 +33,31 @@ export function RecognitionPanel() {
       if (!cameraRef.current || busy || loading) return;
       setBusy(true);
       try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.7,
-          skipProcessing: true,
-        });
-        if (!photo?.uri) return;
+        const captured: { uri: string; name: string; type: string }[] = [];
+        for (let i = 0; i < 3; i++) {
+          if (!cameraRef.current) break;
+          try {
+            const photo = await cameraRef.current.takePictureAsync({
+              quality: 0.85,
+              skipProcessing: true,
+            });
+            if (photo?.uri) {
+              captured.push({
+                uri: photo.uri,
+                name: `frame_${i + 1}.jpg`,
+                type: "image/jpeg",
+              });
+            }
+          } catch {
+            // Se falhar algum frame intermediário, continua com os obtidos
+          }
+          if (i < 2) {
+            await new Promise((r) => setTimeout(r, 150));
+          }
+        }
+        if (captured.length === 0) return;
 
-        const res = await recognize(
-          { uri: photo.uri, name: "frame.jpg", type: "image/jpeg" },
-          action
-        );
+        const res = await recognize(captured, action);
 
         if (!res) {
           Alert.alert("Erro", "Falha ao comunicar com o servidor.");

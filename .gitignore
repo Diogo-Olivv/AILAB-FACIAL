@@ -33,6 +33,7 @@ backend/.env
 backend/__pycache__/
 backend/**/__pycache__/
 backend/*.pyc
+*.onnx
 
 # Mobile / Expo
 mobile/.env

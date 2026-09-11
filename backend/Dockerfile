@@ -26,10 +26,12 @@ ENV OMP_NUM_THREADS=2 \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Baixa o modelo buffalo_s na imagem para nao pagar o download no primeiro request
+# Baixa o modelo buffalo_s e o modelo anti-spoofing MiniFASNet na imagem
 RUN python -c "from insightface.app import FaceAnalysis; \
-FaceAnalysis(name='buffalo_s', root='/app/.insightface', providers=['CPUExecutionProvider'], allowed_modules=['detection','recognition']).prepare(ctx_id=-1, det_size=(320, 320))" \
-    && chmod -R a+rX /app/.insightface
+FaceAnalysis(name='buffalo_s', root='/app/.insightface', providers=['CPUExecutionProvider'], allowed_modules=['detection','recognition']).prepare(ctx_id=-1, det_size=(640, 640))"
+
+COPY scripts/ ./scripts/
+RUN python scripts/download_models.py && chmod -R a+rX /app/.insightface
 
 # Copia código
 COPY . .

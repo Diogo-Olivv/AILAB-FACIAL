@@ -9,13 +9,13 @@ class Settings(BaseSettings):
     supabase_service_key: str = ""
 
     # Face recognition & biometria calibrada
-    face_threshold: float = 0.80                # Distância euclidiana máxima (0.80 ~ cos_theta >= 0.68)
-    face_min_cosine: float = 0.68               # Limiar de similaridade cosseno estrito
-    min_face_size: int = 80                     # Tamanho mínimo da face em pixels (largura e altura)
-    min_laplacian_var: float = 70.0             # FIQA: descarte de fotos com motion blur
-    liveness_enabled: bool = True               # Ativação de checagem passiva anti-spoofing
-    liveness_min_score: float = 0.60            # Score mínimo de vivacidade
-    enroll_max_pairwise_distance: float = 0.40  # Distância máxima entre fotos no burst de cadastro
+    face_threshold: float = 1.00                # Distância euclidiana máxima (relaxado para buffalo_s em tablet)
+    face_min_cosine: float = 0.50               # Limiar de similaridade cosseno (correspondente a dist=1.00)
+    min_face_size: int = 40                     # Tamanho mínimo da face em pixels (adaptado para det_size 640)
+    min_laplacian_var: float = 30.0             # FIQA: adaptado para câmeras frontais de tablet com denoising
+    liveness_enabled: bool = True               # Ativação de checagem anti-spoofing (ONNX + heurísticas)
+    liveness_min_score: float = 0.55            # Score mínimo de vivacidade (ONNX model ajustado)
+    enroll_max_pairwise_distance: float = 0.70  # Distância máxima entre fotos (permite variação natural)
     max_enroll_frames: int = 5                  # Máximo de fotos no payload de cadastro (mitigação DoS)
     debounce_seconds: int = 60                  # Janela mínima de histerese (segundos) entre transições
 

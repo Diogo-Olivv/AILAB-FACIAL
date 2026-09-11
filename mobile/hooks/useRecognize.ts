@@ -9,7 +9,7 @@ export function useRecognize() {
   const abortRef = useRef<AbortController | null>(null);
 
   const recognize = useCallback(
-    async (frame: UploadFile, action?: "check_in" | "check_out") => {
+    async (frame: UploadFile | UploadFile[], action?: "check_in" | "check_out") => {
     // Cancela chamada anterior se ainda pendente
     abortRef.current?.abort();
     abortRef.current = new AbortController();

@@ -25,7 +25,7 @@ from app.services.liveness_service import check_image_quality, verify_liveness
 
 log = logging.getLogger(__name__)
 
-_MIN_DET_SCORE = 0.70
+_MIN_DET_SCORE = 0.50
 _analyzer = None
 
 # Cache local de embeddings ativos em memória
@@ -58,7 +58,7 @@ def _get_analyzer():
         providers=["CPUExecutionProvider"],
         allowed_modules=["detection", "recognition"],
     )
-    fa.prepare(ctx_id=0, det_size=(320, 320))
+    fa.prepare(ctx_id=0, det_size=(640, 640))
     return fa
 
 
@@ -79,7 +79,7 @@ def warmup() -> None:
     try:
         fa = _analyzer_instance()
         # 1. Warmup do modelo de detecção (SCRFD)
-        dummy_det = np.zeros((320, 320, 3), dtype=np.uint8)
+        dummy_det = np.zeros((640, 640, 3), dtype=np.uint8)
         fa.get(dummy_det)
 
         # 2. Warmup explícito do modelo de reconhecimento (ArcFace 512-D)
@@ -161,11 +161,12 @@ def crop_face(bgr: np.ndarray, bbox: list | np.ndarray) -> np.ndarray:
 def compute_calibrated_confidence(cosine_sim: float) -> float:
     """Calcula a probabilidade sigmoidal calibrada via Platt Scaling.
 
-    Similaridade cosseno de 0.70 mapeia para ~50% de confiança;
-    0.80 mapeia para ~92%;
-    0.60 mapeia para ~8%.
+    Similaridade cosseno de 0.50 mapeia para ~50% de confiança;
+    0.60 mapeia para ~82%;
+    0.70 mapeia para ~95%;
+    0.45 mapeia para ~32%.
     """
-    logit = 25.0 * (cosine_sim - 0.70)
+    logit = 15.0 * (cosine_sim - 0.50)
     # Clip para estabilidade numérica
     logit = float(np.clip(logit, -15.0, 15.0))
     conf = 1.0 / (1.0 + float(np.exp(-logit)))
@@ -180,7 +181,8 @@ def extract_primary_face_data(
     """Processa a imagem e retorna (face_crop, embedding, status, message)."""
     try:
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    except Exception:
+    except Exception as exc:
+        log.warning("Formato de imagem inválido: %s", exc)
         return None, None, "invalid_image", "Formato de imagem inválido ou corrompido."
 
     bgr = np.array(img)[:, :, ::-1]
@@ -189,6 +191,11 @@ def extract_primary_face_data(
     faces = _analyzer_instance().get(bgr)
     face, status = select_primary_face(faces, iw, ih)
     if face is None:
+        log.warning(
+            "Detecção facial falhou (status=%s). Total faces brutas detectadas: %d",
+            status,
+            len(faces) if faces else 0,
+        )
         if status == "face_too_small":
             return None, None, "face_too_small", "Rosto muito distante ou pequeno. Aproxime-se."
         return None, None, "no_face", "Nenhum rosto confiável detectado no enquadramento."
@@ -199,6 +206,12 @@ def extract_primary_face_data(
     if check_quality:
         quality_ok, score, reason = check_image_quality(face_crop)
         if not quality_ok:
+            log.warning(
+                "Qualidade facial rejeitada: score=%.2f (min=%.2f), motivo=%s",
+                score,
+                settings.min_laplacian_var,
+                reason,
+            )
             if reason == "blur_detected":
                 return None, None, "blur_detected", "Imagem borrada. Mantenha a câmera estável."
             return None, None, reason, "Qualidade facial insuficiente para identificação."
@@ -207,12 +220,19 @@ def extract_primary_face_data(
     if check_pad:
         is_live, pad_score, pad_reason = verify_liveness(face_crop)
         if not is_live:
+            log.warning(
+                "Vivacidade (PAD) rejeitada: score=%.4f (min=%.2f), motivo=%s",
+                pad_score,
+                settings.liveness_min_score,
+                pad_reason,
+            )
             return None, None, "spoof_detected", "Falha na verificação de vivacidade presencial."
 
     # 3. Extração do Embedding L2 normalizado
     enc = np.array(face.embedding, dtype=np.float64)
     norm = np.linalg.norm(enc)
     if norm == 0:
+        log.error("Vetor biométrico gerado com norma zero.")
         return None, None, "zero_embedding", "Falha ao gerar vetor biométrico."
 
     normalized_enc = enc / norm
@@ -344,6 +364,15 @@ def identify(image_bytes: bytes) -> dict:
 
     # 2. Verificação do Limiar Estrito Calibrado
     if dist > settings.face_threshold or cosine_sim < settings.face_min_cosine:
+        log.warning(
+            "Rosto não reconhecido: candidato mais próximo='%s' (%s), dist=%.4f (max=%.2f), cos=%.4f (min=%.2f)",
+            names[idx],
+            ids[idx],
+            dist,
+            settings.face_threshold,
+            cosine_sim,
+            settings.face_min_cosine,
+        )
         return {
             "recognized": False,
             "status": "not_recognized",
@@ -354,6 +383,14 @@ def identify(image_bytes: bytes) -> dict:
 
     # 3. Confiança Calibrada por Regressão Logística (Platt Scaling)
     confidence = compute_calibrated_confidence(cosine_sim)
+    log.info(
+        "Rosto reconhecido com sucesso: '%s' (%s), dist=%.4f, cos=%.4f, conf=%.4f",
+        names[idx],
+        ids[idx],
+        dist,
+        cosine_sim,
+        confidence,
+    )
 
     return {
         "recognized": True,
@@ -364,3 +401,52 @@ def identify(image_bytes: bytes) -> dict:
         "distance": round(dist, 4),
         "cosine_similarity": round(cosine_sim, 4),
     }
+
+
+def identify_frames(images: list[bytes]) -> dict:
+    """Identifica integrante avaliando sequência multi-frame com checagem anti-spoofing."""
+    if not images:
+        return {
+            "recognized": False,
+            "status": "no_face",
+            "message": "Nenhuma imagem fornecida.",
+        }
+
+    if len(images) == 1:
+        return identify(images[0])
+
+    candidates = []
+    last_status = "no_face"
+    last_message = "Nenhum rosto confiável detectado nos frames."
+
+    for idx, img_bytes in enumerate(images):
+        res = identify(img_bytes)
+        if res.get("status") == "spoof_detected":
+            log.warning("Multi-frame: frame %d detectou spoofing. Rejeitando requisição.", idx + 1)
+            return res
+
+        if res.get("recognized"):
+            candidates.append(res)
+        else:
+            last_status = res.get("status", last_status)
+            last_message = res.get("message", last_message)
+
+    if candidates:
+        # Seleciona o frame com maior confiança calibrada
+        candidates.sort(key=lambda c: c.get("confidence", 0.0), reverse=True)
+        best = candidates[0]
+        log.info(
+            "Multi-frame reconhecimento: %d/%d frames válidos. Melhor candidato: '%s' (conf=%.4f)",
+            len(candidates),
+            len(images),
+            best.get("name"),
+            best.get("confidence", 0.0),
+        )
+        return best
+
+    return {
+        "recognized": False,
+        "status": last_status,
+        "message": last_message,
+    }
+
