@@ -214,17 +214,43 @@ def verify_cron_or_api_key(
 # ── Validação de Mídia ────────────────────────────────────────────────────────
 
 
+def check_image_magic_bytes(data: bytes) -> str:
+    """Valida os magic bytes da imagem retornando o formato ('jpeg', 'png', 'webp').
+
+    Rejeita com HTTPException 400 se a assinatura binária for inválida ou não suportada.
+    """
+    if len(data) < 12:
+        raise HTTPException(400, "Arquivo muito curto para conter cabeçalho de imagem válido.")
+    if data.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+        return "webp"
+    raise HTTPException(400, "Assinatura binária (magic bytes) inválida ou formato não reconhecido.")
+
+
 def validate_image(
     content_type: str | None,
     size: int,
     raw_bytes: bytes | None = None,
 ) -> None:
-    """Rejeita tipos de mídia não suportados, imagens acima do limite em bytes ou com dimensões perigosas."""
+    """Rejeita tipos de mídia não suportados, magic bytes inválidos, imagens acima de 5MB ou com dimensões anômalas."""
     if content_type is not None and content_type.lower() not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(415, f"Tipo de mídia não suportado: {content_type}")
     if size > MAX_IMAGE_BYTES:
         raise HTTPException(413, "Imagem excede o limite de 5 MB.")
-    if raw_bytes:
+    if raw_bytes is not None:
+        detected_format = check_image_magic_bytes(raw_bytes)
+        if content_type:
+            ct = content_type.lower()
+            if ct in ("image/jpeg", "image/jpg") and detected_format != "jpeg":
+                raise HTTPException(400, "Conflito entre Content-Type e assinatura binária (esperado JPEG).")
+            if ct == "image/png" and detected_format != "png":
+                raise HTTPException(400, "Conflito entre Content-Type e assinatura binária (esperado PNG).")
+            if ct == "image/webp" and detected_format != "webp":
+                raise HTTPException(400, "Conflito entre Content-Type e assinatura binária (esperado WebP).")
+
         import io
         from PIL import Image
 

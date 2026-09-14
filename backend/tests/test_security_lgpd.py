@@ -360,3 +360,23 @@ def test_session_stats_accepts_kiosk_key():
         assert res_no_key.status_code == 401
 
 
+def test_validate_image_magic_bytes_enforcement():
+    """Garante rejeição de arquivos com magic bytes ausentes, corrompidos ou em conflito com Content-Type."""
+    from app.deps import validate_image
+
+    # 1. Arquivo com bytes aleatórios (sem magic bytes válidos) deve ser rejeitado com 400
+    fake_bytes = b"NOT_AN_IMAGE_RANDOM_DATA_12345678"
+    with pytest.raises(HTTPException) as exc_info:
+        validate_image("image/jpeg", len(fake_bytes), fake_bytes)
+    assert exc_info.value.status_code == 400
+    assert "magic bytes" in exc_info.value.detail.lower()
+
+    # 2. Arquivo PNG enviado com Content-Type JPEG deve ser rejeitado com 400
+    png_header = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+    with pytest.raises(HTTPException) as exc_info:
+        validate_image("image/jpeg", len(png_header), png_header)
+    assert exc_info.value.status_code == 400
+    assert "conflito" in exc_info.value.detail.lower()
+
+
+

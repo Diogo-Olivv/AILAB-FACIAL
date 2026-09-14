@@ -206,3 +206,68 @@ def test_recognize_accepts_when_challenge_enforcement_disabled():
             data={"action": "check_in"},
         )
         assert res.status_code == 200
+
+
+def test_recognize_accepts_challenge_via_header_token():
+    """Garante que o desafio pode ser fornecido via cabeçalho HTTP X-Challenge-Token."""
+    from app.routers.recognize import clear_rate_limits_for_testing
+
+    clear_rate_limits_for_testing()
+    client = TestClient(app, raise_server_exceptions=False)
+    img_data = _dummy_image_bytes()
+
+    with (
+        patch.object(settings, "kiosk_api_key", "secret-kiosk-999"),
+        patch.object(settings, "enforce_capture_challenge", True),
+        patch("app.routers.recognize.identify_frames", return_value={"recognized": True, "status": "ok"}),
+    ):
+        # 1. Obtém desafio
+        ch_res = client.post("/api/v1/recognize/challenge", headers={"X-Kiosk-Key": "secret-kiosk-999"})
+        challenge_id = ch_res.json()["challenge_id"]
+
+        # 2. Envia via header X-Challenge-Token (sem challenge_id no form data)
+        res = client.post(
+            "/api/v1/recognize",
+            headers={
+                "X-Kiosk-Key": "secret-kiosk-999",
+                "X-Challenge-Token": challenge_id,
+            },
+            files={"frame": ("cam.jpg", img_data, "image/jpeg")},
+            data={"action": "check_in"},
+        )
+        assert res.status_code == 200
+        assert res.json().get("recognized") is True
+
+
+def test_recognize_rate_limiting_exceeded_returns_429():
+    """Garante que requisições acima do limite configurado retornam HTTP 429 Too Many Requests."""
+    from app.routers.recognize import clear_rate_limits_for_testing
+
+    clear_rate_limits_for_testing()
+    client = TestClient(app, raise_server_exceptions=False)
+    img_data = _dummy_image_bytes()
+
+    with (
+        patch.object(settings, "kiosk_api_key", "secret-kiosk-999"),
+        patch.object(settings, "enforce_capture_challenge", False),
+        patch.object(settings, "rate_limit_per_minute", 3),
+        patch("app.routers.recognize.identify_frames", return_value={"recognized": False, "status": "no_face"}),
+    ):
+        # 3 requisições permitidas
+        for _ in range(3):
+            r = client.post(
+                "/api/v1/recognize",
+                headers={"X-Kiosk-Key": "secret-kiosk-999"},
+                files={"frame": ("cam.jpg", img_data, "image/jpeg")},
+            )
+            assert r.status_code == 200
+
+        # A 4ª requisição deve estourar o limite (HTTP 429)
+        r4 = client.post(
+            "/api/v1/recognize",
+            headers={"X-Kiosk-Key": "secret-kiosk-999"},
+            files={"frame": ("cam.jpg", img_data, "image/jpeg")},
+        )
+        assert r4.status_code == 429
+        assert "muitas requisições" in r4.json().get("detail", "").lower()
+

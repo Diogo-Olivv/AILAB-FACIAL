@@ -356,8 +356,6 @@ def _match_face_pgvector(enc: np.ndarray) -> dict | None:
                 "recognized": False,
                 "status": "not_recognized",
                 "message": "Rosto não reconhecido na base.",
-                "distance": round(euclidean_dist, 4),
-                "cosine_similarity": round(cosine_sim, 4),
             }
 
         if cosine_sim < settings.face_min_cosine or euclidean_dist > settings.face_threshold:
@@ -370,10 +368,6 @@ def _match_face_pgvector(enc: np.ndarray) -> dict | None:
             return {
                 "recognized": False,
                 "status": "uncertain",
-                "confidence": confidence,
-                "distance": round(euclidean_dist, 4),
-                "cosine_similarity": round(cosine_sim, 4),
-                "similarity": cosine_sim,
                 "message": "Similaridade insuficiente para reconhecimento automático. Confirmação adicional necessária.",
             }
 
@@ -450,8 +444,6 @@ def identify(image_bytes: bytes) -> dict:
             "recognized": False,
             "status": "not_recognized",
             "message": "Rosto não reconhecido na base.",
-            "distance": round(dist, 4),
-            "cosine_similarity": round(cosine_sim, 4),
         }
 
     if cosine_sim < settings.face_min_cosine or dist > settings.face_threshold:
@@ -466,8 +458,6 @@ def identify(image_bytes: bytes) -> dict:
             "recognized": False,
             "status": "uncertain",
             "message": "Similaridade insuficiente para reconhecimento automático. Confirmação adicional necessária.",
-            "distance": round(dist, 4),
-            "cosine_similarity": round(cosine_sim, 4),
         }
 
     # 3. Confiança Calibrada por Regressão Logística (Platt Scaling)

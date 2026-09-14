@@ -512,7 +512,9 @@ def test_pgvector_match_face_uncertain_between_062_and_068():
         assert res["status"] == "uncertain"
         assert "profile_id" not in res
         assert "name" not in res
-        assert res["cosine_similarity"] == 0.65
+        assert "cosine_similarity" not in res
+        assert "distance" not in res
+        assert "similarity" not in res
 
 
 def test_pgvector_match_face_rejects_impostor_below_062():

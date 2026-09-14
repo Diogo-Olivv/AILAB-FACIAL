@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     enforce_capture_challenge: bool = True      # Exige challenge_id assinado em POST /recognize
     challenge_ttl_seconds: int = 30             # Janela temporal de validade do desafio (segundos)
 
+    # Controle de Concorrência & Rate Limiting (FINDING-08)
+    max_concurrent_inferences: int = 10         # Teto de inferências biométricas simultâneas por worker
+    rate_limit_per_minute: int = 60             # Limite de requisições por minuto por chave/IP
+
 
 settings = Settings()
 

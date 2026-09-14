@@ -142,6 +142,10 @@ export async function recognizeFrame(
   return request<RecognizeResult>("/api/v1/recognize", {
     method: "POST",
     body: form,
+    headers: {
+      "X-Challenge-Token": challenge.challenge_id,
+      "X-Challenge-Id": challenge.challenge_id,
+    },
     signal,
   });
 }
