@@ -43,6 +43,9 @@ mobile/dist/
 mobile/android/
 mobile/ios/
 mobile/.env.local
+# eas.json pode conter secrets de build — use EAS Secret Manager em vez de commit
+# Ver: https://docs.expo.dev/eas/environment-variables/
+mobile/eas.json
 
 # Web
 web/.env
