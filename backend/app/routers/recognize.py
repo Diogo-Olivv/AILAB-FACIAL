@@ -8,7 +8,8 @@ import collections
 import time
 import threading
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from starlette.datastructures import UploadFile
 
 from app.config import settings
 from app.db.supabase_client import get_client
