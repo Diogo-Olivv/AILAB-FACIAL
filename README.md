@@ -6,26 +6,26 @@ Controle de presença para o laboratório de extensão. Substitui a lista de ass
 
 ## Arquitetura
 
-Reconhecimento server-side. Os clientes (tablet e web) capturam frames da câmera e enviam ao backend, que faz detecção, gera o embedding, compara com os cadastrados e registra a sessão. A biometria nunca sai do servidor.
+Reconhecimento server-side. O tablet na entrada captura frames da câmera com desafio temporal criptográfico e envia ao backend, que faz detecção, gera o embedding, compara com os cadastrados e registra a sessão. A biometria nunca sai do servidor. Tutores e gestores acompanham as horas autenticados pelo painel web.
 
 ```
-Tablet (app Expo)  ─frames→  Backend FastAPI  ─service_role→  Supabase (Postgres)
-Web (React kiosk)  ─frames→   InsightFace 512-D                 ↑ leitura anon
-                                                          Dashboard web (tutores)
+Tablet (app Expo kiosk)  ─frames+challenge→  Backend FastAPI  ─service_role→  Supabase (Postgres)
+                                             InsightFace 512-D                    ↑ leitura restrita RLS
+                                                                               Dashboard web (tutores)
 ```
 
-- **Backend (FastAPI + InsightFace):** recebe os frames, gera o embedding facial de 512 dimensões (buffalo_s, L2-normalizado, ONNX CPU), faz o match, aplica debounce e escreve a sessão no Supabase usando a `service_role` key. É o único componente que acessa a biometria.
-- **Supabase (PostgreSQL):** banco único do sistema. `profiles`, `sessions`, `face_embeddings`, `face_logs`, com RLS. Clientes leem com a chave `anon`; `face_embeddings` é acessível somente pela `service_role`.
-- **App Expo (tablet):** APK Android instalado no tablet da entrada. Lê presença/histórico e faz o cadastro de novos integrantes (captura as fotos e envia ao backend).
-- **Web (React + Vite):** painel dos tutores (dashboard de horas) e modo kiosk de reconhecimento no navegador. Publicado no GitHub Pages.
+- **Backend (FastAPI + InsightFace):** recebe os frames com desafio temporal anti-replay (`POST /recognize`), gera o embedding facial de 512 dimensões (buffalo_s, L2-normalizado, ONNX CPU), avalia liveness anti-spoofing (MiniFASNetV2), faz o match vetorial (pgvector HNSW), aplica histerese e escreve a sessão no Supabase usando a `service_role` key.
+- **Supabase (PostgreSQL):** banco único do sistema. `profiles`, `sessions`, `face_embeddings`, `face_logs`, com RLS estrito.
+- **App Expo (tablet):** APK Android instalado no tablet da entrada. Modo totem kiosk de reconhecimento com câmera frontal, desafio de vivacidade temporal e fluxo de cadastro protegido por PIN/tutorToken.
+- **Web (React + Vite):** painel restrito dos tutores (autenticação Supabase Auth, visualização de totais, histórico diário com indicação de sessões anuladas). Publicado no GitHub Pages.
 
 ## Estrutura do repositório
 
 | Pasta | O que vive aqui |
 |---|---|
-| `backend/` | API FastAPI. `app/routers` (recognize, enroll, health), `app/services` (face, enroll, session), `app/db`. Deploy via Docker. |
-| `web/` | SPA React + Vite + Tailwind. Login, dashboard, cadastro e kiosk. |
-| `mobile/` | App Expo (React Native, expo-router). Tabs: Presença, Histórico, Câmera, Cadastro. |
+| `backend/` | API FastAPI. `app/routers` (recognize, enroll, health, maintenance, profiles), `app/services` (face, enroll, session, challenge), `app/db`. Deploy via Docker. |
+| `web/` | SPA React + Vite + Tailwind. Login e dashboard de acompanhamento de horas para tutores. |
+| `mobile/` | App Expo (React Native, expo-router). Totem kiosk, histórico de presença no tablet e cadastro biométrico guiado. |
 | `supabase/` | `schema.sql` (tabelas, RPCs, RLS). Aplicar no SQL Editor ou `supabase db push`. |
 | `pwa/`, `python/`, `enrollment/` | Legado das fases anteriores (PWA offline e scripts de estudo). Não fazem parte do fluxo atual. |
 
