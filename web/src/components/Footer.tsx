@@ -3,16 +3,15 @@ import { Link } from "react-router-dom";
 interface FooterProps {
   lastRefreshed: Date;
   onOpenTerms: () => void;
-  onOpenHowItWorks: () => void;
 }
 
-export function Footer({ lastRefreshed, onOpenTerms, onOpenHowItWorks }: FooterProps) {
+export function Footer({ lastRefreshed, onOpenTerms }: FooterProps) {
   return (
     <footer
-      className="border-t border-line/80 bg-card/40 px-4 py-8 text-xs text-muted transition-colors sm:px-8"
+      className="border-t border-line/80 bg-card/40 px-4 py-6 text-xs text-muted transition-colors sm:px-8 mt-12"
       role="contentinfo"
     >
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto max-w-6xl space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
           {/* Status de Sincronização Dinâmico */}
           <div
@@ -29,15 +28,8 @@ export function Footer({ lastRefreshed, onOpenTerms, onOpenHowItWorks }: FooterP
           {/* Links Úteis */}
           <div className="flex flex-wrap items-center gap-4 font-semibold">
             <button
-              onClick={onOpenHowItWorks}
-              className="hover:text-navy hover:underline cursor-pointer"
-            >
-              Arquitetura ArcFace 512-D
-            </button>
-
-            <button
               onClick={onOpenTerms}
-              className="hover:text-navy hover:underline cursor-pointer"
+              className="text-navy hover:underline cursor-pointer"
             >
               Política de Privacidade (LGPD Art. 11)
             </button>
@@ -46,19 +38,17 @@ export function Footer({ lastRefreshed, onOpenTerms, onOpenHowItWorks }: FooterP
               to="/login"
               className="hover:text-navy hover:underline"
             >
-              Portal do Tutor
+              Acesso Tutor
             </Link>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/50 pt-4 text-[11px]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/40 pt-3 text-[11px]">
           <p>
-            © {new Date().getFullYear()} AILAB Makers · Laboratório de Inovação & IA. Desenvolvido para extensão acadêmica.
+            © {new Date().getFullYear()} AILAB Makers · Controle de Frequência e Permanência Acadêmica.
           </p>
           <p className="flex items-center gap-2">
             <span>Acessibilidade WCAG 2.2 AA</span>
-            <span>·</span>
-            <span>InsightFace ONNX CPU</span>
           </p>
         </div>
       </div>
