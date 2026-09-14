@@ -8,7 +8,7 @@ import collections
 import time
 import threading
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile
 
 from app.config import settings
 from app.db.supabase_client import get_client
@@ -67,15 +67,19 @@ def request_challenge():
 @router.post("/recognize", dependencies=[Depends(verify_kiosk_key)])
 async def recognize(
     request: Request,
-    frame: UploadFile | None = File(None),
-    frames: list[UploadFile] | None = File(None),
-    action: str | None = Form(None),
-    challenge_id: str | None = Form(None),
     x_challenge_id: str | None = Header(None, alias="X-Challenge-Id"),
     x_challenge_token: str | None = Header(None, alias="X-Challenge-Token"),
     kiosk_key: str | None = Header(None, alias="X-Kiosk-Key"),
 ):
     """Recebe frame(s) da camera, valida o desafio temporal, identifica o rosto e registra o evento."""
+    # Leitura manual do multipart: `list[UploadFile]` opcional via File() é parseado como escalar
+    # em versões do FastAPI, gerando 422. getlist() lida com single e multi-frame de forma robusta.
+    form = await request.form()
+    frames = [f for f in form.getlist("frames") if isinstance(f, UploadFile)]
+    single_frame = form.get("frame")
+    action = form.get("action")
+    challenge_id = form.get("challenge_id")
+
     # 1. Limitação de taxa (Rate Limiting)
     client_id = kiosk_key or (request.client.host if request.client else "kiosk-anonymous")
     _check_rate_limit(client_id)
@@ -92,8 +96,8 @@ async def recognize(
     uploads: list[UploadFile] = []
     if frames:
         uploads.extend(frames)
-    elif frame:
-        uploads.append(frame)
+    elif isinstance(single_frame, UploadFile):
+        uploads.append(single_frame)
 
     if not uploads:
         return {
