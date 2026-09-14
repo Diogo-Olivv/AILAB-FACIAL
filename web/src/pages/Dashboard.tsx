@@ -9,14 +9,14 @@ import {
   type SessionRecord,
 } from "../lib/reports";
 import { rangeFor, type PeriodKey } from "../lib/period";
-import { formatDuration, groupByDay, totalsByMember, type MemberTotal } from "../lib/aggregate";
+import { formatDuration, groupByDay, sessionSeconds, totalsByMember, type MemberTotal } from "../lib/aggregate";
 import { Header } from "../components/Header";
 import { PeriodSelector } from "../components/PeriodSelector";
-import { MemberSelector } from "../components/MemberSelector";
 import { TotalsTable } from "../components/TotalsTable";
 import { DailyHistory } from "../components/DailyHistory";
 import { PrivacyTermsModal } from "../components/PrivacyTermsModal";
 import { MemberDetailDrawer } from "../components/MemberDetailDrawer";
+import { TutorWarningModal } from "../components/TutorWarningModal";
 import { Footer } from "../components/Footer";
 import { KpiSkeleton, TableSkeleton } from "../components/TableSkeleton";
 
@@ -30,7 +30,7 @@ export function Dashboard() {
   const [period, setPeriod] = useState<PeriodKey>("week");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
-  const [memberId, setMemberId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<View>("totals");
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -39,6 +39,7 @@ export function Dashboard() {
 
   // Modais e Drawer
   const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [isTutorWarningOpen, setIsTutorWarningOpen] = useState(false);
   const [selectedMemberTotal, setSelectedMemberTotal] = useState<MemberTotal | null>(null);
 
   const loadMembers = useCallback(async () => {
@@ -120,17 +121,35 @@ export function Dashboard() {
     return () => clearInterval(timer);
   }, [refreshData]);
 
-  const filtered = useMemo(
-    () => (memberId ? sessions.filter((s) => s.profileId === memberId) : sessions),
-    [sessions, memberId],
-  );
-
   const totals = useMemo(() => {
-    const scope = memberId ? members.filter((m) => m.id === memberId) : members;
-    return totalsByMember(scope, filtered, presentIds, new Date());
-  }, [members, filtered, presentIds, memberId]);
+    return totalsByMember(members, sessions, presentIds, new Date());
+  }, [members, sessions, presentIds]);
 
-  const days = useMemo(() => groupByDay(members, filtered, new Date()), [members, filtered]);
+  const days = useMemo(() => groupByDay(members, sessions, new Date()), [members, sessions]);
+
+  // Filtragem dinâmica por nome e matrícula
+  const filteredTotals = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return totals;
+    return totals.filter(
+      (t) =>
+        t.member.name.toLowerCase().includes(q) ||
+        (t.member.matricula && t.member.matricula.toLowerCase().includes(q))
+    );
+  }, [totals, searchQuery]);
+
+  const filteredDays = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return days;
+    return days
+      .map((day) => ({
+        ...day,
+        entries: day.entries.filter((entry) =>
+          entry.memberName.toLowerCase().includes(q)
+        ),
+      }))
+      .filter((day) => day.entries.length > 0);
+  }, [days, searchQuery]);
 
   // Métricas para KPI Cards
   const presentCount = useMemo(() => presentIds.length, [presentIds]);
@@ -142,7 +161,24 @@ export function Dashboard() {
     () => totals.filter((r) => r.sessionCount > 0).length,
     [totals],
   );
-  const totalSessionsCount = useMemo(() => filtered.length, [filtered]);
+  const totalSessionsCount = useMemo(() => sessions.length, [sessions]);
+
+  // Contagem de alunos com débito na semana (< 4h) para o Tutor
+  const studentsUnderFourHoursCount = useMemo(() => {
+    const weekRange = rangeFor("week");
+    const now = new Date();
+    const weekSessions = sessions.filter((s) => {
+      const d = new Date(s.checkIn);
+      return d >= weekRange.from && d <= weekRange.to;
+    });
+    const map = new Map<string, number>();
+    for (const m of members) map.set(m.id, 0);
+    for (const s of weekSessions) {
+      if (s.voidedAt != null) continue;
+      map.set(s.profileId, (map.get(s.profileId) ?? 0) + sessionSeconds(s, now));
+    }
+    return members.filter((m) => (map.get(m.id) ?? 0) < 4 * 3600).length;
+  }, [members, sessions]);
 
   return (
     <div className="min-h-screen bg-cream flex flex-col justify-between selection:bg-green/20">
@@ -156,45 +192,40 @@ export function Dashboard() {
         presentCount={presentCount}
       />
 
-      <main className="flex-1 px-4 py-8 md:px-8 space-y-6 max-w-6xl mx-auto w-full">
-        {/* Título da Seção e Botão de Atualização */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-navy/10 px-2.5 py-0.5 text-xs font-bold text-navy">
-                Presença em Tempo Real
+      <main className="flex-1 px-4 py-6 md:px-8 space-y-6 max-w-6xl mx-auto w-full">
+        {/* Painel do Tutor (visível apenas para tutores autenticados) */}
+        {user && (
+          <div className="rounded-2xl border border-navy/20 bg-navy/5 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs animate-fade-in">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-navy text-white text-xl">
+                🎓
               </span>
-              <span className="text-xs text-muted">· {members.length} integrantes cadastrados</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-bold text-ink">
+                    Painel Exclusivo do Tutor
+                  </h3>
+                  <span className="rounded-full bg-navy/15 px-2 py-0.5 text-2xs font-bold text-navy">
+                    {user.email}
+                  </span>
+                </div>
+                <p className="text-xs text-muted mt-0.5">
+                  Audite o cumprimento da meta semanal (4 horas) e emita advertências aos alunos em débito.
+                </p>
+              </div>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-ink mt-1">
-              Tempo de Permanência & Frequência
-            </h2>
-          </div>
 
-          <button
-            onClick={() => refreshData(false)}
-            disabled={isRefreshing}
-            title="Atualizar dados de permanência agora"
-            className="inline-flex items-center gap-2 rounded-xl border border-navy/15 bg-card px-3.5 py-2 text-xs sm:text-sm font-semibold text-navy shadow-2xs transition-all hover:bg-navy/5 active:scale-95 disabled:opacity-60 cursor-pointer min-h-[44px]"
-          >
-            <svg
-              className={`h-4 w-4 transition-transform ${isRefreshing ? "animate-spin text-green" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+            <button
+              onClick={() => setIsTutorWarningOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-warn px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-warn/90 active:scale-95 cursor-pointer min-h-[44px]"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            <span>{isRefreshing ? "Sincronizando..." : "Atualizar Tabela"}</span>
-          </button>
-        </div>
+              <span>⚠️</span>
+              <span>Auditoria Semanal & Advertências ({studentsUnderFourHoursCount})</span>
+            </button>
+          </div>
+        )}
 
-        {/* KPI Cards de Resumo */}
+        {/* KPI Cards de Resumo Direto (sem título redundante) */}
         {loading ? (
           <KpiSkeleton />
         ) : (
@@ -275,7 +306,7 @@ export function Dashboard() {
           onCustomTo={setCustomTo}
         />
 
-        {/* Filtros e Alternância de Visualização */}
+        {/* Barra de Filtros com Busca Integrada por Nome e Matrícula */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card p-3 shadow-2xs">
           <div className="flex gap-2">
             <button
@@ -299,7 +330,30 @@ export function Dashboard() {
               Histórico Diário
             </button>
           </div>
-          <MemberSelector members={members} selected={memberId} onSelect={setMemberId} />
+
+          {/* Campo de Busca Reativa por Nome ou Matrícula */}
+          <div className="relative flex-1 min-w-[220px] max-w-sm">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted pointer-events-none text-xs">
+              🔍
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar por nome ou matrícula..."
+              className="w-full rounded-xl border border-line bg-white py-2 pl-8 pr-7 text-xs sm:text-sm text-ink placeholder:text-muted/70 focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20 shadow-2xs"
+              aria-label="Buscar integrantes por nome ou matrícula"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-muted hover:text-ink cursor-pointer text-xs"
+                aria-label="Limpar busca"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Alerta de Erro Resiliente */}
@@ -322,11 +376,11 @@ export function Dashboard() {
           <div key={view} className="animate-fade-in">
             {view === "totals" ? (
               <TotalsTable
-                rows={totals}
+                rows={filteredTotals}
                 onSelectMember={(row) => setSelectedMemberTotal(row)}
               />
             ) : (
-              <DailyHistory days={days} />
+              <DailyHistory days={filteredDays} />
             )}
           </div>
         )}
@@ -338,11 +392,22 @@ export function Dashboard() {
         onOpenTerms={() => setIsTermsOpen(true)}
       />
 
-      {/* Modal de Termos LGPD */}
+      {/* Modal de Termos LGPD (100% Responsivo) */}
       <PrivacyTermsModal
         isOpen={isTermsOpen}
         onClose={() => setIsTermsOpen(false)}
       />
+
+      {/* Modal de Auditoria e Advertências do Tutor */}
+      {user && (
+        <TutorWarningModal
+          isOpen={isTutorWarningOpen}
+          onClose={() => setIsTutorWarningOpen(false)}
+          members={members}
+          sessions={sessions}
+          tutorEmail={user.email ?? ""}
+        />
+      )}
 
       {/* Gaveta de detalhes do integrante */}
       <MemberDetailDrawer
@@ -356,3 +421,4 @@ export function Dashboard() {
     </div>
   );
 }
+

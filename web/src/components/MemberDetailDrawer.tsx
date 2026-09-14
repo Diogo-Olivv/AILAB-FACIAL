@@ -33,7 +33,7 @@ export function MemberDetailDrawer({
       aria-labelledby="drawer-member-name"
     >
       <div
-        className="h-full w-full max-w-md bg-card border-l border-line shadow-2xl flex flex-col overflow-hidden animate-slide-left"
+        className="h-full w-full max-w-full sm:max-w-md bg-card border-l border-line shadow-2xl flex flex-col overflow-hidden animate-slide-left"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drawer Header */}
