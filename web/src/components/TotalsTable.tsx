@@ -82,9 +82,12 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between px-1 text-xs text-muted font-semibold">
-        <span>
+      <div className="flex items-center justify-between px-1.5 text-xs text-muted font-medium">
+        <span className="hidden sm:inline">
           Exibindo <strong>{sortedRows.length}</strong> integrantes (clique no nome para ver sessões detalhadas)
+        </span>
+        <span className="sm:hidden text-[11px]">
+          <strong>{sortedRows.length}</strong> integrantes · toque para detalhes
         </span>
       </div>
 
@@ -96,7 +99,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 scope="col"
                 aria-sort={sortField === "name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
                 onClick={() => handleSort("name")}
-                className="w-[48%] sm:w-auto px-3 py-3 font-semibold text-muted text-xs sm:px-5 sm:py-3.5 cursor-pointer hover:text-ink transition-colors"
+                className="w-[45%] sm:w-auto px-2.5 py-2.5 sm:px-5 sm:py-3.5 font-semibold text-muted text-xs cursor-pointer hover:text-ink transition-colors"
               >
                 <div className="flex items-center gap-1">
                   <span>Integrante</span>
@@ -135,7 +138,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 scope="col"
                 aria-sort={sortField === "duration" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
                 onClick={() => handleSort("duration")}
-                className="w-[26%] sm:w-36 whitespace-nowrap px-2 py-3 sm:px-5 sm:py-3.5 font-semibold text-muted text-xs cursor-pointer hover:text-ink transition-colors text-right sm:text-left"
+                className="w-[27%] sm:w-36 whitespace-nowrap px-1.5 py-2.5 sm:px-5 sm:py-3.5 font-semibold text-muted text-xs cursor-pointer hover:text-ink transition-colors text-right sm:text-left"
               >
                 <div className="flex items-center justify-end sm:justify-start gap-1">
                   <span className="hidden sm:inline">Total Permanência</span>
@@ -149,7 +152,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 scope="col"
                 aria-sort={sortField === "status" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
                 onClick={() => handleSort("status")}
-                className="w-[26%] sm:w-32 whitespace-nowrap px-2 py-3 sm:px-5 sm:py-3.5 font-semibold text-muted text-xs cursor-pointer hover:text-ink transition-colors text-right sm:text-left"
+                className="w-[28%] sm:w-32 whitespace-nowrap pl-1 pr-3 py-2.5 sm:px-5 sm:py-3.5 font-semibold text-muted text-xs cursor-pointer hover:text-ink transition-colors text-right sm:text-left"
               >
                 <div className="flex items-center justify-end sm:justify-start gap-1">
                   <span>Status</span>
@@ -176,11 +179,11 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 role="button"
                 aria-label={`Ver sessões e histórico de ${row.member.name}`}
               >
-                <td className="px-2.5 py-2.5 sm:px-5 sm:py-3.5 text-ink overflow-hidden">
+                <td className="px-2.5 py-2 sm:px-5 sm:py-3.5 text-ink overflow-hidden">
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                     {/* Avatar estilo Apple com gradiente dinâmico vibrante */}
                     <div
-                      className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarStyle(row.member.name)} text-2xs sm:text-xs font-bold ring-2 ring-white shadow-xs transition-transform duration-200 group-hover:scale-105`}
+                      className={`flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarStyle(row.member.name)} text-[10px] sm:text-xs font-bold ring-1.5 sm:ring-2 ring-white shadow-2xs transition-transform duration-200 group-hover:scale-105`}
                     >
                       {row.member.name.charAt(0).toUpperCase()}
                     </div>
@@ -188,11 +191,6 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                       <span className="font-semibold text-ink group-hover:text-navy transition-colors block text-xs sm:text-sm truncate">
                         {row.member.name}
                       </span>
-                      {row.member.matricula && (
-                        <span className="text-2xs text-muted block sm:hidden font-mono truncate">
-                          {row.member.matricula}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </td>
@@ -202,32 +200,34 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 <td className="hidden px-4 py-3.5 text-ink sm:table-cell sm:px-5 text-center font-medium">
                   {row.sessionCount}
                 </td>
-                <td className="whitespace-nowrap px-2 py-2.5 sm:px-5 sm:py-3.5 text-right sm:text-left text-xs sm:text-sm tabular-nums">
+                <td className="whitespace-nowrap px-1.5 py-2 sm:px-5 sm:py-3.5 text-right sm:text-left text-[11px] sm:text-sm tabular-nums">
                   {row.present ? (
-                    <span className="font-mono font-extrabold text-emerald-600">
+                    <span className="font-mono font-bold text-emerald-600">
                       {formatDuration(row.totalSeconds, true)}
                     </span>
                   ) : (
-                    <span className="font-semibold text-ink/80">
+                    <span className="font-semibold text-ink/75">
                       {formatDuration(row.totalSeconds)}
                     </span>
                   )}
                 </td>
-                <td className="whitespace-nowrap px-2 py-2.5 sm:px-5 sm:py-3.5 text-right sm:text-left">
-                  {row.present ? (
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-2xs sm:text-xs font-bold text-emerald-800 shadow-[0_2px_6px_rgba(16,185,129,0.12)] backdrop-blur-md">
-                      <span className="relative flex h-2 w-2 shrink-0">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                <td className="whitespace-nowrap pl-1 pr-3 py-2 sm:px-5 sm:py-3.5 text-right sm:text-left">
+                  <div className="flex items-center justify-end sm:justify-start">
+                    {row.present ? (
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-500/12 border border-emerald-500/25 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10.5px] sm:text-xs font-semibold text-emerald-700 shadow-2xs">
+                        <span className="relative flex h-1.5 w-1.5 shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                        </span>
+                        <span>Presente</span>
                       </span>
-                      <span>Presente</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-500/[0.06] border border-slate-400/20 px-2.5 py-1 text-2xs sm:text-xs font-medium text-slate-500">
-                      <span className="h-1.5 w-1.5 rounded-full bg-slate-400/40 shrink-0" />
-                      <span>Ausente</span>
-                    </span>
-                  )}
+                    ) : (
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-slate-500/[0.05] border border-slate-400/15 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10.5px] sm:text-xs font-medium text-slate-500">
+                        <span className="h-1.5 w-1.5 rounded-full bg-slate-400/50 shrink-0" />
+                        <span>Ausente</span>
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

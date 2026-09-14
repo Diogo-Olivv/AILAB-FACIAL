@@ -214,7 +214,7 @@ export function Dashboard() {
         presentCount={presentCount}
       />
 
-      <main className="flex-1 px-4 py-6 md:px-8 max-w-6xl mx-auto w-full relative">
+      <main className="flex-1 px-3 py-5 sm:px-6 md:px-8 max-w-6xl mx-auto w-full relative">
         <div className={`space-y-6 transition-opacity duration-300 ${isRefreshing ? "opacity-75" : "opacity-100"}`}>
         {/* Painel do Tutor (visível apenas para tutores autenticados) */}
         {user && (
