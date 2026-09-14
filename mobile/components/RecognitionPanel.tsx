@@ -10,6 +10,7 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRecognize } from "@/hooks/useRecognize";
 import { useCameraFocus } from "@/hooks/useCameraFocus";
+import { triggerPresenceRefresh } from "@/hooks/usePresence";
 import type { RecognitionAction } from "@/lib/api";
 import { GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 
@@ -113,6 +114,7 @@ export function RecognitionPanel() {
 
           Alert.alert(title, detail);
         } else {
+          triggerPresenceRefresh();
           Alert.alert(
             action === "check_in" ? "Entrada" : "Saída",
             FEEDBACK[res.event.action](res.name, res.event.duration_minutes)

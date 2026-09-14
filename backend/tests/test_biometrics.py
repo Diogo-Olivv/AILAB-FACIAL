@@ -476,17 +476,17 @@ def test_pgvector_match_face_accepts_above_068():
         assert res["name"] == "Ana Clara"
         assert res["cosine_similarity"] == 0.72
 
-        # Valida que o match_threshold passado na RPC foi <= 0.38 (e NUNCA 0.68)
+        # Valida que o match_threshold passado na RPC foi <= 0.45 (e NUNCA limiar de similaridade)
         rpc_call_args = mock_db.rpc.call_args[0]
         assert rpc_call_args[0] == "match_face"
         passed_params = rpc_call_args[1]
-        assert passed_params["match_threshold"] <= 0.38, (
-            f"match_threshold deve ser a distância máxima (<= 0.38), mas foi {passed_params['match_threshold']}"
+        assert passed_params["match_threshold"] <= 0.45, (
+            f"match_threshold deve ser a distância máxima (<= 0.45), mas foi {passed_params['match_threshold']}"
         )
 
 
-def test_pgvector_match_face_uncertain_between_062_and_068():
-    """pgvector RPC retornando similaridade na zona incerta (0.62 a 0.68) deve retornar status 'uncertain'."""
+def test_pgvector_match_face_uncertain_between_055_and_062():
+    """pgvector RPC retornando similaridade na zona incerta (0.55 a 0.62) deve retornar status 'uncertain'."""
     from app.services.face_service import _match_face_pgvector
 
     mock_db = MagicMock()
@@ -497,7 +497,7 @@ def test_pgvector_match_face_uncertain_between_062_and_068():
             {
                 "profile_id": "prof-2",
                 "name": "Bruno Silva",
-                "similarity": 0.65,
+                "similarity": 0.58,
             }
         ]
     )
@@ -517,8 +517,8 @@ def test_pgvector_match_face_uncertain_between_062_and_068():
         assert "similarity" not in res
 
 
-def test_pgvector_match_face_rejects_impostor_below_062():
-    """pgvector RPC retornando similaridade < 0.62 deve ser rejeitado com status 'not_recognized'."""
+def test_pgvector_match_face_rejects_impostor_below_055():
+    """pgvector RPC retornando similaridade < 0.55 deve ser rejeitado com status 'not_recognized'."""
     from app.services.face_service import _match_face_pgvector
 
     mock_db = MagicMock()
@@ -542,4 +542,30 @@ def test_pgvector_match_face_rejects_impostor_below_062():
         assert res is not None
         assert res["recognized"] is False
         assert res["status"] == "not_recognized"
+
+
+def test_extract_representative_embeddings_clustering():
+    """Garante que fotos com variação natural (com e sem óculos) geram 2 vetores representativos."""
+    from app.services.enroll_service import _extract_representative_embeddings
+
+    rng = np.random.default_rng(42)
+    # Polo 1: cluster "sem óculos"
+    base1 = rng.standard_normal(512)
+    base1 /= np.linalg.norm(base1)
+    encs_no_glasses = [base1 + rng.normal(0, 0.05, 512) for _ in range(3)]
+    encs_no_glasses = [v / np.linalg.norm(v) for v in encs_no_glasses]
+
+    # Polo 2: cluster "com óculos" (afastado ~0.65 de distância)
+    base2 = base1 + rng.normal(0, 0.45, 512)
+    base2 /= np.linalg.norm(base2)
+    encs_with_glasses = [base2 + rng.normal(0, 0.05, 512) for _ in range(2)]
+    encs_with_glasses = [v / np.linalg.norm(v) for v in encs_with_glasses]
+
+    all_encs = encs_no_glasses + encs_with_glasses
+
+    reps = _extract_representative_embeddings(all_encs)
+    assert len(reps) == 2, f"Deveria extrair 2 clusters representativos, obteve {len(reps)}"
+    for r in reps:
+        assert np.isclose(np.linalg.norm(r), 1.0, atol=1e-5)
+
 

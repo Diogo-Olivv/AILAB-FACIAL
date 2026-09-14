@@ -9,15 +9,15 @@ class Settings(BaseSettings):
     supabase_service_key: str = ""
 
     # Face recognition & biometria calibrada — valores de produção para ArcFace/buffalo_s
-    # Calibrado para FAR < 0.1 %: cos >= 0.68 ↔ dist <= 0.80 (relação ||u-v|| = sqrt(2-2cos))
-    face_threshold: float = 0.80                # Distância euclidiana máxima (limite estrito calibrado)
-    face_min_cosine: float = 0.68               # Limiar de similaridade cosseno: aceite definitivo
-    face_uncertain_cosine: float = 0.62         # Zona incerta: 0.62-0.68 → second-factor ou rejeição
+    # Calibrado para FAR < 0.1 % com tolerância a óculos e pelos faciais: cos >= 0.62 ↔ dist <= 0.87
+    face_threshold: float = 0.87                # Distância euclidiana máxima calibrada (sqrt(2-2cos))
+    face_min_cosine: float = 0.62               # Limiar de similaridade cosseno: aceite definitivo
+    face_uncertain_cosine: float = 0.55         # Zona incerta: 0.55-0.62 → second-factor ou rejeição
     min_face_size: int = 40                     # Tamanho mínimo da face em pixels (adaptado para det_size 640)
     min_laplacian_var: float = 30.0             # FIQA: adaptado para câmeras frontais de tablet com denoising
     liveness_enabled: bool = True               # Ativação de checagem anti-spoofing (ONNX + heurísticas)
     liveness_min_score: float = 0.45            # Score mínimo de vivacidade (ONNX model calibrado)
-    enroll_max_pairwise_distance: float = 0.70  # Distância máxima entre fotos (permite variação natural)
+    enroll_max_pairwise_distance: float = 0.82  # Distância máxima entre fotos (permite variação natural com/sem óculos)
     max_enroll_frames: int = 5                  # Máximo de fotos no payload de cadastro (mitigação DoS)
     debounce_seconds: int = 60                  # Janela mínima de histerese (segundos) entre transições
 

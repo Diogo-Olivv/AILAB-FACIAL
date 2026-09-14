@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AppState } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 
@@ -15,6 +16,25 @@ export interface PresentMember {
   session_id: number;
   check_in: string;
   profile: Profile;
+}
+
+// ── Event Emitter Leve para Sincronização Local Imediata ───────────────────────
+
+type PresenceListener = () => void;
+const listeners = new Set<PresenceListener>();
+
+/**
+ * Dispara uma recarga imediata da lista de presenças em todos os componentes ativos.
+ * Deve ser chamada após eventos de check-in ou check-out no RecognitionPanel.
+ */
+export function triggerPresenceRefresh(): void {
+  listeners.forEach((fn) => {
+    try {
+      fn();
+    } catch {
+      // Ignora erro de listener isolado
+    }
+  });
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -49,9 +69,25 @@ export function usePresence() {
   }, []);
 
   useEffect(() => {
+    // 1. Carga inicial
     fetchOpen();
 
-    // Supabase Realtime — re-busca em qualquer mutação de sessions
+    // 2. Registro no canal de eventos locais (gatilho imediato após reconhecimento)
+    listeners.add(fetchOpen);
+
+    // 3. Polling de fallback a cada 10s (resiliência contra perda de pacotes WebSocket e RLS)
+    const intervalId = setInterval(() => {
+      fetchOpen();
+    }, 10000);
+
+    // 4. Re-sincronização quando o app ou tela do tablet sai de repouso
+    const appStateSub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        fetchOpen();
+      }
+    });
+
+    // 5. Supabase Realtime — re-busca em qualquer mutação de sessions
     const channel = supabase
       .channel("presence_updates")
       .on(
@@ -64,6 +100,9 @@ export function usePresence() {
       .subscribe();
 
     return () => {
+      listeners.delete(fetchOpen);
+      clearInterval(intervalId);
+      appStateSub.remove();
       supabase.removeChannel(channel);
     };
   }, [fetchOpen]);

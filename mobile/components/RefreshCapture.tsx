@@ -242,9 +242,16 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
       <View style={styles.infoCard}>
         <Text style={styles.infoTitle}>Atualização do Vetor Biométrico</Text>
         <Text style={styles.infoBody}>
-          O recadastro calcula uma nova média vetorial facial para o integrante e
-          sobrescreve os embeddings antigos. Todas as sessões anteriores, horas
+          O recadastro recalcula as representações biométricas faciais do integrante e
+          atualiza os vetores na base. Todas as sessões anteriores, horas
           acumuladas e histórico de presença continuam vinculados ao perfil sem qualquer perda.
+        </Text>
+      </View>
+
+      <View style={styles.tipCard}>
+        <Text style={styles.tipTitle}>💡 Dica para quem usa óculos ou barba</Text>
+        <Text style={styles.tipBody}>
+          Se você começou a usar óculos, mudou a armação ou alterou a barba recentemente, capture algumas fotos com óculos e outras sem para atualizar o reconhecimento em todas as suas variações.
         </Text>
       </View>
 
@@ -456,4 +463,22 @@ const styles = StyleSheet.create({
   feedbackText: { fontSize: 14, fontWeight: "600", textAlign: "center" },
   feedbackTextOk: { color: "#166534" },
   feedbackTextErr: { color: "#DC2626" },
+  tipCard: {
+    backgroundColor: "rgba(30,45,95,.06)",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(30,45,95,.12)",
+    gap: 4,
+  },
+  tipTitle: {
+    color: "#1E2D5F",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  tipBody: {
+    color: "#6B6F82",
+    fontSize: 12,
+    lineHeight: 17,
+  },
 });

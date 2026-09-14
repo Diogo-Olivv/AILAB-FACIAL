@@ -129,6 +129,13 @@ export function EnrollCapture({ tutorToken }: Props) {
         </View>
       )}
 
+      <View style={styles.tipCard}>
+        <Text style={styles.tipTitle}>💡 Dica para quem usa óculos ou barba</Text>
+        <Text style={styles.tipBody}>
+          Se você costuma usar óculos ou variar a barba, capture algumas fotos com óculos e outras sem. O sistema salva representações calibradas para reconhecê-lo em qualquer situação.
+        </Text>
+      </View>
+
       <View style={styles.consentCard}>
         <Text style={styles.consentTitle}>Termo de Consentimento Biométrico (LGPD - v1.0)</Text>
         <Text style={styles.consentBody}>
@@ -246,4 +253,22 @@ const styles = StyleSheet.create({
   feedback: { fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 4 },
   feedbackOk: { color: "#166534" },
   feedbackErr: { color: "#DC2626" },
+  tipCard: {
+    backgroundColor: "rgba(30,45,95,.06)",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(30,45,95,.12)",
+    gap: 4,
+  },
+  tipTitle: {
+    color: "#1E2D5F",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  tipBody: {
+    color: "#6B6F82",
+    fontSize: 12,
+    lineHeight: 17,
+  },
 });

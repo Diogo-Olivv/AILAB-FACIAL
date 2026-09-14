@@ -217,6 +217,18 @@ $$;
 revoke all on function public.match_face(vector(512), float8, int) from public, anon, authenticated;
 grant execute on function public.match_face(vector(512), float8, int) to service_role;
 
+-- ── Publicação Supabase Realtime ───────────────────────────────────────────────
+-- Permite que clientes WebSocket (ex: tablet kiosk) recebam mutações em sessions
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'sessions'
+  ) then
+    alter publication supabase_realtime add table public.sessions;
+  end if;
+end $$;
+
 -- ── Notificação para Reload de Cache no PostgREST ────────────────────────────────
 
 notify pgrst, 'reload schema';

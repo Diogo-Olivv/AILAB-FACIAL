@@ -519,7 +519,14 @@ def identify_frames(images: list[bytes]) -> dict:
         return best
 
     # Se nenhum foi reconhecido, retorna o erro de maior prioridade
-    priority = {"not_recognized": 5, "spoof_detected": 4, "blur_detected": 3, "face_too_small": 2, "no_face": 1}
+    priority = {
+        "uncertain": 6,
+        "not_recognized": 5,
+        "spoof_detected": 4,
+        "blur_detected": 3,
+        "face_too_small": 2,
+        "no_face": 1,
+    }
     results.sort(key=lambda r: priority.get(r.get("status", ""), 0), reverse=True)
     return results[0]
 
