@@ -66,8 +66,23 @@ export function PeriodSelector({
     }
   };
 
+  const applyDaysPreset = (daysAgo: number) => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - daysAgo);
+    onCustomFrom(from.toISOString().split("T")[0]);
+    onCustomTo(to.toISOString().split("T")[0]);
+  };
+
+  const applyThisMonthPreset = () => {
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    onCustomFrom(from.toISOString().split("T")[0]);
+    onCustomTo(now.toISOString().split("T")[0]);
+  };
+
   return (
-    <div className="space-y-3 rounded-3xl border border-black/[0.06] bg-white p-3.5 sm:p-4 shadow-apple transition-all duration-300 hover:shadow-apple-hover">
+    <div className="glass-panel space-y-3.5 rounded-3xl p-3.5 sm:p-4 transition-all duration-300 hover:shadow-apple-hover">
       {/* Apple-style Segmented Control com deslizamento e arrasto */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div
@@ -119,7 +134,7 @@ export function PeriodSelector({
 
         {/* Indicador elegante de intervalo de datas ativo */}
         <div className="flex items-center justify-between sm:justify-end gap-2 px-1 text-xs">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.06] bg-black/[0.02] px-3 py-1 text-xs font-semibold text-ink/80 shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.06] bg-black/[0.03] px-3 py-1 text-xs font-semibold text-ink/80 shadow-2xs">
             <span>📅</span>
             <span>{formatRange(range)}</span>
           </span>
@@ -130,37 +145,82 @@ export function PeriodSelector({
               ? "Semana Corrente"
               : period === "month"
               ? "Mês Corrente"
-              : "Intervalo Personalizado"}
+              : "Personalizado"}
           </span>
         </div>
       </div>
 
-      {/* Painel expansível para período personalizado */}
+      {/* Cápsula Liquid Glass para seleção de período personalizado */}
       {period === "custom" && (
-        <div className="animate-slide-down grid grid-cols-2 gap-3 pt-2.5 border-t border-black/[0.05]">
-          <div className="space-y-1">
-            <label className="text-2xs font-bold text-muted uppercase tracking-wider block">
-              Data Inicial (De)
-            </label>
-            <input
-              type="date"
-              value={customFrom}
-              max={customTo || undefined}
-              onChange={(e) => onCustomFrom(e.target.value)}
-              className="w-full rounded-2xl border border-black/[0.08] bg-white px-3 py-2 text-xs sm:text-sm text-ink outline-none focus:border-navy focus:ring-2 focus:ring-navy/15 shadow-2xs transition-all"
-            />
+        <div className="animate-slide-down pt-3 border-t border-black/[0.05] space-y-2.5">
+          {/* Presets Rápidos de 1 Toque estilo Apple */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 text-2xs sm:text-xs">
+              <span className="font-semibold text-muted mr-1 hidden sm:inline">Atalhos:</span>
+              <button
+                type="button"
+                onClick={() => applyDaysPreset(7)}
+                className="liquid-glass-button rounded-xl px-2.5 py-1 text-2xs sm:text-xs font-semibold text-ink hover:text-navy cursor-pointer"
+              >
+                Últimos 7 dias
+              </button>
+              <button
+                type="button"
+                onClick={() => applyDaysPreset(30)}
+                className="liquid-glass-button rounded-xl px-2.5 py-1 text-2xs sm:text-xs font-semibold text-ink hover:text-navy cursor-pointer"
+              >
+                Últimos 30 dias
+              </button>
+              <button
+                type="button"
+                onClick={applyThisMonthPreset}
+                className="liquid-glass-button rounded-xl px-2.5 py-1 text-2xs sm:text-xs font-semibold text-ink hover:text-navy cursor-pointer"
+              >
+                Mês Atual
+              </button>
+            </div>
+
+            {(customFrom || customTo) && (
+              <button
+                type="button"
+                onClick={() => {
+                  onCustomFrom("");
+                  onCustomTo("");
+                }}
+                className="text-2xs font-semibold text-muted hover:text-warn transition-colors cursor-pointer"
+              >
+                ✕ Limpar datas
+              </button>
+            )}
           </div>
-          <div className="space-y-1">
-            <label className="text-2xs font-bold text-muted uppercase tracking-wider block">
-              Data Final (Até)
-            </label>
-            <input
-              type="date"
-              value={customTo}
-              min={customFrom || undefined}
-              onChange={(e) => onCustomTo(e.target.value)}
-              className="w-full rounded-2xl border border-black/[0.08] bg-white px-3 py-2 text-xs sm:text-sm text-ink outline-none focus:border-navy focus:ring-2 focus:ring-navy/15 shadow-2xs transition-all"
-            />
+
+          {/* Cápsula de Intervalo Conectada (Liquid Glass Capsule) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* Campo Inicial (De) */}
+            <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white/70 backdrop-blur-md px-3 py-2 shadow-2xs focus-within:ring-2 focus-within:ring-navy/20 focus-within:bg-white focus-within:border-navy/30 transition-all">
+              <span className="text-xs font-bold text-muted uppercase tracking-wider shrink-0">De:</span>
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo || undefined}
+                onChange={(e) => onCustomFrom(e.target.value)}
+                className="w-full bg-transparent text-xs sm:text-sm font-semibold text-ink outline-none cursor-pointer"
+                aria-label="Data inicial"
+              />
+            </div>
+
+            {/* Campo Final (Até) */}
+            <div className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white/70 backdrop-blur-md px-3 py-2 shadow-2xs focus-within:ring-2 focus-within:ring-navy/20 focus-within:bg-white focus-within:border-navy/30 transition-all">
+              <span className="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Até:</span>
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom || undefined}
+                onChange={(e) => onCustomTo(e.target.value)}
+                className="w-full bg-transparent text-xs sm:text-sm font-semibold text-ink outline-none cursor-pointer"
+                aria-label="Data final"
+              />
+            </div>
           </div>
         </div>
       )}

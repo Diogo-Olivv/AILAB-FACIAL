@@ -218,9 +218,9 @@ export function Dashboard() {
         <div className={`space-y-6 transition-opacity duration-300 ${isRefreshing ? "opacity-75" : "opacity-100"}`}>
         {/* Painel do Tutor (visível apenas para tutores autenticados) */}
         {user && (
-          <div className="rounded-2xl border border-navy/20 bg-navy/5 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs animate-fade-in">
+          <div className="glass-panel rounded-3xl border border-navy/15 bg-navy/[0.03] p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-apple animate-fade-in">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-navy text-white text-xl">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl liquid-glass-pill text-navy text-xl shadow-2xs">
                 🎓
               </span>
               <div>
@@ -228,7 +228,7 @@ export function Dashboard() {
                   <h3 className="text-sm sm:text-base font-bold text-ink">
                     Painel Exclusivo do Tutor
                   </h3>
-                  <span className="rounded-full bg-navy/15 px-2 py-0.5 text-2xs font-bold text-navy">
+                  <span className="rounded-full bg-navy/10 border border-navy/15 px-2.5 py-0.5 text-2xs font-bold text-navy">
                     {user.email}
                   </span>
                 </div>
@@ -240,7 +240,7 @@ export function Dashboard() {
 
             <button
               onClick={() => setIsTutorWarningOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-warn px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-warn/90 active:scale-95 cursor-pointer min-h-[44px]"
+              className="liquid-glass-button inline-flex items-center gap-2 rounded-2xl bg-amber-500/10 border-amber-500/25 px-4 py-2.5 text-xs sm:text-sm font-bold text-amber-900 shadow-2xs hover:bg-amber-500/20 active:scale-95 cursor-pointer min-h-[44px]"
             >
               <span>⚠️</span>
               <span>Auditoria Semanal & Advertências ({studentsUnderFourHoursCount})</span>
@@ -248,41 +248,43 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* KPI Cards de Resumo Direto */}
+        {/* KPI Cards de Resumo Direto com Apple Glass */}
         {loading && members.length === 0 ? (
           <KpiSkeleton />
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4 animate-fade-in">
             {/* Presentes Agora */}
-            <div className="rounded-2xl border border-black/[0.06] bg-white p-3.5 sm:p-5 shadow-apple transition-all duration-300 hover:shadow-apple-hover">
+            <div className="glass-card rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
               <div className="flex items-center justify-between">
                 <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
                   Presentes
                 </span>
                 <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-green" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500" />
                 </span>
               </div>
-              <div className="mt-2 flex items-baseline gap-1.5 sm:gap-2">
+              <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
                 <span className="text-2xl sm:text-3xl font-extrabold text-ink tabular-nums">{presentCount}</span>
-                <span className="text-2xs sm:text-xs font-bold text-green">ao vivo</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-2xs font-bold text-emerald-700">
+                  ao vivo
+                </span>
               </div>
               <p className="text-2xs sm:text-xs text-muted mt-0.5 truncate">no laboratório agora</p>
             </div>
 
             {/* Total de Horas */}
-            <div className="rounded-2xl border border-black/[0.06] bg-white p-3.5 sm:p-5 shadow-apple transition-all duration-300 hover:shadow-apple-hover">
+            <div className="glass-card rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
               <div className="flex items-center justify-between">
                 <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
                   Horas Totais
                 </span>
-                <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-navy/5 text-xs sm:text-sm">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl liquid-glass-pill text-xs sm:text-sm shadow-2xs">
                   ⏱️
                 </span>
               </div>
-              <div className="mt-2">
-                <span className="text-xl sm:text-3xl font-extrabold text-navy tabular-nums">
+              <div className="mt-2.5">
+                <span className="text-xl sm:text-3xl font-extrabold text-navy tabular-nums tracking-tight">
                   {formatDuration(totalLabSeconds)}
                 </span>
               </div>
@@ -290,16 +292,16 @@ export function Dashboard() {
             </div>
 
             {/* Integrantes com Registro */}
-            <div className="rounded-2xl border border-black/[0.06] bg-white p-3.5 sm:p-5 shadow-apple transition-all duration-300 hover:shadow-apple-hover">
+            <div className="glass-card rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
               <div className="flex items-center justify-between">
                 <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
                   Ativos
                 </span>
-                <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-navy/5 text-xs sm:text-sm">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl liquid-glass-pill text-xs sm:text-sm shadow-2xs">
                   👥
                 </span>
               </div>
-              <div className="mt-2 flex items-baseline gap-1.5 sm:gap-2">
+              <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
                 <span className="text-2xl sm:text-3xl font-extrabold text-ink tabular-nums">{activeMembersCount}</span>
                 <span className="text-2xs sm:text-xs text-muted">de {members.length}</span>
               </div>
@@ -307,16 +309,16 @@ export function Dashboard() {
             </div>
 
             {/* Total de Sessões */}
-            <div className="rounded-2xl border border-black/[0.06] bg-white p-3.5 sm:p-5 shadow-apple transition-all duration-300 hover:shadow-apple-hover">
+            <div className="glass-card rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
               <div className="flex items-center justify-between">
                 <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
                   Sessões
                 </span>
-                <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-navy/5 text-xs sm:text-sm">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl liquid-glass-pill text-xs sm:text-sm shadow-2xs">
                   📌
                 </span>
               </div>
-              <div className="mt-2">
+              <div className="mt-2.5">
                 <span className="text-2xl sm:text-3xl font-extrabold text-ink tabular-nums">{totalSessionsCount}</span>
               </div>
               <p className="text-2xs sm:text-xs text-muted mt-0.5 truncate">registros válidos</p>
@@ -335,12 +337,12 @@ export function Dashboard() {
           onCustomTo={setCustomTo}
         />
 
-        {/* Barra de Navegação e Busca Integrada */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 rounded-2xl border border-black/[0.06] bg-white p-2.5 sm:p-3 shadow-apple transition-all duration-300">
+        {/* Barra de Navegação e Busca Integrada com Liquid Glass */}
+        <div className="glass-panel flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 rounded-3xl p-2.5 sm:p-3 shadow-apple transition-all duration-300">
           {/* Segmented control estilo Apple com deslizamento e arrasto */}
           <ViewSelector view={view} onViewChange={setView} />
 
-          {/* Campo de Busca Reativa por Nome ou Matrícula */}
+          {/* Campo de Busca Reativa estilo Apple Spotlight */}
           <div className="relative w-full sm:w-72">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted pointer-events-none text-xs">
               🔍
@@ -350,7 +352,7 @@ export function Dashboard() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nome ou matrícula..."
-              className="w-full rounded-xl border border-black/[0.08] bg-[#F5F5F7]/70 py-2 pl-8 pr-7 text-xs sm:text-sm text-ink placeholder:text-muted/70 focus:border-navy focus:bg-white focus:outline-none focus:ring-2 focus:ring-navy/15 shadow-2xs min-h-[38px] transition-all"
+              className="w-full rounded-2xl border border-white/80 bg-white/65 backdrop-blur-md py-2 pl-8 pr-7 text-xs sm:text-sm text-ink placeholder:text-muted/60 focus:border-navy/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-navy/15 shadow-2xs min-h-[38px] transition-all"
               aria-label="Buscar integrantes por nome ou matrícula"
             />
             {searchQuery && (

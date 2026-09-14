@@ -20,7 +20,7 @@ export function Header({
 }: HeaderProps) {
   return (
     <header
-      className="sticky top-0 z-30 border-b border-line/80 bg-card/95 px-3 py-2.5 backdrop-blur-md transition-all sm:px-8 sm:py-3.5 shadow-2xs"
+      className="sticky top-0 z-30 border-b border-black/[0.05] bg-white/80 px-3 py-2.5 backdrop-blur-2xl transition-all sm:px-8 sm:py-3.5 shadow-[0_2px_16px_rgba(0,0,0,0.03)]"
       role="banner"
     >
       <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-2.5 sm:gap-4">
@@ -29,15 +29,15 @@ export function Header({
           <img
             src={logo}
             alt="AiLab Makers Foundation Logo"
-            className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl border border-line/60 object-cover shadow-2xs"
+            className="h-9 w-9 sm:h-11 sm:w-11 rounded-2xl border border-white/80 object-cover shadow-2xs"
           />
           <div>
             <div className="flex items-center gap-1.5 sm:gap-2">
               <h1 className="text-sm sm:text-lg font-extrabold tracking-tight text-ink leading-tight">
                 Tempo de permanência
               </h1>
-              <span className="inline-flex items-center gap-1 rounded-full bg-green/15 px-2 py-0.5 text-2xs sm:text-xs font-bold text-green ring-1 ring-green/20">
-                <span className="h-1.5 w-1.5 rounded-full bg-green animate-pulse" />
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-2xs sm:text-xs font-bold text-emerald-700 shadow-[0_1px_4px_rgba(16,185,129,0.08)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 {presentCount} ao vivo
               </span>
             </div>
@@ -52,12 +52,12 @@ export function Header({
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="inline-flex items-center justify-center rounded-xl border border-line/80 bg-white p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-navy shadow-2xs transition-all hover:bg-navy/5 active:scale-95 disabled:opacity-60 cursor-pointer min-h-[36px] sm:min-h-[40px]"
+            className="liquid-glass-button inline-flex items-center justify-center rounded-xl p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-ink cursor-pointer min-h-[36px] sm:min-h-[40px] disabled:opacity-60"
             title="Atualizar dados de permanência agora"
             aria-label="Atualizar dados de permanência agora"
           >
             <svg
-              className={`h-4 w-4 transition-transform ${isRefreshing ? "animate-spin text-green" : ""}`}
+              className={`h-4 w-4 transition-transform ${isRefreshing ? "animate-spin text-emerald-600" : "text-muted"}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -76,7 +76,7 @@ export function Header({
 
           <button
             onClick={onOpenTerms}
-            className="inline-flex items-center gap-1 rounded-xl border border-line/80 bg-white px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-xs font-semibold text-ink shadow-2xs transition-all hover:bg-navy/5 active:scale-95 cursor-pointer min-h-[36px] sm:min-h-[40px]"
+            className="liquid-glass-button inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-xs font-semibold text-ink cursor-pointer min-h-[36px] sm:min-h-[40px]"
             title="Políticas de Privacidade Biométrica (LGPD Art. 11)"
           >
             <span className="text-xs">⚖️</span>
@@ -86,7 +86,7 @@ export function Header({
           {user ? (
             <button
               onClick={signOut}
-              className="rounded-xl border border-warn/25 bg-warn/10 px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-xs font-bold text-warn shadow-2xs transition-all hover:bg-warn/20 active:scale-95 cursor-pointer min-h-[36px] sm:min-h-[40px]"
+              className="liquid-glass-button rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-xs font-bold text-warn border-warn/20 hover:border-warn/40 hover:bg-warn/10 cursor-pointer min-h-[36px] sm:min-h-[40px]"
               title="Encerrar sessão de tutor"
             >
               Sair
@@ -94,7 +94,7 @@ export function Header({
           ) : (
             <Link
               to="/login"
-              className="rounded-xl border border-navy/20 bg-navy/10 px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-xs font-bold text-navy shadow-2xs transition-all hover:bg-navy/20 active:scale-95 inline-flex items-center min-h-[36px] sm:min-h-[40px]"
+              className="liquid-glass-button rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-xs font-bold text-navy border-navy/20 hover:border-navy/40 hover:bg-navy/10 inline-flex items-center min-h-[36px] sm:min-h-[40px]"
               title="Área administrativa de tutores e coordenadores"
             >
               Acesso Tutor
