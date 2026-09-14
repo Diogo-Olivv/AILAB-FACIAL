@@ -1,16 +1,13 @@
 # AILAB Facial - Web
 
-Site de cadastro (owner) e dashboard de horas (estudantes), com Supabase Auth.
+Dashboard de acompanhamento de horas e permanência no laboratório com Supabase Auth.
 
 ## Rotas
 
-- `/login` - login por email e senha (Supabase Auth).
-- `/dashboard` - horas acumuladas por integrante. Requer autenticacao.
-- `/cadastro` - cadastro de integrante com captura facial. Apenas owner.
-- `/kiosk` - tela do tablet (proximo passo). Apenas owner.
+- `/login` - Autenticação por e-mail e senha (Supabase Auth).
+- `/dashboard` - Visualização de horas acumuladas por integrante, totais do período e histórico diário.
 
-Owner e definido por `VITE_OWNER_EMAIL`. Estudantes usam uma conta compartilhada
-que so enxerga o dashboard.
+> Nota: O modo Totem Kiosk e o cadastro biométrico facial são operados exclusivamente através do aplicativo móvel para tablet (`mobile/`), preservando a separação de privilégios.
 
 ## Setup local
 

@@ -12,6 +12,7 @@ export interface SessionRecord {
   checkOut: string | null;
   durationS: number | null;
   autoClosed?: boolean;
+  voidedAt?: string | null;
 }
 
 export interface DateRange {
@@ -32,7 +33,7 @@ export async function fetchMembers(): Promise<Member[]> {
 export async function fetchSessions(range: DateRange): Promise<SessionRecord[]> {
   const { data, error } = await supabase
     .from("sessions")
-    .select("profile_id, check_in, check_out, duration_s, auto_closed")
+    .select("profile_id, check_in, check_out, duration_s, auto_closed, voided_at")
     .gte("check_in", range.from.toISOString())
     .lte("check_in", range.to.toISOString())
     .order("check_in", { ascending: false });
@@ -43,6 +44,7 @@ export async function fetchSessions(range: DateRange): Promise<SessionRecord[]> 
     checkOut: s.check_out,
     durationS: s.duration_s,
     autoClosed: s.auto_closed,
+    voidedAt: s.voided_at,
   }));
 }
 

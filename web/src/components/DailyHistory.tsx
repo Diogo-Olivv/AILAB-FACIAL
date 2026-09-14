@@ -20,9 +20,22 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
                 <tr key={index} className="border-t border-line">
                   <td className="px-4 py-3">{entry.memberName}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted">
-                    {formatTime(entry.checkIn)} até {entry.open ? "agora" : formatTime(entry.checkOut!)}
+                    {formatTime(entry.checkIn)} até{" "}
+                    {entry.voided ? (
+                      <span className="text-warn font-medium">anulada (sem checkout)</span>
+                    ) : entry.open ? (
+                      "agora"
+                    ) : (
+                      formatTime(entry.checkOut!)
+                    )}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">{formatDuration(entry.seconds)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                    {entry.voided ? (
+                      <span className="text-muted/60">0h 00m</span>
+                    ) : (
+                      formatDuration(entry.seconds)
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

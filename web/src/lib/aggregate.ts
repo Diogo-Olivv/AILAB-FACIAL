@@ -10,7 +10,8 @@ export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
-function sessionSeconds(session: SessionRecord, now: Date): number {
+export function sessionSeconds(session: SessionRecord, now: Date): number {
+  if (session.voidedAt != null) return 0;
   if (session.durationS != null) return session.durationS;
   if (session.checkOut != null) {
     const closedElapsed = Math.floor(
@@ -48,6 +49,7 @@ export function totalsByMember(
   for (const session of sessions) {
     const row = totals.get(session.profileId);
     if (!row) continue;
+    if (session.voidedAt != null) continue;
     row.totalSeconds += sessionSeconds(session, now);
     row.sessionCount += 1;
   }
@@ -60,6 +62,7 @@ export interface DayEntry {
   checkOut: string | null;
   seconds: number;
   open: boolean;
+  voided: boolean;
 }
 
 export interface DayGroup {
@@ -94,6 +97,7 @@ export function groupByDay(members: Member[], sessions: SessionRecord[], now: Da
       group = { key, label: dayLabel(session.checkIn), totalSeconds: 0, entries: [] };
       groups.set(key, group);
     }
+    const isVoided = session.voidedAt != null;
     const seconds = sessionSeconds(session, now);
     group.totalSeconds += seconds;
     group.entries.push({
@@ -101,7 +105,8 @@ export function groupByDay(members: Member[], sessions: SessionRecord[], now: Da
       checkIn: session.checkIn,
       checkOut: session.checkOut,
       seconds,
-      open: session.checkOut === null,
+      open: session.checkOut === null && !isVoided,
+      voided: isVoided,
     });
   }
   return [...groups.values()].sort((a, b) => (a.key < b.key ? 1 : -1));
