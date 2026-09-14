@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   StyleSheet,
   Text,
@@ -89,6 +90,24 @@ export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
 
 function SidebarRow({ member }: { member: PresentMember }) {
   const elapsed = useElapsed(member.check_in);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(6)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
   const initials = member.profile.name
     .split(" ")
     .map((w) => w[0])
@@ -97,7 +116,15 @@ function SidebarRow({ member }: { member: PresentMember }) {
     .toUpperCase();
 
   return (
-    <View style={styles.row}>
+    <Animated.View
+      style={[
+        styles.row,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
       <View style={styles.avatar}>
         <Text style={styles.initials}>{initials}</Text>
       </View>
@@ -107,7 +134,7 @@ function SidebarRow({ member }: { member: PresentMember }) {
         </Text>
         <Text style={styles.elapsed}>⏱️ {elapsed}</Text>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

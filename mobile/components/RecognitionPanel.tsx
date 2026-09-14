@@ -228,45 +228,118 @@ export function RecognitionPanel() {
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.action, styles.entrada, disabled && styles.disabled]}
-          onPress={() => capture("check_in")}
+        <SmoothActionButton
+          label="Entrada"
+          icon="🟢"
+          type="entrada"
+          busy={disabled && currentAction === "check_in"}
           disabled={disabled}
-          activeOpacity={0.85}
-          accessibilityRole="button"
+          onPress={() => capture("check_in")}
           accessibilityLabel="Registrar Entrada"
           accessibilityHint="Captura seu rosto e inicia o registro de presença"
-        >
-          {disabled && currentAction === "check_in" ? (
-            <View style={styles.buttonBusy}>
-              <ActivityIndicator color="#FFFFFF" size="small" />
-              <Text style={styles.actionText}>Verificando...</Text>
-            </View>
-          ) : (
-            <Text style={styles.actionText}>🟢 Entrada</Text>
-          )}
-        </TouchableOpacity>
+        />
 
-        <TouchableOpacity
-          style={[styles.action, styles.saida, disabled && styles.disabled]}
-          onPress={() => capture("check_out")}
+        <SmoothActionButton
+          label="Saída"
+          icon="🔵"
+          type="saida"
+          busy={disabled && currentAction === "check_out"}
           disabled={disabled}
-          activeOpacity={0.85}
-          accessibilityRole="button"
+          onPress={() => capture("check_out")}
           accessibilityLabel="Registrar Saída"
           accessibilityHint="Captura seu rosto e encerra a sessão com horas computadas"
-        >
-          {disabled && currentAction === "check_out" ? (
-            <View style={styles.buttonBusy}>
-              <ActivityIndicator color="#FFFFFF" size="small" />
-              <Text style={styles.actionText}>Verificando...</Text>
-            </View>
-          ) : (
-            <Text style={styles.actionText}>🔵 Saída</Text>
-          )}
-        </TouchableOpacity>
+        />
       </View>
     </View>
+  );
+}
+
+/** Botão Premium com feedback tátil suave e física de mola */
+function SmoothActionButton({
+  label,
+  icon,
+  type,
+  busy,
+  disabled,
+  onPress,
+  accessibilityLabel,
+  accessibilityHint,
+}: {
+  label: string;
+  icon: string;
+  type: "entrada" | "saida";
+  busy: boolean;
+  disabled: boolean;
+  onPress: () => void;
+  accessibilityLabel: string;
+  accessibilityHint: string;
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.94,
+      friction: 5,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 4,
+      tension: 90,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  useEffect(() => {
+    Animated.timing(opacityAnim, {
+      toValue: disabled && !busy ? 0.65 : 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [disabled, busy]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.actionWrapper,
+        {
+          transform: [{ scale: scaleAnim }],
+          opacity: opacityAnim,
+        },
+      ]}
+    >
+      <TouchableOpacity
+        style={[
+          styles.action,
+          type === "entrada" ? styles.entrada : styles.saida,
+          busy && styles.actionBusy,
+        ]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={disabled}
+        activeOpacity={0.92}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+      >
+        {busy ? (
+          <View style={styles.buttonBusy}>
+            <ActivityIndicator color="#FFFFFF" size="small" />
+            <Text style={styles.actionText}>Verificando...</Text>
+          </View>
+        ) : (
+          <Text style={styles.actionText}>
+            {icon} {label}
+          </Text>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
@@ -437,27 +510,39 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.40)",
   },
   actions: { flexDirection: "row", gap: 14 },
+  actionWrapper: { flex: 1 },
   action: {
-    flex: 1,
+    width: "100%",
     paddingVertical: 18,
-    borderRadius: 16,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.24,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.22)",
   },
   buttonBusy: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  entrada: { backgroundColor: "#166534" },
-  saida: { backgroundColor: "#1E2D5F" },
+  entrada: {
+    backgroundColor: "#166534",
+    shadowColor: "#166534",
+  },
+  saida: {
+    backgroundColor: "#1E2D5F",
+    shadowColor: "#1E2D5F",
+  },
+  actionBusy: {
+    backgroundColor: "#0F172A",
+    borderColor: "rgba(255, 255, 255, 0.35)",
+  },
   disabled: { opacity: 0.65 },
-  actionText: { color: "#FFFFFF", fontWeight: "800", fontSize: 18 },
+  actionText: { color: "#FFFFFF", fontWeight: "800", fontSize: 18, letterSpacing: 0.3 },
   permText: { color: "#141A33", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
   permBtn: {
     backgroundColor: "#1E2D5F",

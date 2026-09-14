@@ -53,6 +53,7 @@ export default function Home() {
           <TouchableOpacity
             style={styles.termsBtn}
             onPress={() => setTermsVisible(true)}
+            activeOpacity={0.75}
             accessibilityRole="button"
             accessibilityLabel="Abrir termos de privacidade e LGPD"
           >
@@ -63,6 +64,7 @@ export default function Home() {
             <TouchableOpacity
               style={styles.presenceToggleBtn}
               onPress={() => setPresenceModalVisible(true)}
+              activeOpacity={0.75}
               accessibilityRole="button"
               accessibilityLabel="Ver integrantes presentes no laboratório"
             >
@@ -70,10 +72,18 @@ export default function Home() {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.refreshBtn} onPress={() => openTutorAuth("refresh")}>
+          <TouchableOpacity
+            style={styles.refreshBtn}
+            onPress={() => openTutorAuth("refresh")}
+            activeOpacity={0.75}
+          >
             <Text style={styles.refreshBtnText}>Recadastrar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.registerBtn} onPress={() => openTutorAuth("enroll")}>
+          <TouchableOpacity
+            style={styles.registerBtn}
+            onPress={() => openTutorAuth("enroll")}
+            activeOpacity={0.75}
+          >
             <Text style={styles.registerBtnText}>Cadastrar</Text>
           </TouchableOpacity>
         </View>

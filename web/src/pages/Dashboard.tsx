@@ -109,9 +109,11 @@ export function Dashboard() {
   );
 
   useEffect(() => {
-    setLoading(true);
+    if (members.length === 0) {
+      setLoading(true);
+    }
     refreshData(false);
-  }, [refreshData]);
+  }, [refreshData, members.length]);
 
   // Polling a cada 30 segundos para manter os dados atualizados em tempo real no dashboard
   useEffect(() => {
@@ -182,6 +184,11 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-cream flex flex-col justify-between selection:bg-green/20">
+      {/* Linha sutil de carregamento superior em tempo real */}
+      {isRefreshing && (
+        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-gradient-to-r from-transparent via-navy to-green animate-pulse" />
+      )}
+
       {/* Cabeçalho limpo com contagem ao vivo e ações rápidas */}
       <Header
         user={user}
@@ -192,7 +199,8 @@ export function Dashboard() {
         presentCount={presentCount}
       />
 
-      <main className="flex-1 px-4 py-6 md:px-8 space-y-6 max-w-6xl mx-auto w-full">
+      <main className="flex-1 px-4 py-6 md:px-8 max-w-6xl mx-auto w-full relative">
+        <div className={`space-y-6 transition-opacity duration-300 ${isRefreshing ? "opacity-75" : "opacity-100"}`}>
         {/* Painel do Tutor (visível apenas para tutores autenticados) */}
         {user && (
           <div className="rounded-2xl border border-navy/20 bg-navy/5 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs animate-fade-in">
@@ -225,8 +233,8 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* KPI Cards de Resumo Direto (sem título redundante) */}
-        {loading ? (
+        {/* KPI Cards de Resumo Direto */}
+        {loading && members.length === 0 ? (
           <KpiSkeleton />
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4 animate-fade-in">
@@ -380,7 +388,7 @@ export function Dashboard() {
         )}
 
         {/* Conteúdo Principal com Tabela e Drawer */}
-        {loading ? (
+        {loading && members.length === 0 ? (
           <TableSkeleton />
         ) : (
           <div key={view} className="animate-fade-in">
@@ -394,6 +402,7 @@ export function Dashboard() {
             )}
           </div>
         )}
+        </div>
       </main>
 
       {/* Rodapé simples com status de sincronização */}
