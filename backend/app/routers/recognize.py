@@ -4,10 +4,15 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
+from app.config import settings
 from app.db.supabase_client import get_client
-from app.deps import validate_image, verify_api_key
+from app.deps import validate_image, verify_api_key, verify_kiosk_key
+from app.services.challenge_service import (
+    create_capture_challenge,
+    verify_and_consume_challenge,
+)
 from app.services.face_service import identify, identify_frames
 from app.services.session_service import (
     close_stale_sessions,
@@ -19,13 +24,28 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["recognize"])
 
 
-@router.post("/recognize", dependencies=[Depends(verify_api_key)])
+@router.post("/recognize/challenge", dependencies=[Depends(verify_kiosk_key)])
+@router.get("/recognize/challenge", dependencies=[Depends(verify_kiosk_key)])
+def request_challenge():
+    """Emite token de desafio criptográfico assinado com TTL para captura temporal anti-injeção."""
+    return create_capture_challenge()
+
+
+@router.post("/recognize", dependencies=[Depends(verify_kiosk_key)])
 async def recognize(
     frame: UploadFile | None = File(None),
     frames: list[UploadFile] | None = File(None),
     action: str | None = Form(None),
+    challenge_id: str | None = Form(None),
 ):
-    """Recebe frame(s) da camera, identifica o rosto e registra o evento."""
+    """Recebe frame(s) da camera, valida o desafio temporal, identifica o rosto e registra o evento."""
+    if settings.enforce_capture_challenge:
+        valid, reason = verify_and_consume_challenge(challenge_id)
+        if not valid:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Desafio de captura inválido ou expirado: {reason}",
+            )
     uploads: list[UploadFile] = []
     if frames:
         uploads.extend(frames)
@@ -42,7 +62,7 @@ async def recognize(
     raw_images: list[bytes] = []
     for f in uploads[:5]:
         b = await f.read()
-        validate_image(f.content_type, len(b))
+        validate_image(f.content_type, len(b), b)
         raw_images.append(b)
 
     # Offload de inferência CPU para não bloquear o event loop do asyncio
@@ -86,7 +106,7 @@ def close_stale():
     return close_stale_sessions()
 
 
-@router.get("/sessions/stats/{profile_id}", dependencies=[Depends(verify_api_key)])
+@router.get("/sessions/stats/{profile_id}", dependencies=[Depends(verify_kiosk_key)])
 def session_stats(
     profile_id: str,
     year: int | None = None,
