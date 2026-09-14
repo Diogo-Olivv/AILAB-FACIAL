@@ -118,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       signOut: async () => {
         localStorage.removeItem(TUTOR_STORAGE_KEY);
+        localStorage.removeItem("ailab_site_access_granted");
         await supabase.auth.signOut().catch(() => {});
         setSession(null);
       },

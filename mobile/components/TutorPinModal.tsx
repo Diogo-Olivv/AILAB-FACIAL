@@ -88,7 +88,7 @@ export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
             <Text style={styles.label}>E-mail institucional</Text>
             <TextInput
               style={styles.input}
-              placeholder="tutor@lab.com"
+              placeholder="tutor@ailab.com"
               placeholderTextColor="#6B6F82"
               value={email}
               onChangeText={(t) => {
