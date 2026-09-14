@@ -51,12 +51,18 @@ export function MemberDetailDrawer({
               </span>
               <span>•</span>
               {isPresent ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-green/15 px-2 py-0.5 text-xs font-semibold text-green">
-                  <span className="h-1.5 w-1.5 rounded-full bg-green animate-pulse" />
-                  No laboratório agora
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 shadow-2xs">
+                  <span className="relative flex h-1.5 w-1.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                  </span>
+                  Presente no laboratório
                 </span>
               ) : (
-                <span className="text-xs text-muted">Fora do laboratório</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-black/[0.03] border border-black/[0.05] px-2.5 py-0.5 text-xs font-medium text-muted">
+                  <span className="h-1.5 w-1.5 rounded-full bg-black/20 shrink-0" />
+                  Ausente
+                </span>
               )}
             </div>
           </div>

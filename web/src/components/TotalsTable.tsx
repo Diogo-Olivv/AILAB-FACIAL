@@ -194,13 +194,17 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 </td>
                 <td className="whitespace-nowrap px-2 py-2.5 sm:px-5 sm:py-3.5 text-right sm:text-left">
                   {row.present ? (
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-0.5 sm:px-3 sm:py-1 text-2xs sm:text-xs font-bold text-emerald-700 backdrop-blur-xs shadow-[0_1px_4px_rgba(16,185,129,0.1)]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                      No lab
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-2xs sm:text-xs font-semibold text-emerald-700 backdrop-blur-md shadow-[0_1px_3px_rgba(16,185,129,0.08)]">
+                      <span className="relative flex h-1.5 w-1.5 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                      </span>
+                      <span>Presente</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center whitespace-nowrap rounded-full bg-black/[0.03] border border-black/[0.05] px-2.5 py-0.5 sm:px-3 sm:py-1 text-2xs sm:text-xs font-medium text-muted">
-                      Fora
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-black/[0.02] border border-black/[0.04] px-2.5 py-1 text-2xs sm:text-xs font-medium text-muted/80">
+                      <span className="h-1.5 w-1.5 rounded-full bg-black/20 shrink-0" />
+                      <span>Ausente</span>
                     </span>
                   )}
                 </td>
