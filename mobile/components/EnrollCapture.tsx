@@ -14,6 +14,8 @@ import { useCameraPermissions } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEnroll } from "@/hooks/useEnroll";
 import { SequentialCamera } from "@/components/SequentialCamera";
+import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
+import { TermsModal } from "@/components/TermsModal";
 import { ENROLL_PHOTO_COUNT, MATRICULA_LENGTH } from "@/lib/config";
 
 interface Props {
@@ -31,6 +33,8 @@ export function EnrollCapture({ tutorToken }: Props) {
   const [shots, setShots] = useState<string[]>([]);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [badgeData, setBadgeData] = useState<FeedbackBadgeData | null>(null);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const matriculaValid = new RegExp(`^\\d{${MATRICULA_LENGTH}}$`).test(matricula);
   const canSubmit =
@@ -54,6 +58,7 @@ export function EnrollCapture({ tutorToken }: Props) {
 
   const submit = useCallback(async () => {
     setFeedback(null);
+    setBadgeData(null);
     const outcome = await enroll(
       name.trim(),
       matricula.trim(),
@@ -63,19 +68,36 @@ export function EnrollCapture({ tutorToken }: Props) {
     );
     if (outcome.ok) {
       const { name: enrolledName, photos_used } = outcome.data;
+      setBadgeData({
+        type: "enroll_success",
+        name: enrolledName,
+        title: "Cadastro Concluído!",
+        message: `Novo integrante cadastrado com ${photos_used} fotos processadas.`,
+      });
       setFeedback({ ok: true, text: `${enrolledName} cadastrado(a) com ${photos_used} fotos.` });
       setName("");
       setMatricula("");
       setConsent(false);
       setShots([]);
     } else {
+      setBadgeData({
+        type: "error",
+        title: "Falha no Cadastro",
+        message: outcome.message,
+      });
       setFeedback({ ok: false, text: outcome.message });
     }
   }, [enroll, name, matricula, consent, shots, tutorToken]);
 
   return (
-    <ScrollView
-      style={styles.container}
+    <View style={styles.root}>
+      <FeedbackBadge
+        data={badgeData}
+        onDismiss={() => setBadgeData(null)}
+        autoCloseMs={5000}
+      />
+      <ScrollView
+        style={styles.container}
       contentContainerStyle={[
         styles.content,
         {
@@ -144,6 +166,13 @@ export function EnrollCapture({ tutorToken }: Props) {
           convertidas em vetor numérico e descartadas. O titular pode revogar este consentimento ou
           solicitar a exclusão definitiva a qualquer momento.
         </Text>
+        <TouchableOpacity
+          onPress={() => setTermsOpen(true)}
+          style={styles.termsBtn}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.termsBtnText}>📖 Ler Termos de Privacidade e LGPD Completos</Text>
+        </TouchableOpacity>
         <View style={styles.consentSwitchRow}>
           <Switch
             value={consent}
@@ -181,10 +210,17 @@ export function EnrollCapture({ tutorToken }: Props) {
         onCancel={() => setCameraOpen(false)}
       />
     </ScrollView>
+
+    <TermsModal
+      visible={termsOpen}
+      onClose={() => setTermsOpen(false)}
+    />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: "#F4EFE4", position: "relative" },
   container: { flex: 1, backgroundColor: "#F4EFE4" },
   content: { padding: 16, gap: 14, paddingBottom: 40 },
   row: { flexDirection: "row", gap: 12 },
@@ -235,6 +271,17 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: "rgba(30,45,95,.08)",
+  },
+  termsBtn: {
+    alignSelf: "flex-start",
+    paddingVertical: 4,
+    marginBottom: 4,
+  },
+  termsBtnText: {
+    color: "#1E2D5F",
+    fontSize: 12.5,
+    fontWeight: "700",
+    textDecorationLine: "underline",
   },
   consentSwitchLabel: {
     flex: 1,

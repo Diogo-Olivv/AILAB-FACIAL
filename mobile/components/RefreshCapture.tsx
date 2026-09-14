@@ -14,6 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useProfiles, type ProfileItem } from "@/hooks/useProfiles";
 import { useRefreshEmbedding } from "@/hooks/useRefreshEmbedding";
 import { SequentialCamera } from "@/components/SequentialCamera";
+import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
+import { TermsModal } from "@/components/TermsModal";
 import { ENROLL_PHOTO_COUNT } from "@/lib/config";
 
 interface Props {
@@ -31,7 +33,9 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
   const [selectedProfile, setSelectedProfile] = useState<ProfileItem | null>(null);
   const [shots, setShots] = useState<string[]>([]);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [badgeData, setBadgeData] = useState<FeedbackBadgeData | null>(null);
 
   const filteredProfiles = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -76,6 +80,7 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
   const submit = useCallback(async () => {
     if (!selectedProfile) return;
     setFeedback(null);
+    setBadgeData(null);
 
     const outcome = await refresh(
       selectedProfile.id,
@@ -85,6 +90,12 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
 
     if (outcome.ok) {
       const { name: refreshedName, photos_used } = outcome.data;
+      setBadgeData({
+        type: "enroll_success",
+        name: refreshedName,
+        title: "Recadastro Concluído!",
+        message: `Biometria atualizada com sucesso (${photos_used} fotos processadas).`,
+      });
       setFeedback({
         ok: true,
         text: `Biometria de ${refreshedName} atualizada com sucesso (${photos_used} fotos processadas).`,
@@ -93,13 +104,24 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
       setShots([]);
       if (onSuccess) onSuccess();
     } else {
+      setBadgeData({
+        type: "error",
+        title: "Falha na Atualização",
+        message: outcome.message,
+      });
       setFeedback({ ok: false, text: outcome.message });
     }
   }, [refresh, selectedProfile, shots, tutorToken, onSuccess]);
 
   return (
-    <ScrollView
-      style={styles.container}
+    <View style={styles.root}>
+      <FeedbackBadge
+        data={badgeData}
+        onDismiss={() => setBadgeData(null)}
+        autoCloseMs={5000}
+      />
+      <ScrollView
+        style={styles.container}
       contentContainerStyle={[
         styles.content,
         {
@@ -246,6 +268,13 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
           atualiza os vetores na base. Todas as sessões anteriores, horas
           acumuladas e histórico de presença continuam vinculados ao perfil sem qualquer perda.
         </Text>
+        <TouchableOpacity
+          onPress={() => setTermsOpen(true)}
+          style={styles.termsBtn}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.termsBtnText}>📖 Ler Termos de Privacidade e LGPD Completos</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.tipCard}>
@@ -291,11 +320,18 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
         onComplete={onCaptured}
         onCancel={() => setCameraOpen(false)}
       />
+
+      <TermsModal
+        visible={termsOpen}
+        onClose={() => setTermsOpen(false)}
+      />
     </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: "#F4EFE4", position: "relative" },
   container: { flex: 1, backgroundColor: "#F4EFE4" },
   content: { padding: 16, gap: 14, paddingBottom: 40 },
   sectionHeader: {
@@ -436,6 +472,17 @@ const styles = StyleSheet.create({
   },
   infoTitle: { color: "#141A33", fontSize: 13, fontWeight: "700" },
   infoBody: { color: "#6B6F82", fontSize: 12, lineHeight: 18 },
+  termsBtn: {
+    alignSelf: "flex-start",
+    paddingVertical: 4,
+    marginTop: 2,
+  },
+  termsBtnText: {
+    color: "#1E2D5F",
+    fontSize: 12.5,
+    fontWeight: "700",
+    textDecorationLine: "underline",
+  },
 
   submitBtn: {
     backgroundColor: "#166534",

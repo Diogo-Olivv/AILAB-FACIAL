@@ -44,14 +44,15 @@ export function SequentialCamera({ visible, onComplete, onCancel }: Props) {
       let photo;
       try {
         photo = await cameraRef.current.takePictureAsync({
-          quality: 0.7,
-          skipProcessing: true,
+          quality: 0.75,
+          shutterSound: false,
         });
       } catch {
         // Fallback resiliente para sensores que exigem pós-processamento
         try {
           photo = await cameraRef.current.takePictureAsync({
             quality: 0.7,
+            shutterSound: false,
           });
         } catch {
           // Ignora falha de frame isolado
@@ -83,6 +84,7 @@ export function SequentialCamera({ visible, onComplete, onCancel }: Props) {
           ref={cameraRef}
           style={styles.camera}
           facing="front"
+          animateShutter={false}
           onCameraReady={() => setReady(true)}
         />
 
