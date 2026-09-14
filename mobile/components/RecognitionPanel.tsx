@@ -230,7 +230,6 @@ export function RecognitionPanel() {
       <View style={styles.actions}>
         <SmoothActionButton
           label="Entrada"
-          icon="🟢"
           type="entrada"
           busy={disabled && currentAction === "check_in"}
           disabled={disabled}
@@ -241,7 +240,6 @@ export function RecognitionPanel() {
 
         <SmoothActionButton
           label="Saída"
-          icon="🔵"
           type="saida"
           busy={disabled && currentAction === "check_out"}
           disabled={disabled}
@@ -257,7 +255,6 @@ export function RecognitionPanel() {
 /** Botão Premium com feedback tátil suave e física de mola */
 function SmoothActionButton({
   label,
-  icon,
   type,
   busy,
   disabled,
@@ -266,7 +263,6 @@ function SmoothActionButton({
   accessibilityHint,
 }: {
   label: string;
-  icon: string;
   type: "entrada" | "saida";
   busy: boolean;
   disabled: boolean;
@@ -334,9 +330,7 @@ function SmoothActionButton({
             <Text style={styles.actionText}>Verificando...</Text>
           </View>
         ) : (
-          <Text style={styles.actionText}>
-            {icon} {label}
-          </Text>
+          <Text style={styles.actionText}>{label}</Text>
         )}
       </TouchableOpacity>
     </Animated.View>
