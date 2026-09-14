@@ -7,7 +7,8 @@ import pytest
 
 from app.config import settings
 from app.deps import verify_api_key, verify_cron_or_api_key, verify_kiosk_key, verify_tutor_token
-from app.routers.profiles import delete_profile, get_profile, revoke_consent
+from app.routers.profiles import delete_profile, get_profile, refresh_embedding_route, revoke_consent
+from app.services.enroll_service import EnrollError, ProfileNotFound
 
 
 # ── Testes de Autenticação Segura & Fail-Closed ───────────────────────────────
@@ -377,6 +378,101 @@ def test_validate_image_magic_bytes_enforcement():
         validate_image("image/jpeg", len(png_header), png_header)
     assert exc_info.value.status_code == 400
     assert "conflito" in exc_info.value.detail.lower()
+
+
+# ── Testes de Renovação Biométrica (Refresh Embedding) ─────────────────────────
+
+
+@pytest.mark.anyio
+async def test_refresh_embedding_route_rejects_less_than_3_frames():
+    """Deve rejeitar com HTTP 400 se menos de 3 fotos forem enviadas."""
+    from starlette.datastructures import UploadFile
+    from io import BytesIO
+
+    frames = [
+        UploadFile(filename="f1.jpg", file=BytesIO(b"data1")),
+        UploadFile(filename="f2.jpg", file=BytesIO(b"data2")),
+    ]
+    with pytest.raises(HTTPException) as exc:
+        await refresh_embedding_route(profile_id="uuid-1", frames=frames)
+    assert exc.value.status_code == 400
+    assert "ao menos 3 fotos" in exc.value.detail
+
+
+@pytest.mark.anyio
+async def test_refresh_embedding_route_rejects_excess_frames():
+    """Deve rejeitar com HTTP 400 se mais fotos que max_enroll_frames forem enviadas."""
+    from starlette.datastructures import UploadFile
+    from io import BytesIO
+
+    frames = [
+        UploadFile(filename=f"f{i}.jpg", file=BytesIO(b"data"))
+        for i in range(settings.max_enroll_frames + 1)
+    ]
+    with pytest.raises(HTTPException) as exc:
+        await refresh_embedding_route(profile_id="uuid-1", frames=frames)
+    assert exc.value.status_code == 400
+    assert "Excesso de fotos" in exc.value.detail
+
+
+@pytest.mark.anyio
+async def test_refresh_embedding_route_profile_not_found():
+    """ProfileNotFound no serviço deve retornar HTTP 404."""
+    from starlette.datastructures import UploadFile
+    from io import BytesIO
+
+    frames = [
+        UploadFile(filename=f"f{i}.jpg", file=BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 30), headers={"content-type": "image/jpeg"})
+        for i in range(3)
+    ]
+    with (
+        patch("app.routers.profiles.validate_image"),
+        patch("app.routers.profiles.refresh_embedding", side_effect=ProfileNotFound("uuid-999")),
+    ):
+        with pytest.raises(HTTPException) as exc:
+            await refresh_embedding_route(profile_id="uuid-999", frames=frames)
+        assert exc.value.status_code == 404
+        assert "Perfil não encontrado" in exc.value.detail
+
+
+@pytest.mark.anyio
+async def test_refresh_embedding_route_enroll_error():
+    """EnrollError no serviço (ex: inconsistência ou troca de identidade) deve retornar HTTP 422."""
+    from starlette.datastructures import UploadFile
+    from io import BytesIO
+
+    frames = [
+        UploadFile(filename=f"f{i}.jpg", file=BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 30), headers={"content-type": "image/jpeg"})
+        for i in range(3)
+    ]
+    with (
+        patch("app.routers.profiles.validate_image"),
+        patch("app.routers.profiles.refresh_embedding", side_effect=EnrollError("Inconsistência intra-burst")),
+    ):
+        with pytest.raises(HTTPException) as exc:
+            await refresh_embedding_route(profile_id="uuid-1", frames=frames)
+        assert exc.value.status_code == 422
+        assert "Inconsistência intra-burst" in exc.value.detail
+
+
+@pytest.mark.anyio
+async def test_refresh_embedding_route_success():
+    """Atualização biométrica bem-sucedida deve retornar dados do perfil e contagem de fotos."""
+    from starlette.datastructures import UploadFile
+    from io import BytesIO
+
+    frames = [
+        UploadFile(filename=f"f{i}.jpg", file=BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 30), headers={"content-type": "image/jpeg"})
+        for i in range(3)
+    ]
+    expected_result = {"profile_id": "uuid-1", "name": "Aluno Teste", "photos_used": 3}
+    with (
+        patch("app.routers.profiles.validate_image"),
+        patch("app.routers.profiles.refresh_embedding", return_value=expected_result),
+    ):
+        res = await refresh_embedding_route(profile_id="uuid-1", frames=frames)
+        assert res == expected_result
+
 
 
 

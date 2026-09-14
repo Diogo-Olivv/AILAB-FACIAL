@@ -12,6 +12,12 @@ export default function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [pinModalVisible, setPinModalVisible] = useState(false);
+  const [pendingMode, setPendingMode] = useState<"enroll" | "refresh">("enroll");
+
+  const openTutorAuth = (mode: "enroll" | "refresh") => {
+    setPendingMode(mode);
+    setPinModalVisible(true);
+  };
 
   return (
     <View style={styles.safe}>
@@ -29,9 +35,14 @@ export default function Home() {
           <Image source={logo} style={styles.brandLogo} />
           <Text style={styles.title}>AILAB Makers</Text>
         </View>
-        <TouchableOpacity style={styles.registerBtn} onPress={() => setPinModalVisible(true)}>
-          <Text style={styles.registerBtnText}>Cadastrar</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.refreshBtn} onPress={() => openTutorAuth("refresh")}>
+            <Text style={styles.refreshBtnText}>Recadastrar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.registerBtn} onPress={() => openTutorAuth("enroll")}>
+            <Text style={styles.registerBtnText}>Cadastrar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View
@@ -50,7 +61,10 @@ export default function Home() {
         visible={pinModalVisible}
         onSuccess={(token: string) => {
           setPinModalVisible(false);
-          router.push({ pathname: "/enroll", params: { tutorToken: token } });
+          router.push({
+            pathname: "/enroll",
+            params: { tutorToken: token, initialMode: pendingMode },
+          });
         }}
         onCancel={() => setPinModalVisible(false)}
       />
@@ -70,6 +84,16 @@ const styles = StyleSheet.create({
   brand: { flexDirection: "row", alignItems: "center", gap: 10 },
   brandLogo: { width: 40, height: 40, borderRadius: 9 },
   title: { color: "#fff", fontSize: 20, fontWeight: "800" },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 10 },
+  refreshBtn: {
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.28)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  refreshBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   registerBtn: {
     backgroundColor: "#166534",
     paddingHorizontal: 20,

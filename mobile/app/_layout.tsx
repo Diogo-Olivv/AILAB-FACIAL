@@ -14,7 +14,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="enroll" options={{ title: "Cadastro", presentation: "modal" }} />
+        <Stack.Screen name="enroll" options={{ title: "Cadastro e Recadastro", presentation: "modal" }} />
       </Stack>
     </SafeAreaProvider>
   );
