@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/useAuth";
+import { supabase } from "../lib/supabase";
 import {
   fetchMembers,
   fetchPresentIds,
@@ -8,18 +9,25 @@ import {
   type SessionRecord,
 } from "../lib/reports";
 import { rangeFor, type PeriodKey } from "../lib/period";
-import { formatDuration, groupByDay, totalsByMember } from "../lib/aggregate";
+import { formatDuration, groupByDay, totalsByMember, type MemberTotal } from "../lib/aggregate";
+import { Header } from "../components/Header";
+import { Hero } from "../components/Hero";
+import { AnalysisWorkflow } from "../components/AnalysisWorkflow";
 import { PeriodSelector } from "../components/PeriodSelector";
 import { MemberSelector } from "../components/MemberSelector";
 import { TotalsTable } from "../components/TotalsTable";
 import { DailyHistory } from "../components/DailyHistory";
+import { PrivacySection } from "../components/PrivacySection";
+import { PrivacyTermsModal } from "../components/PrivacyTermsModal";
+import { HowItWorksModal } from "../components/HowItWorksModal";
+import { MemberDetailDrawer } from "../components/MemberDetailDrawer";
+import { Footer } from "../components/Footer";
 import { KpiSkeleton, TableSkeleton } from "../components/TableSkeleton";
-import logo from "../ailab_makers.jpeg";
 
 type View = "totals" | "history";
 
 export function Dashboard() {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [presentIds, setPresentIds] = useState<string[]>([]);
@@ -33,11 +41,30 @@ export function Dashboard() {
   const [error, setError] = useState("");
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
-  useEffect(() => {
-    fetchMembers()
-      .then(setMembers)
-      .catch((e) => setError(e instanceof Error ? e.message : "Falha ao carregar integrantes."));
+  // Navegação e Modais
+  const [activeTab, setActiveTab] = useState<"analysis" | "dashboard">("analysis");
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
+  const [selectedMemberTotal, setSelectedMemberTotal] = useState<MemberTotal | null>(null);
+
+  const loadMembers = useCallback(async () => {
+    try {
+      const data = await fetchMembers();
+      setMembers(data);
+    } catch (e: any) {
+      if (e?.message?.includes("JWT") || e?.message?.includes("expired")) {
+        await supabase.auth.signOut();
+        const retryData = await fetchMembers();
+        setMembers(retryData);
+      } else {
+        setError(e instanceof Error ? e.message : "Falha ao carregar integrantes.");
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
 
   const range = useMemo(
     () => rangeFor(period, customFrom, customTo),
@@ -56,8 +83,28 @@ export function Dashboard() {
         setSessions(nextSessions);
         setPresentIds(nextPresent);
         setLastRefreshed(new Date());
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Falha ao carregar dados.");
+      } catch (e: any) {
+        // Recuperação automática caso haja token JWT expirado no navegador
+        if (e?.message?.includes("JWT") || e?.message?.includes("expired") || e?.message?.includes("401")) {
+          try {
+            await supabase.auth.signOut();
+            const [retrySessions, retryPresent] = await Promise.all([
+              fetchSessions(range),
+              fetchPresentIds(),
+            ]);
+            setSessions(retrySessions);
+            setPresentIds(retryPresent);
+            setLastRefreshed(new Date());
+            return;
+          } catch {
+            // Continua com erro
+          }
+        }
+        setError(
+          e instanceof Error
+            ? e.message
+            : "Falha ao acessar os dados de permanência. Tente novamente."
+        );
       } finally {
         setLoading(false);
         setIsRefreshing(false);
@@ -103,38 +150,80 @@ export function Dashboard() {
   );
   const totalSessionsCount = useMemo(() => filtered.length, [filtered]);
 
+  const handleScrollTo = (sectionId: string) => {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-cream px-4 py-8 md:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        {/* Header com branding, status e ações */}
-        <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line bg-card/80 p-5 backdrop-blur-md shadow-xs">
-          <div className="flex items-center gap-3.5">
-            <img
-              src={logo}
-              alt="Maker Foundation"
-              className="h-14 w-14 rounded-2xl border-2 border-line/60 object-cover shadow-2xs"
-            />
+    <div className="min-h-screen bg-cream flex flex-col justify-between selection:bg-green/20">
+      {/* ── 1. HEADER ENXUTO E ACESSÍVEL ── */}
+      <Header
+        user={user}
+        signOut={signOut}
+        onOpenTerms={() => setIsTermsOpen(true)}
+        onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+        activeSection={activeTab}
+        onSelectSection={(tab) => {
+          setActiveTab(tab);
+          if (tab === "analysis") handleScrollTo("analise-facial");
+          else handleScrollTo("painel-frequencia");
+        }}
+      />
+
+      <main className="flex-1 px-4 py-8 md:px-8 space-y-10 max-w-6xl mx-auto w-full">
+        {/* ── 2. HERO PRINCIPAL (<10s de entendimento) ── */}
+        <Hero
+          onStartAnalysis={() => {
+            setActiveTab("analysis");
+            handleScrollTo("analise-facial");
+          }}
+          onViewDashboard={() => {
+            setActiveTab("dashboard");
+            handleScrollTo("painel-frequencia");
+          }}
+          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+        />
+
+        {/* ── 3. ÁREA PRINCIPAL DE ANÁLISE FACIAL (Câmera & Upload) ── */}
+        <AnalysisWorkflow
+          members={members}
+          onAnalysisSuccess={() => refreshData(true)}
+          onViewDashboard={() => {
+            setActiveTab("dashboard");
+            handleScrollTo("painel-frequencia");
+          }}
+        />
+
+        {/* ── 4. PAINEL DE MONITORAMENTO DE HORAS E FREQUÊNCIA ── */}
+        <section
+          id="painel-frequencia"
+          className="space-y-6 pt-4 border-t border-line/60"
+          aria-labelledby="dashboard-kpi-heading"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-ink">
-                  Tempo de permanência
-                </h1>
-                <span className="hidden sm:inline-block rounded-full bg-green/15 px-2 py-0.5 text-xs font-semibold text-green">
-                  AiLab
+                <span className="rounded-full bg-navy/10 px-2.5 py-0.5 text-xs font-bold text-navy">
+                  Presença em Tempo Real
                 </span>
+                <span className="text-xs text-muted">· {members.length} integrantes cadastrados</span>
               </div>
-              <p className="text-xs sm:text-sm text-muted">
-                Painel inteligente de acompanhamento e frequência do laboratório.
-              </p>
+              <h2
+                id="dashboard-kpi-heading"
+                className="text-2xl sm:text-3xl font-extrabold tracking-tight text-ink mt-1"
+              >
+                Tempo de Permanência & Frequência
+              </h2>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
             <button
               onClick={() => refreshData(false)}
               disabled={isRefreshing}
-              title="Atualizar dados agora"
-              className="inline-flex items-center gap-2 rounded-xl border border-navy/15 bg-card px-3.5 py-2 text-sm font-medium text-navy shadow-2xs transition-all hover:bg-navy/5 active:scale-95 disabled:opacity-60 cursor-pointer"
+              title="Atualizar dados de permanência agora"
+              className="inline-flex items-center gap-2 rounded-xl border border-navy/15 bg-card px-3.5 py-2 text-xs sm:text-sm font-semibold text-navy shadow-2xs transition-all hover:bg-navy/5 active:scale-95 disabled:opacity-60 cursor-pointer min-h-[44px]"
             >
               <svg
                 className={`h-4 w-4 transition-transform ${isRefreshing ? "animate-spin text-green" : ""}`}
@@ -149,159 +238,178 @@ export function Dashboard() {
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                 />
               </svg>
-              <span className="hidden sm:inline">
-                {isRefreshing ? "Atualizando..." : "Atualizar"}
-              </span>
-            </button>
-            <button
-              onClick={signOut}
-              className="rounded-xl border border-warn/20 bg-warn/10 px-4 py-2 text-sm font-medium text-warn transition-all hover:bg-warn/20 active:scale-95 shadow-2xs cursor-pointer"
-            >
-              Sair
+              <span>{isRefreshing ? "Sincronizando..." : "Atualizar Tabela"}</span>
             </button>
           </div>
-        </header>
 
-        {/* KPI Cards de Resumo */}
-        {loading ? (
-          <KpiSkeleton />
-        ) : (
-          <section className="grid grid-cols-2 gap-3.5 sm:grid-cols-4 sm:gap-4 animate-fade-in">
-            {/* Presentes Agora */}
-            <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Presentes
-                </span>
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green opacity-75" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green" />
-                </span>
+          {/* KPI Cards de Resumo */}
+          {loading ? (
+            <KpiSkeleton />
+          ) : (
+            <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4 sm:gap-4 animate-fade-in">
+              {/* Presentes Agora */}
+              <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                    Presentes
+                  </span>
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green" />
+                  </span>
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-3xl font-extrabold text-ink">{presentCount}</span>
+                  <span className="text-xs font-bold text-green">ao vivo</span>
+                </div>
+                <p className="text-xs text-muted mt-1">no laboratório agora</p>
               </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-ink">{presentCount}</span>
-                <span className="text-xs font-semibold text-green">ao vivo</span>
+
+              {/* Total de Horas */}
+              <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                    Horas Totais
+                  </span>
+                  <span className="text-sm">⏱️</span>
+                </div>
+                <div className="mt-2">
+                  <span className="text-2xl sm:text-3xl font-extrabold text-navy">
+                    {formatDuration(totalLabSeconds)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted mt-1">acumuladas no período</p>
               </div>
-              <p className="text-xs text-muted mt-1">no laboratório agora</p>
+
+              {/* Integrantes com Registro */}
+              <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                    Ativos no Período
+                  </span>
+                  <span className="text-sm">👥</span>
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-3xl font-extrabold text-ink">{activeMembersCount}</span>
+                  <span className="text-xs text-muted">de {members.length}</span>
+                </div>
+                <p className="text-xs text-muted mt-1">integrantes com presença</p>
+              </div>
+
+              {/* Total de Sessões */}
+              <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                    Total Sessões
+                  </span>
+                  <span className="text-sm">📌</span>
+                </div>
+                <div className="mt-2">
+                  <span className="text-3xl font-extrabold text-ink">{totalSessionsCount}</span>
+                </div>
+                <p className="text-xs text-muted mt-1">registros válidos</p>
+              </div>
             </div>
+          )}
 
-            {/* Total de Horas */}
-            <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Horas Totais
-                </span>
-                <span className="text-sm">⏱️</span>
-              </div>
-              <div className="mt-2">
-                <span className="text-2xl sm:text-3xl font-bold text-ink">
-                  {formatDuration(totalLabSeconds)}
-                </span>
-              </div>
-              <p className="text-xs text-muted mt-1">acumulado no período</p>
+          {/* Seletor de Período */}
+          <PeriodSelector
+            period={period}
+            range={range}
+            customFrom={customFrom}
+            customTo={customTo}
+            onPeriod={setPeriod}
+            onCustomFrom={setCustomFrom}
+            onCustomTo={setCustomTo}
+          />
+
+          {/* Filtros e Alternância de Visualização */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card p-3 shadow-2xs">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setView("totals")}
+                className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer min-h-[44px] ${
+                  view === "totals"
+                    ? "bg-navy text-white shadow-sm ring-2 ring-navy/20"
+                    : "border border-line bg-card text-muted hover:text-ink hover:bg-navy/5"
+                }`}
+              >
+                Totais por Integrante
+              </button>
+              <button
+                onClick={() => setView("history")}
+                className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer min-h-[44px] ${
+                  view === "history"
+                    ? "bg-navy text-white shadow-sm ring-2 ring-navy/20"
+                    : "border border-line bg-card text-muted hover:text-ink hover:bg-navy/5"
+                }`}
+              >
+                Histórico Diário
+              </button>
             </div>
-
-            {/* Integrantes Ativos */}
-            <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Ativos
-                </span>
-                <span className="text-sm">👥</span>
-              </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-ink">{activeMembersCount}</span>
-                <span className="text-xs text-muted">de {members.length}</span>
-              </div>
-              <p className="text-xs text-muted mt-1">integrantes com presença</p>
-            </div>
-
-            {/* Total de Sessões */}
-            <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Sessões
-                </span>
-                <span className="text-sm">📌</span>
-              </div>
-              <div className="mt-2">
-                <span className="text-3xl font-bold text-ink">{totalSessionsCount}</span>
-              </div>
-              <p className="text-xs text-muted mt-1">registros no período</p>
-            </div>
-          </section>
-        )}
-
-        {/* Seletor de Período */}
-        <PeriodSelector
-          period={period}
-          range={range}
-          customFrom={customFrom}
-          customTo={customTo}
-          onPeriod={setPeriod}
-          onCustomFrom={setCustomFrom}
-          onCustomTo={setCustomTo}
-        />
-
-        {/* Filtros e Alternância de Visualização */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card p-3 shadow-2xs">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setView("totals")}
-              className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-95 cursor-pointer ${
-                view === "totals"
-                  ? "bg-navy text-white shadow-sm ring-2 ring-navy/20"
-                  : "border border-line bg-card text-muted hover:text-ink hover:bg-navy/5"
-              }`}
-            >
-              Totais por Integrante
-            </button>
-            <button
-              onClick={() => setView("history")}
-              className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-95 cursor-pointer ${
-                view === "history"
-                  ? "bg-navy text-white shadow-sm ring-2 ring-navy/20"
-                  : "border border-line bg-card text-muted hover:text-ink hover:bg-navy/5"
-              }`}
-            >
-              Histórico Diário
-            </button>
+            <MemberSelector members={members} selected={memberId} onSelect={setMemberId} />
           </div>
-          <MemberSelector members={members} selected={memberId} onSelect={setMemberId} />
-        </div>
 
-        {/* Alerta de Erro */}
-        {error && (
-          <div className="flex items-center justify-between rounded-2xl border border-warn/30 bg-warn/10 p-4 text-sm text-warn animate-slide-down">
-            <span>⚠️ {error}</span>
-            <button
-              onClick={() => refreshData(false)}
-              className="font-semibold underline hover:text-warn/80"
-            >
-              Tentar novamente
-            </button>
-          </div>
-        )}
+          {/* Alerta de Erro Resiliente */}
+          {error && (
+            <div className="flex items-center justify-between rounded-2xl border border-warn/30 bg-warn/10 p-4 text-sm text-warn animate-slide-down" role="alert">
+              <span>⚠️ {error}</span>
+              <button
+                onClick={() => refreshData(false)}
+                className="font-bold underline hover:text-warn/80 cursor-pointer min-h-[44px] px-2"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
 
-        {/* Conteúdo Principal com Animação */}
-        {loading ? (
-          <TableSkeleton />
-        ) : (
-          <div key={view} className="animate-fade-in">
-            {view === "totals" ? (
-              <TotalsTable rows={totals} />
-            ) : (
-              <DailyHistory days={days} />
-            )}
-          </div>
-        )}
+          {/* Conteúdo Principal com Tabela e Drawer */}
+          {loading ? (
+            <TableSkeleton />
+          ) : (
+            <div key={view} className="animate-fade-in">
+              {view === "totals" ? (
+                <TotalsTable
+                  rows={totals}
+                  onSelectMember={(row) => setSelectedMemberTotal(row)}
+                />
+              ) : (
+                <DailyHistory days={days} />
+              )}
+            </div>
+          )}
+        </section>
 
-        {/* Rodapé com timestamp de sincronização */}
-        <footer className="pt-2 text-center text-xs text-muted flex items-center justify-center gap-1.5">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-green" />
-          Sincronizado às {lastRefreshed.toLocaleTimeString("pt-BR")} (atualização automática a cada 30s)
-        </footer>
-      </div>
+        {/* ── 5. SEÇÃO DE PRIVACIDADE E TRANSPARÊNCIA LGPD ── */}
+        <PrivacySection onOpenFullTerms={() => setIsTermsOpen(true)} />
+      </main>
+
+      {/* ── 6. RODAPÉ ACESSÍVEL ── */}
+      <Footer
+        lastRefreshed={lastRefreshed}
+        onOpenTerms={() => setIsTermsOpen(true)}
+        onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+      />
+
+      {/* Modais Globais Acessíveis */}
+      <PrivacyTermsModal
+        isOpen={isTermsOpen}
+        onClose={() => setIsTermsOpen(false)}
+      />
+
+      <HowItWorksModal
+        isOpen={isHowItWorksOpen}
+        onClose={() => setIsHowItWorksOpen(false)}
+      />
+
+      <MemberDetailDrawer
+        isOpen={Boolean(selectedMemberTotal)}
+        member={selectedMemberTotal?.member ?? null}
+        sessions={sessions}
+        isPresent={Boolean(selectedMemberTotal?.present)}
+        totalSeconds={selectedMemberTotal?.totalSeconds ?? 0}
+        onClose={() => setSelectedMemberTotal(null)}
+      />
     </div>
   );
 }
