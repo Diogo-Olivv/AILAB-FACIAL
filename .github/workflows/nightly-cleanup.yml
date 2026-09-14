@@ -1,0 +1,17 @@
+name: Nightly Maintenance Cleanup
+
+on:
+  schedule:
+    - cron: "59 2 * * *"  # 23:59 horário de Brasília (UTC-3 = 02:59 UTC)
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    name: Run Stale Sessions & LGPD Purge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger maintenance cleanup
+        run: |
+          curl -f -i -X POST https://ailab-facial-api-948162587922.southamerica-east1.run.app/api/v1/maintenance/cleanup \
+            -H "X-API-Key: noPromptEngAllowed@42" \
+            -H "Content-Length: 0"
