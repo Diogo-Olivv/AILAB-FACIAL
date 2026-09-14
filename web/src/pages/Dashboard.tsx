@@ -18,6 +18,7 @@ import { PrivacyTermsModal } from "../components/PrivacyTermsModal";
 import { MemberDetailDrawer } from "../components/MemberDetailDrawer";
 import { TutorWarningModal } from "../components/TutorWarningModal";
 import { Footer } from "../components/Footer";
+import { ViewSelector } from "../components/ViewSelector";
 import { KpiSkeleton, TableSkeleton } from "../components/TableSkeleton";
 
 type View = "totals" | "history";
@@ -336,31 +337,8 @@ export function Dashboard() {
 
         {/* Barra de Navegação e Busca Integrada */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 rounded-2xl border border-black/[0.06] bg-white p-2.5 sm:p-3 shadow-apple transition-all duration-300">
-          {/* Segmented control para alternar entre Totais e Histórico */}
-          <div className="grid grid-cols-2 sm:flex rounded-xl bg-[#EBEBED]/80 p-1 border border-black/[0.03] gap-1 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setView("totals")}
-              className={`flex items-center justify-center py-2 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 active:scale-95 cursor-pointer min-h-[38px] ${
-                view === "totals"
-                  ? "bg-white text-navy shadow-sm font-bold"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              Totais por Integrante
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("history")}
-              className={`flex items-center justify-center py-2 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 active:scale-95 cursor-pointer min-h-[38px] ${
-                view === "history"
-                  ? "bg-white text-navy shadow-sm font-bold"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              Histórico Diário
-            </button>
-          </div>
+          {/* Segmented control estilo Apple com deslizamento e arrasto */}
+          <ViewSelector view={view} onViewChange={setView} />
 
           {/* Campo de Busca Reativa por Nome ou Matrícula */}
           <div className="relative w-full sm:w-72">
