@@ -5,6 +5,25 @@ import { formatDuration } from "../lib/aggregate";
 type SortField = "name" | "matricula" | "sessions" | "duration" | "status";
 type SortDirection = "asc" | "desc";
 
+const AVATAR_GRADIENTS = [
+  "from-blue-500 to-indigo-600 text-white shadow-blue-500/25",
+  "from-purple-500 to-pink-600 text-white shadow-purple-500/25",
+  "from-emerald-500 to-teal-600 text-white shadow-emerald-500/25",
+  "from-amber-500 to-orange-600 text-white shadow-amber-500/25",
+  "from-rose-500 to-red-600 text-white shadow-rose-500/25",
+  "from-cyan-500 to-blue-600 text-white shadow-cyan-500/25",
+  "from-violet-600 to-purple-700 text-white shadow-violet-500/25",
+  "from-teal-500 to-emerald-600 text-white shadow-teal-500/25",
+];
+
+function getAvatarStyle(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
+}
+
 interface Props {
   rows: MemberTotal[];
   onSelectMember?: (row: MemberTotal) => void;
@@ -159,8 +178,10 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
               >
                 <td className="px-2.5 py-2.5 sm:px-5 sm:py-3.5 text-ink overflow-hidden">
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                    {/* Avatar Liquid Glass com micro-reflexo */}
-                    <div className="flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full liquid-glass-pill text-2xs sm:text-xs font-bold text-navy shadow-2xs transition-transform duration-200 group-hover:scale-105">
+                    {/* Avatar estilo Apple com gradiente dinâmico vibrante */}
+                    <div
+                      className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarStyle(row.member.name)} text-2xs sm:text-xs font-bold ring-2 ring-white shadow-xs transition-transform duration-200 group-hover:scale-105`}
+                    >
                       {row.member.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -194,16 +215,16 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 </td>
                 <td className="whitespace-nowrap px-2 py-2.5 sm:px-5 sm:py-3.5 text-right sm:text-left">
                   {row.present ? (
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-2xs sm:text-xs font-semibold text-emerald-700 backdrop-blur-md shadow-[0_1px_3px_rgba(16,185,129,0.08)]">
-                      <span className="relative flex h-1.5 w-1.5 shrink-0">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-2xs sm:text-xs font-bold text-emerald-800 shadow-[0_2px_6px_rgba(16,185,129,0.12)] backdrop-blur-md">
+                      <span className="relative flex h-2 w-2 shrink-0">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                       </span>
                       <span>Presente</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-black/[0.02] border border-black/[0.04] px-2.5 py-1 text-2xs sm:text-xs font-medium text-muted/80">
-                      <span className="h-1.5 w-1.5 rounded-full bg-black/20 shrink-0" />
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-500/[0.06] border border-slate-400/20 px-2.5 py-1 text-2xs sm:text-xs font-medium text-slate-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-slate-400/40 shrink-0" />
                       <span>Ausente</span>
                     </span>
                   )}

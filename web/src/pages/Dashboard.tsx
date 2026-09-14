@@ -198,7 +198,7 @@ export function Dashboard() {
   }, [members, sessions]);
 
   return (
-    <div className="min-h-screen bg-cream flex flex-col justify-between selection:bg-green/20">
+    <div className="min-h-screen bg-transparent flex flex-col justify-between selection:bg-navy/20">
       {/* Linha sutil de carregamento superior em tempo real */}
       {isRefreshing && (
         <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-gradient-to-r from-transparent via-navy to-green animate-pulse" />
@@ -253,75 +253,75 @@ export function Dashboard() {
           <KpiSkeleton />
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4 animate-fade-in">
-            {/* Presentes Agora */}
-            <div className="glass-card rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
+            {/* Presentes Agora - Apple Emerald Glow */}
+            <div className="rounded-3xl p-3.5 sm:p-5 bg-gradient-to-br from-emerald-500/[0.09] via-white/85 to-teal-500/[0.04] backdrop-blur-xl border border-emerald-500/25 shadow-apple transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
               <div className="flex items-center justify-between">
-                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
+                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-emerald-800">
                   Presentes
                 </span>
-                <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500" />
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-sm shadow-emerald-500/30 text-xs">
+                  🟢
                 </span>
               </div>
               <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                <span className="text-2xl sm:text-3xl font-extrabold text-ink tabular-nums">{presentCount}</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-2xs font-bold text-emerald-700">
+                <span className="text-2xl sm:text-3xl font-black text-ink tabular-nums">{presentCount}</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-2xs font-bold text-emerald-800 shadow-2xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   ao vivo
                 </span>
               </div>
-              <p className="text-2xs sm:text-xs text-muted mt-0.5 truncate">no laboratório agora</p>
+              <p className="text-2xs sm:text-xs text-emerald-900/70 font-semibold mt-1 truncate">No laboratório</p>
             </div>
 
-            {/* Total de Horas */}
-            <div className="glass-card rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
+            {/* Total de Horas - Apple Electric Blue Glow */}
+            <div className="rounded-3xl p-3.5 sm:p-5 bg-gradient-to-br from-blue-500/[0.09] via-white/85 to-indigo-500/[0.04] backdrop-blur-xl border border-blue-500/25 shadow-apple transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
               <div className="flex items-center justify-between">
-                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
+                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-blue-800">
                   Horas Totais
                 </span>
-                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl liquid-glass-pill text-xs sm:text-sm shadow-2xs">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm shadow-blue-500/30 text-xs">
                   ⏱️
                 </span>
               </div>
               <div className="mt-2.5">
-                <span className="text-xl sm:text-3xl font-extrabold text-navy tabular-nums tracking-tight">
+                <span className="text-xl sm:text-3xl font-black text-blue-950 tabular-nums tracking-tight">
                   {formatDuration(totalLabSeconds)}
                 </span>
               </div>
-              <p className="text-2xs sm:text-xs text-muted mt-0.5 truncate">acumuladas no período</p>
+              <p className="text-2xs sm:text-xs text-blue-900/70 font-semibold mt-1 truncate">Acumuladas</p>
             </div>
 
-            {/* Integrantes com Registro */}
-            <div className="glass-card rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
+            {/* Integrantes Ativos - Apple Royal Violet Glow */}
+            <div className="rounded-3xl p-3.5 sm:p-5 bg-gradient-to-br from-purple-500/[0.09] via-white/85 to-violet-500/[0.04] backdrop-blur-xl border border-purple-500/25 shadow-apple transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
               <div className="flex items-center justify-between">
-                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
+                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-purple-800">
                   Ativos
                 </span>
-                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl liquid-glass-pill text-xs sm:text-sm shadow-2xs">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-sm shadow-purple-500/30 text-xs">
                   👥
                 </span>
               </div>
               <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                <span className="text-2xl sm:text-3xl font-extrabold text-ink tabular-nums">{activeMembersCount}</span>
-                <span className="text-2xs sm:text-xs text-muted">de {members.length}</span>
+                <span className="text-2xl sm:text-3xl font-black text-ink tabular-nums">{activeMembersCount}</span>
+                <span className="text-2xs sm:text-xs font-bold text-purple-700">de {members.length}</span>
               </div>
-              <p className="text-2xs sm:text-xs text-muted mt-0.5 truncate">integrantes presentes</p>
+              <p className="text-2xs sm:text-xs text-purple-900/70 font-semibold mt-1 truncate">Integrantes</p>
             </div>
 
-            {/* Total de Sessões */}
-            <div className="glass-card rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
+            {/* Total de Sessões - Apple Sunset Amber Glow */}
+            <div className="rounded-3xl p-3.5 sm:p-5 bg-gradient-to-br from-amber-500/[0.09] via-white/85 to-orange-500/[0.04] backdrop-blur-xl border border-amber-500/25 shadow-apple transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
               <div className="flex items-center justify-between">
-                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
+                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-amber-800">
                   Sessões
                 </span>
-                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl liquid-glass-pill text-xs sm:text-sm shadow-2xs">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm shadow-amber-500/30 text-xs">
                   📌
                 </span>
               </div>
               <div className="mt-2.5">
-                <span className="text-2xl sm:text-3xl font-extrabold text-ink tabular-nums">{totalSessionsCount}</span>
+                <span className="text-2xl sm:text-3xl font-black text-ink tabular-nums">{totalSessionsCount}</span>
               </div>
-              <p className="text-2xs sm:text-xs text-muted mt-0.5 truncate">registros válidos</p>
+              <p className="text-2xs sm:text-xs text-amber-900/70 font-semibold mt-1 truncate">Registros válidos</p>
             </div>
           </div>
         )}
