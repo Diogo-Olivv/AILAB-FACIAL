@@ -2,14 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-navy: #1E2D5F;
+  --color-navy-dark: #141E40;
+  --color-green: #166534;
+  --color-green-light: #22C55E;
+  --color-cream: #F4EFE4;
+  --color-card: #FBF8F1;
+  --color-ink: #141A33;
+  --color-muted: #525866;
+  --color-line: rgba(30, 45, 95, 0.14);
+  --color-gold: #C9A961;
+  --color-warn: #DC2626;
+  --color-amber: #B45309;
+  --focus-ring: rgba(30, 45, 95, 0.45);
+}
+
 @layer base {
   body {
     margin: 0;
-    background-color: #F4EFE4;
-    color: #141A33;
+    background-color: var(--color-cream);
+    color: var(--color-ink);
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Foco Visível Acessível (WCAG 2.2 AA - 2.4.7 e 2.4.11) */
+  :focus-visible {
+    outline: 2.5px solid var(--color-navy);
+    outline-offset: 2.5px;
+    box-shadow: 0 0 0 4px rgba(30, 45, 95, 0.2);
   }
 }
 
@@ -50,6 +73,21 @@
   }
 }
 
+@keyframes scanLaser {
+  0% {
+    top: 5%;
+    opacity: 0.7;
+  }
+  50% {
+    top: 90%;
+    opacity: 1;
+  }
+  100% {
+    top: 5%;
+    opacity: 0.7;
+  }
+}
+
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -71,6 +109,10 @@
   animation: pulseGlow 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 }
 
+.animate-scan-laser {
+  animation: scanLaser 2.2s infinite ease-in-out;
+}
+
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
@@ -80,6 +122,18 @@
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+/* Respeito estrito a Usuários com Sensibilidade a Movimento (WCAG 2.2 SC 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Suavização de scrollbars */
