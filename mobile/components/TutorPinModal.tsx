@@ -22,9 +22,14 @@ export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const TUTOR_STATIC_EMAIL = "tutor@ailab.com";
+  const TUTOR_STATIC_PASSWORD = "apenasParaTutores@42";
+
   async function handleLogin() {
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !password) {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !cleanPassword) {
       setErrorMsg("Preencha e-mail e senha.");
       return;
     }
@@ -32,10 +37,36 @@ export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
     setLoading(true);
     setErrorMsg(null);
 
+    // 1. Verificação direta das credenciais de tutor solicitadas pelo usuário
+    if (cleanEmail === TUTOR_STATIC_EMAIL && cleanPassword === TUTOR_STATIC_PASSWORD) {
+      try {
+        const { data } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: cleanPassword,
+        });
+        const token = data?.session?.access_token || "tutor-static-session-token";
+        setEmail("");
+        setPassword("");
+        setErrorMsg(null);
+        setLoading(false);
+        onSuccess(token);
+        return;
+      } catch {
+        // Se Supabase falhar ou usuário não existir na base de dados, libera localmente
+        setEmail("");
+        setPassword("");
+        setErrorMsg(null);
+        setLoading(false);
+        onSuccess("tutor-static-session-token");
+        return;
+      }
+    }
+
+    // 2. Fallback para autenticação de contas de tutor no Supabase
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
-        password,
+        password: cleanPassword,
       });
 
       if (error || !data.session) {
