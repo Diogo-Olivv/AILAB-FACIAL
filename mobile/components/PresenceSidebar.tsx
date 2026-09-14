@@ -1,19 +1,69 @@
-import React from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { usePresence, type PresentMember } from "@/hooks/usePresence";
 import { useElapsed } from "@/hooks/useElapsed";
 
-export function PresenceSidebar() {
+interface PresenceSidebarProps {
+  onClose?: () => void;
+  style?: any;
+}
+
+export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
   const { members, loading, error } = usePresence();
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return members;
+    return members.filter((m) =>
+      m.profile.name.toLowerCase().includes(q) ||
+      (m.profile.matricula ? m.profile.matricula.includes(q) : false)
+    );
+  }, [members, search]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Presentes</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{members.length}</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.title}>Presentes</Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{members.length}</Text>
+          </View>
         </View>
+
+        {onClose && (
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.closeBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Fechar lista de presentes"
+          >
+            <Text style={styles.closeBtnText}>✕</Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* Busca rápida se houver mais de 5 integrantes */}
+      {members.length > 5 && (
+        <View style={styles.searchWrapper}>
+          <TextInput
+            placeholder="Filtrar por nome..."
+            placeholderTextColor="#6B6F82"
+            value={search}
+            onChangeText={setSearch}
+            style={styles.searchInput}
+            accessibilityLabel="Filtrar integrantes presentes"
+          />
+        </View>
+      )}
 
       {loading ? (
         <ActivityIndicator color="#1E2D5F" style={styles.center} />
@@ -21,12 +71,16 @@ export function PresenceSidebar() {
         <Text style={styles.error}>{error}</Text>
       ) : (
         <FlatList
-          data={members}
+          data={filtered}
           keyExtractor={(m) => String(m.session_id)}
           renderItem={({ item }) => <SidebarRow member={item} />}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={<Text style={styles.empty}>Ninguem presente.</Text>}
+          ListEmptyComponent={
+            <Text style={styles.empty}>
+              {search ? "Nenhum resultado para a busca." : "Nenhum integrante no laboratório agora."}
+            </Text>
+          }
         />
       )}
     </View>
@@ -51,7 +105,7 @@ function SidebarRow({ member }: { member: PresentMember }) {
         <Text style={styles.name} numberOfLines={1}>
           {member.profile.name}
         </Text>
-        <Text style={styles.elapsed}>{elapsed}</Text>
+        <Text style={styles.elapsed}>⏱️ {elapsed}</Text>
       </View>
     </View>
   );
@@ -59,7 +113,7 @@ function SidebarRow({ member }: { member: PresentMember }) {
 
 const styles = StyleSheet.create({
   container: {
-    width: 300,
+    width: 290,
     backgroundColor: "#FBF8F1",
     borderLeftWidth: 1,
     borderLeftColor: "rgba(30,45,95,.14)",
@@ -71,6 +125,21 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 12,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  closeBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: "rgba(30,45,95,.08)",
+  },
+  closeBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1E2D5F",
   },
   title: {
     color: "#141A33",
@@ -89,6 +158,20 @@ const styles = StyleSheet.create({
     color: "#1E2D5F",
     fontWeight: "700",
     fontSize: 13,
+  },
+  searchWrapper: {
+    paddingHorizontal: 14,
+    paddingBottom: 8,
+  },
+  searchInput: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(30,45,95,.15)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 12.5,
+    color: "#141A33",
   },
   center: {
     marginTop: 24,

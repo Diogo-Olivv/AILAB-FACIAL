@@ -1,17 +1,31 @@
 import React, { useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { RecognitionPanel } from "@/components/RecognitionPanel";
 import { PresenceSidebar } from "@/components/PresenceSidebar";
 import { TutorPinModal } from "@/components/TutorPinModal";
+import { TermsModal } from "@/components/TermsModal";
 
 const logo = require("../assets/ailab_makers.jpeg");
 
 export default function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 768;
+
   const [pinModalVisible, setPinModalVisible] = useState(false);
+  const [termsVisible, setTermsVisible] = useState(false);
+  const [presenceModalVisible, setPresenceModalVisible] = useState(false);
   const [pendingMode, setPendingMode] = useState<"enroll" | "refresh">("enroll");
 
   const openTutorAuth = (mode: "enroll" | "refresh") => {
@@ -36,6 +50,26 @@ export default function Home() {
           <Text style={styles.title}>AILAB Makers</Text>
         </View>
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.termsBtn}
+            onPress={() => setTermsVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir termos de privacidade e LGPD"
+          >
+            <Text style={styles.termsBtnText}>Termos LGPD</Text>
+          </TouchableOpacity>
+
+          {isCompact && (
+            <TouchableOpacity
+              style={styles.presenceToggleBtn}
+              onPress={() => setPresenceModalVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Ver integrantes presentes no laboratório"
+            >
+              <Text style={styles.presenceToggleBtnText}>👥 Presentes</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity style={styles.refreshBtn} onPress={() => openTutorAuth("refresh")}>
             <Text style={styles.refreshBtnText}>Recadastrar</Text>
           </TouchableOpacity>
@@ -54,8 +88,25 @@ export default function Home() {
         <View style={styles.cameraColumn}>
           <RecognitionPanel />
         </View>
-        <PresenceSidebar />
+
+        {!isCompact && <PresenceSidebar />}
       </View>
+
+      {/* Modal de Presentes para Telas Compactas / Smartphones */}
+      {isCompact && (
+        <Modal
+          visible={presenceModalVisible}
+          animationType="slide"
+          onRequestClose={() => setPresenceModalVisible(false)}
+        >
+          <View style={[styles.presenceModalContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }]}>
+            <PresenceSidebar
+              onClose={() => setPresenceModalVisible(false)}
+              style={styles.presenceModalSidebar}
+            />
+          </View>
+        </Modal>
+      )}
 
       <TutorPinModal
         visible={pinModalVisible}
@@ -67,6 +118,11 @@ export default function Home() {
           });
         }}
         onCancel={() => setPinModalVisible(false)}
+      />
+
+      <TermsModal
+        visible={termsVisible}
+        onClose={() => setTermsVisible(false)}
       />
     </View>
   );
@@ -84,23 +140,50 @@ const styles = StyleSheet.create({
   brand: { flexDirection: "row", alignItems: "center", gap: 10 },
   brandLogo: { width: 40, height: 40, borderRadius: 9 },
   title: { color: "#fff", fontSize: 20, fontWeight: "800" },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 10 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  termsBtn: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 12,
+  },
+  termsBtnText: { color: "rgba(255, 255, 255, 0.85)", fontWeight: "600", fontSize: 13.5 },
+  presenceToggleBtn: {
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 12,
+  },
+  presenceToggleBtnText: { color: "#fff", fontWeight: "700", fontSize: 13.5 },
   refreshBtn: {
     backgroundColor: "rgba(255, 255, 255, 0.12)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.28)",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: 12,
   },
-  refreshBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  refreshBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   registerBtn: {
     backgroundColor: "#166534",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
     borderRadius: 12,
   },
-  registerBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  registerBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   body: { flex: 1, flexDirection: "row" },
   cameraColumn: { flex: 1, padding: 16 },
+  presenceModalContent: {
+    flex: 1,
+    backgroundColor: "#FBF8F1",
+  },
+  presenceModalSidebar: {
+    width: "100%",
+    flex: 1,
+    borderLeftWidth: 0,
+  },
 });
