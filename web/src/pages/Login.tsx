@@ -52,7 +52,7 @@ export function Login() {
           <label className="text-xs font-bold text-ink">E-mail institucional do Tutor</label>
           <input
             type="email"
-            placeholder="tutor@ailab.org"
+            placeholder="tutor@ailab.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

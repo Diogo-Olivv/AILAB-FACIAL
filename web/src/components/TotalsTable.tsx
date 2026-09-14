@@ -116,10 +116,11 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 scope="col"
                 aria-sort={sortField === "duration" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
                 onClick={() => handleSort("duration")}
-                className="whitespace-nowrap px-4 py-3.5 font-bold sm:px-5 cursor-pointer hover:bg-white/10 transition-colors"
+                className="whitespace-nowrap px-3 py-3 sm:px-5 font-bold cursor-pointer hover:bg-white/10 transition-colors"
               >
                 <div className="flex items-center gap-1.5">
-                  <span>Total Permanência</span>
+                  <span className="hidden sm:inline">Total Permanência</span>
+                  <span className="sm:hidden">Tempo</span>
                   <span className="text-xs opacity-70">
                     {sortField === "duration" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
@@ -129,9 +130,9 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 scope="col"
                 aria-sort={sortField === "status" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
                 onClick={() => handleSort("status")}
-                className="whitespace-nowrap px-4 py-3.5 font-bold sm:px-5 cursor-pointer hover:bg-white/10 transition-colors"
+                className="whitespace-nowrap px-3 py-3 sm:px-5 font-bold cursor-pointer hover:bg-white/10 transition-colors text-right sm:text-left"
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-end sm:justify-start gap-1.5">
                   <span>Status</span>
                   <span className="text-xs opacity-70">
                     {sortField === "status" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
@@ -156,22 +157,14 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 role="button"
                 aria-label={`Ver sessões e histórico de ${row.member.name}`}
               >
-                <td className="px-4 py-3.5 sm:px-5 text-ink">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy/10 text-xs font-extrabold text-navy transition-colors group-hover:bg-navy group-hover:text-white">
+                <td className="px-3 py-3 sm:px-5 text-ink">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-navy/10 text-xs font-extrabold text-navy transition-colors group-hover:bg-navy group-hover:text-white">
                       {row.member.name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <span className="font-bold text-ink group-hover:text-navy group-hover:underline transition-colors block">
-                        {row.member.name}
-                      </span>
-                      {/* Subtítulo para telas mobile com matrícula e contagem de sessões */}
-                      <div className="sm:hidden text-2xs text-muted flex items-center gap-1.5 mt-0.5">
-                        <span>Matrícula: {row.member.matricula ?? "—"}</span>
-                        <span>•</span>
-                        <span>{row.sessionCount} sessões</span>
-                      </div>
-                    </div>
+                    <span className="font-bold text-ink group-hover:text-navy group-hover:underline transition-colors block text-xs sm:text-sm truncate max-w-[140px] sm:max-w-none">
+                      {row.member.name}
+                    </span>
                   </div>
                 </td>
                 <td className="hidden px-4 py-3.5 text-muted sm:table-cell sm:px-5 font-mono text-xs">
@@ -180,17 +173,17 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 <td className="hidden px-4 py-3.5 text-ink sm:table-cell sm:px-5 text-center font-semibold">
                   {row.sessionCount}
                 </td>
-                <td className="whitespace-nowrap px-4 py-3.5 font-extrabold sm:px-5 text-navy">
+                <td className="whitespace-nowrap px-3 py-3 font-extrabold sm:px-5 text-navy text-xs sm:text-sm">
                   {formatDuration(row.totalSeconds)}
                 </td>
-                <td className="px-4 py-3.5 sm:px-5">
+                <td className="whitespace-nowrap px-3 py-3 sm:px-5 text-right sm:text-left">
                   {row.present ? (
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-green/15 px-3 py-1 text-xs font-bold text-green ring-1 ring-green/20">
-                      <span className="h-2 w-2 rounded-full bg-green animate-pulse" />
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 whitespace-nowrap rounded-full bg-green/15 px-2.5 py-0.5 sm:px-3 sm:py-1 text-2xs sm:text-xs font-bold text-green ring-1 ring-green/20">
+                      <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green animate-pulse" />
                       No lab
                     </span>
                   ) : (
-                    <span className="inline-flex items-center whitespace-nowrap rounded-full bg-muted/10 px-3 py-1 text-xs font-medium text-muted">
+                    <span className="inline-flex items-center whitespace-nowrap rounded-full bg-muted/10 px-2.5 py-0.5 sm:px-3 sm:py-1 text-2xs sm:text-xs font-medium text-muted">
                       Fora
                     </span>
                   )}
