@@ -48,7 +48,8 @@ def test_cosine_to_euclidean_relationship():
     expected_euclidean = np.sqrt(max(0.0, 2.0 - 2.0 * cosine_sim))
     assert np.isclose(euclidean_dist, expected_euclidean, atol=1e-6)
 
-    # Limiar configurado face_threshold=1.00 deve corresponder a cos_theta = 0.50
+    # Limiar calibrado face_threshold=0.80 deve corresponder a cos_theta = 0.68
+    # Verificação: 1.0 - (0.80^2)/2 = 1.0 - 0.32 = 0.68 == face_min_cosine ✓
     threshold_cos = 1.0 - (settings.face_threshold**2) / 2.0
     assert np.isclose(threshold_cos, settings.face_min_cosine, atol=0.01)
 
@@ -289,4 +290,254 @@ def test_identify_frames_multi_rejects_on_spoof():
         res = identify_frames([b"live_face", b"spoof_photo"])
         assert res["recognized"] is False
         assert res["status"] == "spoof_detected"
+
+
+def test_extract_pad_patch_geometry_and_boundaries():
+    """Valida que extract_pad_patch gera tensor 80x80 mesmo em faces nas bordas da imagem."""
+    from app.services.liveness_service import extract_pad_patch
+
+    # Imagem simulada 640x480
+    img = np.zeros((480, 640, 3), dtype=np.uint8)
+
+    # 1. Face centralizada
+    patch_center = extract_pad_patch(img, [200, 150, 400, 350], scale=2.7, out_size=80)
+    assert patch_center.shape == (80, 80, 3)
+
+    # 2. Face na borda superior esquerda (x=0, y=0)
+    patch_corner = extract_pad_patch(img, [0, 0, 100, 100], scale=2.7, out_size=80)
+    assert patch_corner.shape == (80, 80, 3)
+
+    # 3. Face na borda inferior direita
+    patch_rb = extract_pad_patch(img, [540, 380, 640, 480], scale=2.7, out_size=80)
+    assert patch_rb.shape == (80, 80, 3)
+
+
+def test_enroll_persists_dual_vectors():
+    """Valida que o cadastro sempre persiste tanto 'embedding' quanto 'vec' no banco."""
+    from app.services.enroll_service import enroll
+
+    mock_db = MagicMock()
+    mock_profiles = MagicMock()
+    mock_profiles.insert.return_value.execute.return_value.data = [{"id": "prof-123"}]
+    mock_face_emb = MagicMock()
+    mock_face_emb.insert.return_value.execute.return_value.data = [{"id": "emb-1"}]
+
+    def table_router(table_name: str):
+        if table_name == "profiles":
+            return mock_profiles
+        if table_name == "face_embeddings":
+            return mock_face_emb
+        return MagicMock()
+
+    mock_db.table.side_effect = table_router
+
+    # Três vetores consistentes para passar na validação intra-burst
+    v1 = np.ones(512, dtype=np.float64)
+    v1 /= np.linalg.norm(v1)
+
+    with (
+        patch("app.services.enroll_service.get_client", return_value=mock_db),
+        patch("app.services.enroll_service.extract_primary_face_data", return_value=(None, v1, "ok", "ok")),
+        patch("app.services.enroll_service._check_1_to_n_duplicate"),
+        patch("app.services.enroll_service.invalidate_embeddings_cache"),
+    ):
+        enroll("Aluno Teste", "232038442", [b"img1", b"img2", b"img3"], consent=True)
+
+        # Verifica chamada de insert em face_embeddings
+        insert_calls = mock_face_emb.insert.call_args_list
+        assert len(insert_calls) == 1
+        payload = insert_calls[0][0][0]
+        assert payload["profile_id"] == "prof-123"
+        assert "embedding" in payload
+        assert "vec" in payload
+        assert len(payload["vec"]) == 512
+
+
+# ── Testes de Limiares Biométricos Calibrados (P0) ────────────────────────────
+
+
+def test_identify_rejects_impostor_below_min_cosine():
+    """Impostor com similaridade cosseno < 0.62 deve ser rejeitado definitivamente.
+
+    Regressão: com os limiares antigos (face_min_cosine=0.50), impostores ArcFace
+    com cos~0.40-0.52 podiam ser aceitos. Após P0, o limiar de rejeição definitiva
+    é 0.62 e o de aceite automático é 0.68.
+    """
+    from app.services.face_service import identify
+
+    rng = np.random.default_rng(55)
+    enrolled_vec = rng.standard_normal(512)
+    enrolled_vec = enrolled_vec / np.linalg.norm(enrolled_vec)
+
+    # Impostor: componente ortogonal ao cadastrado → cos ~0
+    impostor_vec = rng.standard_normal(512)
+    impostor_vec -= np.dot(impostor_vec, enrolled_vec) * enrolled_vec
+    impostor_vec = impostor_vec / np.linalg.norm(impostor_vec)
+
+    mock_loaded = (
+        ["prof-uuid-1"],
+        ["João Cadastrado"],
+        np.array([enrolled_vec], dtype=np.float64),
+    )
+
+    with (
+        patch("app.services.face_service._load_embeddings", return_value=mock_loaded),
+        patch(
+            "app.services.face_service.extract_primary_face_data",
+            return_value=(None, impostor_vec, "ok", "ok"),
+        ),
+        patch("app.services.face_service.verify_liveness", return_value=(True, 1.0, "ok")),
+        patch.object(settings, "face_min_cosine", 0.68),
+        patch.object(settings, "face_uncertain_cosine", 0.62),
+        patch.object(settings, "face_threshold", 0.80),
+    ):
+        result = identify(b"fake_image_bytes")
+        assert result["recognized"] is False
+        assert result["status"] in ("not_recognized", "uncertain")
+        # Cosine de vetor ortogonal é próximo de 0 — muito abaixo de qualquer zona de aceite
+        assert result.get("cosine_similarity", 0.0) < 0.62
+
+
+def test_identify_cosine_threshold_is_calibrated_to_068():
+    """Verifica que o limiar de aceite configurado é 0.68 (não o antigo 0.50).
+
+    Garante que um impostor com cos=0.60 (acima do limiar antigo 0.50 mas abaixo
+    do novo 0.68) seja tratado como uncertain ou not_recognized — nunca recognized.
+    """
+    from app.services.face_service import identify
+
+    rng = np.random.default_rng(77)
+    enrolled_vec = rng.standard_normal(512)
+    enrolled_vec = enrolled_vec / np.linalg.norm(enrolled_vec)
+
+    # Constrói vetor com cos=0.60 em relação ao enrolled
+    target_cos = 0.60
+    perp = rng.standard_normal(512)
+    perp -= np.dot(perp, enrolled_vec) * enrolled_vec
+    perp = perp / np.linalg.norm(perp)
+    vec_60 = target_cos * enrolled_vec + np.sqrt(1 - target_cos**2) * perp
+    vec_60 = vec_60 / np.linalg.norm(vec_60)
+
+    actual_cos = float(np.dot(enrolled_vec, vec_60))
+    assert abs(actual_cos - target_cos) < 0.01, f"Construção falhou: cos={actual_cos}"
+
+    mock_loaded = (
+        ["prof-uuid-2"],
+        ["Carlos Limiar"],
+        np.array([enrolled_vec], dtype=np.float64),
+    )
+
+    with (
+        patch("app.services.face_service._load_embeddings", return_value=mock_loaded),
+        patch(
+            "app.services.face_service.extract_primary_face_data",
+            return_value=(None, vec_60, "ok", "ok"),
+        ),
+        patch("app.services.face_service.verify_liveness", return_value=(True, 1.0, "ok")),
+        patch.object(settings, "face_min_cosine", 0.68),
+        patch.object(settings, "face_uncertain_cosine", 0.62),
+        patch.object(settings, "face_threshold", 0.80),
+    ):
+        result = identify(b"fake_image_bytes")
+        # cos=0.60 está abaixo do face_uncertain_cosine (0.62): rejeição definitiva
+        assert result["recognized"] is False
+        assert result["status"] == "not_recognized"
+
+
+# ── Testes Específicos de pgvector com Decisão em 3 Zonas ────────────────────
+
+
+def test_pgvector_match_face_accepts_above_068():
+    """pgvector RPC retornando similaridade >= 0.68 deve ser aceito com status 'ok'."""
+    from app.services.face_service import _match_face_pgvector
+
+    mock_db = MagicMock()
+    mock_rpc = MagicMock()
+    mock_db.rpc.return_value = mock_rpc
+    mock_rpc.execute.return_value = MagicMock(
+        data=[
+            {
+                "profile_id": "prof-1",
+                "name": "Ana Clara",
+                "similarity": 0.72,
+            }
+        ]
+    )
+
+    query_enc = np.ones(512, dtype=np.float64) / np.sqrt(512)
+
+    with patch("app.services.face_service.get_client", return_value=mock_db):
+        res = _match_face_pgvector(query_enc)
+
+        assert res is not None
+        assert res["recognized"] is True
+        assert res["status"] == "ok"
+        assert res["profile_id"] == "prof-1"
+        assert res["name"] == "Ana Clara"
+        assert res["cosine_similarity"] == 0.72
+
+        # Valida que o match_threshold passado na RPC foi <= 0.38 (e NUNCA 0.68)
+        rpc_call_args = mock_db.rpc.call_args[0]
+        assert rpc_call_args[0] == "match_face"
+        passed_params = rpc_call_args[1]
+        assert passed_params["match_threshold"] <= 0.38, (
+            f"match_threshold deve ser a distância máxima (<= 0.38), mas foi {passed_params['match_threshold']}"
+        )
+
+
+def test_pgvector_match_face_uncertain_between_062_and_068():
+    """pgvector RPC retornando similaridade na zona incerta (0.62 a 0.68) deve retornar status 'uncertain'."""
+    from app.services.face_service import _match_face_pgvector
+
+    mock_db = MagicMock()
+    mock_rpc = MagicMock()
+    mock_db.rpc.return_value = mock_rpc
+    mock_rpc.execute.return_value = MagicMock(
+        data=[
+            {
+                "profile_id": "prof-2",
+                "name": "Bruno Silva",
+                "similarity": 0.65,
+            }
+        ]
+    )
+
+    query_enc = np.ones(512, dtype=np.float64) / np.sqrt(512)
+
+    with patch("app.services.face_service.get_client", return_value=mock_db):
+        res = _match_face_pgvector(query_enc)
+
+        assert res is not None
+        assert res["recognized"] is False
+        assert res["status"] == "uncertain"
+        assert "profile_id" not in res
+        assert "name" not in res
+        assert res["cosine_similarity"] == 0.65
+
+
+def test_pgvector_match_face_rejects_impostor_below_062():
+    """pgvector RPC retornando similaridade < 0.62 deve ser rejeitado com status 'not_recognized'."""
+    from app.services.face_service import _match_face_pgvector
+
+    mock_db = MagicMock()
+    mock_rpc = MagicMock()
+    mock_db.rpc.return_value = mock_rpc
+    mock_rpc.execute.return_value = MagicMock(
+        data=[
+            {
+                "profile_id": "prof-3",
+                "name": "Impostor",
+                "similarity": 0.50,
+            }
+        ]
+    )
+
+    query_enc = np.ones(512, dtype=np.float64) / np.sqrt(512)
+
+    with patch("app.services.face_service.get_client", return_value=mock_db):
+        res = _match_face_pgvector(query_enc)
+
+        assert res is not None
+        assert res["recognized"] is False
+        assert res["status"] == "not_recognized"
 

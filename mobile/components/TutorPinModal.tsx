@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Modal,
   StyleSheet,
   Text,
@@ -7,33 +8,64 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { supabase } from "@/lib/supabase";
 
 interface Props {
   visible: boolean;
-  onSuccess: () => void;
+  onSuccess: (token: string) => void;
   onCancel: () => void;
 }
 
-const DEFAULT_PIN = process.env.EXPO_PUBLIC_TUTOR_PIN || "1234";
-
 export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  function handleVerify() {
-    if (pin.trim() === DEFAULT_PIN) {
-      setPin("");
-      setError(false);
-      onSuccess();
-    } else {
-      setError(true);
-      setPin("");
+  async function handleLogin() {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !password) {
+      setErrorMsg("Preencha e-mail e senha.");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+
+      if (error || !data.session) {
+        setErrorMsg(error?.message || "Credenciais de tutor inválidas.");
+        return;
+      }
+
+      const role = data.session.user?.app_metadata?.role;
+      if (role !== "tutor") {
+        await supabase.auth.signOut();
+        setErrorMsg("Acesso negado. Esta conta não possui privilégios de tutor.");
+        return;
+      }
+
+      const token = data.session.access_token;
+      setEmail("");
+      setPassword("");
+      setErrorMsg(null);
+      onSuccess(token);
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Falha de comunicação com o serviço de autenticação.");
+    } finally {
+      setLoading(false);
     }
   }
 
   function handleClose() {
-    setPin("");
-    setError(false);
+    setEmail("");
+    setPassword("");
+    setErrorMsg(null);
     onCancel();
   }
 
@@ -46,42 +78,64 @@ export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
     >
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>Acesso Restrito ao Tutor</Text>
+          <Text style={styles.title}>Autenticação do Tutor</Text>
           <Text style={styles.subtitle}>
-            Digite o PIN de autorização para cadastrar um novo integrante no laboratório.
+            Apenas tutores autorizados podem cadastrar novos integrantes no laboratório.
+            Entre com suas credenciais institucionais.
           </Text>
 
-          <TextInput
-            style={[styles.input, error && styles.inputError]}
-            placeholder="PIN de 4 dígitos"
-            placeholderTextColor="#6B6F82"
-            value={pin}
-            onChangeText={(t) => {
-              setPin(t.replace(/\D/g, "").slice(0, 4));
-              if (error) setError(false);
-            }}
-            keyboardType="number-pad"
-            secureTextEntry
-            maxLength={4}
-            autoFocus
-          />
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>E-mail institucional</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="tutor@lab.com"
+              placeholderTextColor="#6B6F82"
+              value={email}
+              onChangeText={(t) => {
+                setEmail(t);
+                if (errorMsg) setErrorMsg(null);
+              }}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
 
-          {error && (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Senha</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Sua senha de acesso"
+              placeholderTextColor="#6B6F82"
+              value={password}
+              onChangeText={(t) => {
+                setPassword(t);
+                if (errorMsg) setErrorMsg(null);
+              }}
+              secureTextEntry
+            />
+          </View>
+
+          {errorMsg && (
             <Text style={styles.errorText}>
-              PIN incorreto. Apenas tutores autorizados podem cadastrar biometria.
+              {errorMsg}
             </Text>
           )}
 
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={handleClose}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={handleClose} disabled={loading}>
               <Text style={styles.cancelText}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.confirmBtn, pin.length < 4 && styles.btnDisabled]}
-              onPress={handleVerify}
-              disabled={pin.length < 4}
+              style={[styles.confirmBtn, (!email.trim() || !password || loading) && styles.btnDisabled]}
+              onPress={handleLogin}
+              disabled={!email.trim() || !password || loading}
             >
-              <Text style={styles.confirmText}>Autorizar</Text>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.confirmText}>Entrar</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -100,7 +154,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 420,
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 24,
@@ -121,21 +175,23 @@ const styles = StyleSheet.create({
     color: "#6B6F82",
     lineHeight: 20,
   },
+  formGroup: {
+    gap: 6,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#141A33",
+  },
   input: {
     backgroundColor: "#F4EFE4",
     borderWidth: 1.5,
     borderColor: "rgba(30,45,95,.2)",
-    borderRadius: 14,
-    padding: 16,
-    fontSize: 22,
-    letterSpacing: 8,
-    textAlign: "center",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
     color: "#141A33",
-    fontWeight: "700",
-  },
-  inputError: {
-    borderColor: "#DC2626",
-    backgroundColor: "#FEF2F2",
   },
   errorText: {
     color: "#DC2626",

@@ -34,27 +34,57 @@ export function RecognitionPanel() {
       setBusy(true);
       try {
         const captured: { uri: string; name: string; type: string }[] = [];
-        for (let i = 0; i < 3; i++) {
-          if (!cameraRef.current) break;
-          try {
-            const photo = await cameraRef.current.takePictureAsync({
-              quality: 0.85,
-              skipProcessing: true,
+
+        // 1. Captura imediata do frame principal
+        try {
+          const photo1 = await cameraRef.current.takePictureAsync({
+            quality: 0.85,
+            skipProcessing: true,
+          });
+          if (photo1?.uri) {
+            captured.push({
+              uri: photo1.uri,
+              name: "frame_1.jpg",
+              type: "image/jpeg",
             });
-            if (photo?.uri) {
+          }
+        } catch {
+          // Fallback caso o sensor do tablet exija pós-processamento
+          try {
+            const photo1 = await cameraRef.current.takePictureAsync({
+              quality: 0.80,
+            });
+            if (photo1?.uri) {
               captured.push({
-                uri: photo.uri,
-                name: `frame_${i + 1}.jpg`,
+                uri: photo1.uri,
+                name: "frame_1.jpg",
                 type: "image/jpeg",
               });
             }
           } catch {
-            // Se falhar algum frame intermediário, continua com os obtidos
-          }
-          if (i < 2) {
-            await new Promise((r) => setTimeout(r, 150));
+            // Ignora falha de câmera
           }
         }
+
+        // 2. Disparo opcional do segundo frame para verificação temporal
+        if (captured.length > 0 && cameraRef.current) {
+          try {
+            await new Promise((r) => setTimeout(r, 120));
+            const photo2 = await cameraRef.current.takePictureAsync({
+              quality: 0.80,
+            });
+            if (photo2?.uri) {
+              captured.push({
+                uri: photo2.uri,
+                name: "frame_2.jpg",
+                type: "image/jpeg",
+              });
+            }
+          } catch {
+            // Prossegue com o primeiro frame caso a câmera ainda esteja ocupada
+          }
+        }
+
         if (captured.length === 0) return;
 
         const res = await recognize(captured, action);

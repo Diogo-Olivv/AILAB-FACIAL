@@ -14,11 +14,19 @@ export function useEnroll() {
       name: string,
       matricula: string,
       consent: boolean,
-      frames: UploadFile[]
+      frames: UploadFile[],
+      tutorToken?: string
     ): Promise<EnrollOutcome> => {
+      if (!tutorToken) {
+        return {
+          ok: false,
+          message: "Sessão do tutor ausente ou expirada. Faça login novamente.",
+        };
+      }
+
       setLoading(true);
       try {
-        const data = await enrollStudent(name, matricula, consent, frames);
+        const data = await enrollStudent(name, matricula, consent, frames, tutorToken);
         return { ok: true, data };
       } catch (err: unknown) {
         return { ok: false, message: extractErrorMessage(err) };

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.config import settings
 from app.db.supabase_client import get_client
-from app.deps import validate_image, verify_api_key
+from app.deps import validate_image, verify_api_key, verify_tutor_token
 from app.services.enroll_service import EnrollError, ProfileNotFound, refresh_embedding
 from app.services.face_service import invalidate_embeddings_cache
 
@@ -35,7 +35,7 @@ def get_profile(profile_id: str):
     return res.data[0]
 
 
-@router.post("/{profile_id}/refresh-embedding", dependencies=[Depends(verify_api_key)])
+@router.post("/{profile_id}/refresh-embedding", dependencies=[Depends(verify_tutor_token)])
 async def refresh_embedding_route(
     profile_id: str,
     frames: list[UploadFile] = File(...),
@@ -52,7 +52,7 @@ async def refresh_embedding_route(
     images: list[bytes] = []
     for frame in frames:
         data = await frame.read()
-        validate_image(frame.content_type, len(data))
+        validate_image(frame.content_type, len(data), data)
         images.append(data)
 
     try:
@@ -63,7 +63,7 @@ async def refresh_embedding_route(
         raise HTTPException(422, str(exc)) from exc
 
 
-@router.post("/{profile_id}/revoke-consent", dependencies=[Depends(verify_api_key)])
+@router.post("/{profile_id}/revoke-consent", dependencies=[Depends(verify_tutor_token)])
 def revoke_consent(profile_id: str):
     """Revoga o consentimento LGPD do titular: expurga biometria e inativa o perfil."""
     db = get_client()
@@ -96,7 +96,7 @@ def revoke_consent(profile_id: str):
     }
 
 
-@router.delete("/{profile_id}", dependencies=[Depends(verify_api_key)])
+@router.delete("/{profile_id}", dependencies=[Depends(verify_tutor_token)])
 def delete_profile(profile_id: str):
     """Elimina definitivamente o perfil e todos os dados biométricos (LGPD Art. 18)."""
     db = get_client()

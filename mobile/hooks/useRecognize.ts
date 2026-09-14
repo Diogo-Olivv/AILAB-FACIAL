@@ -17,7 +17,7 @@ export function useRecognize() {
     setLoading(true);
     setError(null);
     try {
-      const res = await recognizeFrame(frame, action);
+      const res = await recognizeFrame(frame, action, abortRef.current.signal);
       setResult(res);
       return res;
     } catch (err: any) {

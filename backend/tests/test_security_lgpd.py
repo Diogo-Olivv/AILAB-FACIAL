@@ -6,7 +6,7 @@ from fastapi import HTTPException
 import pytest
 
 from app.config import settings
-from app.deps import verify_api_key
+from app.deps import verify_api_key, verify_cron_or_api_key, verify_kiosk_key, verify_tutor_token
 from app.routers.profiles import delete_profile, get_profile, revoke_consent
 
 
@@ -111,3 +111,252 @@ def test_delete_profile_success():
         assert res["deleted"] is True
         assert res["profile_id"] == "uuid-456"
         assert mock_invalidate.called
+
+
+# ── Testes de Separação de Privilégios (P0) ───────────────────────────────────
+
+
+def test_verify_kiosk_key_accepts_valid_kiosk_key():
+    """Chave de kiosk válida deve ser aceita em verify_kiosk_key."""
+    with patch.object(settings, "kiosk_api_key", "kiosk-secret-xyz"):
+        # Não deve levantar exceção
+        verify_kiosk_key(kiosk_key="kiosk-secret-xyz", legacy_key=None)
+
+
+def test_verify_kiosk_key_accepts_legacy_api_key_as_fallback():
+    """Durante a transição, X-API-Key legada deve ser aceita em verify_kiosk_key."""
+    with (
+        patch.object(settings, "kiosk_api_key", ""),  # kiosk_api_key não configurada
+        patch.object(settings, "api_key", "legacy-api-key"),
+    ):
+        verify_kiosk_key(kiosk_key=None, legacy_key="legacy-api-key")
+
+
+def test_verify_kiosk_key_rejects_when_no_keys_configured():
+    """Fail-closed: se nenhuma chave estiver configurada, deve retornar HTTP 500."""
+    with (
+        patch.object(settings, "kiosk_api_key", ""),
+        patch.object(settings, "api_key", ""),
+    ):
+        with pytest.raises(HTTPException) as exc:
+            verify_kiosk_key(kiosk_key="any-key", legacy_key=None)
+        assert exc.value.status_code == 500
+
+
+def test_verify_kiosk_key_rejects_wrong_key():
+    """Chave de kiosk incorreta deve retornar HTTP 401."""
+    with patch.object(settings, "kiosk_api_key", "correct-kiosk-key"):
+        with pytest.raises(HTTPException) as exc:
+            verify_kiosk_key(kiosk_key="wrong-key", legacy_key=None)
+        assert exc.value.status_code == 401
+
+
+def test_verify_tutor_token_rejects_missing_authorization():
+    """Token ausente deve retornar HTTP 401."""
+    with pytest.raises(HTTPException) as exc:
+        verify_tutor_token(authorization=None)
+    assert exc.value.status_code == 401
+
+
+def test_verify_tutor_token_rejects_non_bearer():
+    """Header sem 'Bearer ' prefix deve retornar HTTP 401."""
+    with pytest.raises(HTTPException) as exc:
+        verify_tutor_token(authorization="Token abc123")
+    assert exc.value.status_code == 401
+
+
+def test_verify_tutor_token_rejects_user_without_tutor_role():
+    """Usuário autenticado sem role=tutor em app_metadata deve receber HTTP 403."""
+    mock_user = MagicMock()
+    mock_user.id = "user-uuid"
+    mock_user.email = "aluno@lab.com"
+    mock_user.app_metadata = {"role": "member"}  # não é tutor
+
+    mock_response = MagicMock()
+    mock_response.user = mock_user
+
+    mock_client = MagicMock()
+    mock_client.auth.get_user.return_value = mock_response
+
+    with patch("app.db.supabase_client.get_client", return_value=mock_client):
+        with pytest.raises(HTTPException) as exc:
+            verify_tutor_token(authorization="Bearer valid.jwt.token")
+        assert exc.value.status_code == 403
+
+
+def test_verify_tutor_token_accepts_tutor_role():
+    """Usuário com role=tutor deve ser aceito e retornar claims com user_id."""
+    mock_user = MagicMock()
+    mock_user.id = "tutor-uuid"
+    mock_user.email = "professor@lab.com"
+    mock_user.app_metadata = {"role": "tutor"}
+
+    mock_response = MagicMock()
+    mock_response.user = mock_user
+
+    mock_client = MagicMock()
+    mock_client.auth.get_user.return_value = mock_response
+
+    with patch("app.db.supabase_client.get_client", return_value=mock_client):
+        claims = verify_tutor_token(authorization="Bearer valid.jwt.token")
+        assert claims["user_id"] == "tutor-uuid"
+        assert claims["role"] == "tutor"
+        assert claims["email"] == "professor@lab.com"
+
+
+def test_verify_cron_fails_closed_when_service_url_empty():
+    """Fail-closed: OIDC sem SERVICE_URL configurada deve retornar HTTP 500."""
+    with (
+        patch.object(settings, "api_key", ""),  # sem API key
+        patch.object(settings, "service_url", ""),  # sem audiência OIDC
+    ):
+        with pytest.raises(HTTPException) as exc:
+            verify_cron_or_api_key(api_key=None, authorization="Bearer any.token.here")
+        assert exc.value.status_code == 500
+
+
+# ── Testes de Integração de Rota (TestClient) ────────────────────────────────
+
+
+def test_enroll_endpoint_rejects_kiosk_key():
+    """Requisição POST /enroll portando apenas X-Kiosk-Key deve ser rejeitada com HTTP 401."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    client = TestClient(app, raise_server_exceptions=False)
+    with patch.object(settings, "kiosk_api_key", "valid-kiosk-token-123"):
+        res = client.post(
+            "/api/v1/enroll",
+            headers={"X-Kiosk-Key": "valid-kiosk-token-123"},
+            data={"name": "Aluno Teste", "matricula": "123456789", "consent": "true"},
+        )
+        assert res.status_code == 401
+        assert "tutor" in res.json().get("detail", "").lower()
+
+
+def test_cors_fail_closed_when_empty():
+    """Quando cors_origins está vazio, preflight OPTIONS não deve conter allow-origin: *."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    with patch.object(settings, "cors_origins", ""):
+        client = TestClient(app)
+        res = client.options(
+            "/api/v1/recognize",
+            headers={
+                "Origin": "https://evil.com",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        allow_origin = res.headers.get("access-control-allow-origin")
+        assert allow_origin != "*", "CORS não pode permitir wildcard * quando cors_origins estiver vazia"
+        assert allow_origin != "https://evil.com"
+
+
+def test_oidc_cleanup_does_not_leak_exception_details():
+    """Falha de validação OIDC não deve vazar tracebacks ou mensagens cruas de exceção no detail."""
+    import sys
+    from types import ModuleType
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    mock_id_token = MagicMock()
+    mock_id_token.verify_oauth2_token.side_effect = ValueError("CRITICAL_INTERNAL_CRYPTO_TRACE_LEAK")
+    mock_requests = MagicMock()
+    mock_requests.Request.return_value = MagicMock()
+
+    google_mod = ModuleType("google")
+    google_oauth2_mod = ModuleType("google.oauth2")
+    google_oauth2_mod.id_token = mock_id_token
+    google_auth_mod = ModuleType("google.auth")
+    google_auth_transport_mod = ModuleType("google.auth.transport")
+    google_auth_transport_mod.requests = mock_requests
+    google_mod.oauth2 = google_oauth2_mod
+    google_mod.auth = google_auth_mod
+    google_auth_mod.transport = google_auth_transport_mod
+
+    modules_backup = {}
+    for key in ("google", "google.oauth2", "google.oauth2.id_token",
+                "google.auth", "google.auth.transport", "google.auth.transport.requests"):
+        modules_backup[key] = sys.modules.get(key)
+
+    sys.modules["google"] = google_mod
+    sys.modules["google.oauth2"] = google_oauth2_mod
+    sys.modules["google.oauth2.id_token"] = mock_id_token
+    sys.modules["google.auth"] = google_auth_mod
+    sys.modules["google.auth.transport"] = google_auth_transport_mod
+    sys.modules["google.auth.transport.requests"] = mock_requests
+
+    try:
+        client = TestClient(app, raise_server_exceptions=False)
+        with (
+            patch.object(settings, "service_url", "https://ailab.run.app"),
+            patch.object(settings, "api_key", "secret-key"),
+        ):
+            res = client.post(
+                "/api/v1/maintenance/cleanup",
+                headers={"Authorization": "Bearer bad.token.here"},
+            )
+            assert res.status_code == 401
+            detail = res.json().get("detail", "")
+            assert "CRITICAL_INTERNAL_CRYPTO_TRACE_LEAK" not in detail
+            assert "ValueError" not in detail
+            assert detail == "Token OIDC inválido ou assinatura não verificada."
+    finally:
+        for key, val in modules_backup.items():
+            if val is None:
+                sys.modules.pop(key, None)
+            else:
+                sys.modules[key] = val
+
+
+# ── Testes de Defesa em Profundidade: Mídia & Kiosk Auth ──────────────────────
+
+
+def test_validate_image_decompression_bomb_rejection():
+    """Garante que imagens com dimensões anômalas (> 4096px) sejam rejeitadas para evitar OOM."""
+    import io
+    from PIL import Image
+    from app.deps import validate_image
+
+    # Imagem válida normal (100x100)
+    buf = io.BytesIO()
+    Image.new("RGB", (100, 100)).save(buf, format="JPEG")
+    valid_bytes = buf.getvalue()
+    validate_image("image/jpeg", len(valid_bytes), valid_bytes)
+
+    # Imagem perigosa com dimensões excessivas (5000x100)
+    buf_huge = io.BytesIO()
+    Image.new("RGB", (5000, 100)).save(buf_huge, format="JPEG")
+    huge_bytes = buf_huge.getvalue()
+    with pytest.raises(HTTPException) as exc_info:
+        validate_image("image/jpeg", len(huge_bytes), huge_bytes)
+    assert exc_info.value.status_code == 400
+    assert "excedem o limite operacional" in exc_info.value.detail
+
+
+def test_session_stats_accepts_kiosk_key():
+    """Garante que /api/v1/sessions/stats/{profile_id} aceita X-Kiosk-Key do tablet."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    client = TestClient(app, raise_server_exceptions=False)
+    with (
+        patch.object(settings, "kiosk_api_key", "kiosk-secret-key-123"),
+        patch("app.routers.recognize.total_hours", return_value={"hours": 12.5}),
+    ):
+        # Com X-Kiosk-Key válida
+        res = client.get(
+            "/api/v1/sessions/stats/some-uuid",
+            headers={"X-Kiosk-Key": "kiosk-secret-key-123"},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["profile_id"] == "some-uuid"
+        assert data["total_hours"] == {"hours": 12.5}
+
+        # Sem chave de autenticação deve falhar com 401
+        res_no_key = client.get("/api/v1/sessions/stats/some-uuid")
+        assert res_no_key.status_code == 401
+
+

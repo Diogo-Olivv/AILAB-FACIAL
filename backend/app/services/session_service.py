@@ -51,17 +51,23 @@ def _is_stale(check_in_iso: str, now: datetime) -> bool:
 
 
 def _close_stale_session(sess_id: int, check_in_iso: str) -> None:
-    """Fecha uma sessão esquecida aplicando o teto configurado e marcando auto_closed."""
-    check_in_dt = _parse_ts(check_in_iso)
-    capped_checkout = check_in_dt + timedelta(hours=settings.max_session_cap_hours)
+    """Fecha uma sessão de saída esquecida marcando-a como anulada (voided_at).
+
+    Comportamento documentado (README): sessões abandonadas contam 0 horas —
+    voided_at é preenchido e não é creditado no total. O campo check_out é
+    preenchido com o mesmo valor de voided_at para satisfazer constraints NOT NULL,
+    mas o serviço de relatório ignora registros onde voided_at IS NOT NULL.
+    """
+    now_iso = datetime.now(UTC).isoformat()
     get_client().table("sessions").update({
-        "check_out": capped_checkout.isoformat(),
-        "auto_closed": True,
+        "check_out": now_iso,   # fecha o registro aberto (constraint NOT NULL)
+        "voided_at": now_iso,   # marca como anulada — 0 horas creditadas
+        "auto_closed": True,    # auditoria: indica fechamento automático pelo sweep
     }).eq("id", sess_id).execute()
     log.info(
-        "Sessão %s encerrada automaticamente pelo sweep com teto de %dh.",
+        "Sessão %s anulada pelo sweep (saída esquecida): voided_at=%s, horas creditadas=0.",
         sess_id,
-        settings.max_session_cap_hours,
+        now_iso,
     )
 
 
@@ -187,7 +193,7 @@ def register_event(profile_id: str, action: str | None = None) -> dict[str, Any]
 
 
 def close_stale_sessions() -> dict[str, int]:
-    """Fecha sessões esquecidas aplicando teto justo configurado (max_session_cap_hours)."""
+    """Fecha sessões esquecidas aplicando anulação (voided_at) para computar 0 horas."""
     now = datetime.now(UTC)
     cutoff = now - timedelta(hours=settings.max_session_hours)
     rows = (

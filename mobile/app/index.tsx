@@ -48,9 +48,9 @@ export default function Home() {
 
       <TutorPinModal
         visible={pinModalVisible}
-        onSuccess={() => {
+        onSuccess={(token: string) => {
           setPinModalVisible(false);
-          router.push("/enroll");
+          router.push({ pathname: "/enroll", params: { tutorToken: token } });
         }}
         onCancel={() => setPinModalVisible(false)}
       />

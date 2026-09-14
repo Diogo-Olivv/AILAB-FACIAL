@@ -14,7 +14,7 @@ except ImportError:
         hint = ""
 
 from app.config import settings
-from app.deps import validate_image, verify_api_key
+from app.deps import validate_image, verify_tutor_token
 from app.services.enroll_service import EnrollError, enroll
 
 router = APIRouter(prefix="/api/v1", tags=["enroll"])
@@ -25,7 +25,7 @@ def _postgrest_detail(exc: APIError) -> str:
     return " | ".join(parts) or "Erro ao persistir no banco."
 
 
-@router.post("/enroll", dependencies=[Depends(verify_api_key)])
+@router.post("/enroll", dependencies=[Depends(verify_tutor_token)])
 async def enroll_route(
     name: str = Form(...),
     consent: bool = Form(...),
@@ -47,7 +47,7 @@ async def enroll_route(
     images: list[bytes] = []
     for frame in frames:
         data = await frame.read()
-        validate_image(frame.content_type, len(data))
+        validate_image(frame.content_type, len(data), data)
         images.append(data)
 
     try:

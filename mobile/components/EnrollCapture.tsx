@@ -16,7 +16,11 @@ import { useEnroll } from "@/hooks/useEnroll";
 import { SequentialCamera } from "@/components/SequentialCamera";
 import { ENROLL_PHOTO_COUNT, MATRICULA_LENGTH } from "@/lib/config";
 
-export function EnrollCapture() {
+interface Props {
+  tutorToken?: string;
+}
+
+export function EnrollCapture({ tutorToken }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const { enroll, loading } = useEnroll();
   const insets = useSafeAreaInsets();
@@ -54,7 +58,8 @@ export function EnrollCapture() {
       name.trim(),
       matricula.trim(),
       consent,
-      shots.map((uri, i) => ({ uri, name: `frame_${i}.jpg`, type: "image/jpeg" }))
+      shots.map((uri, i) => ({ uri, name: `frame_${i}.jpg`, type: "image/jpeg" })),
+      tutorToken
     );
     if (outcome.ok) {
       const { name: enrolledName, photos_used } = outcome.data;
@@ -66,7 +71,7 @@ export function EnrollCapture() {
     } else {
       setFeedback({ ok: false, text: outcome.message });
     }
-  }, [enroll, name, matricula, consent, shots]);
+  }, [enroll, name, matricula, consent, shots, tutorToken]);
 
   return (
     <ScrollView

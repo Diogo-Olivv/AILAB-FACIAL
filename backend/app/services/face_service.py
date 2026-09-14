@@ -13,6 +13,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+import threading
 import time
 from typing import Any, Tuple
 
@@ -27,6 +28,7 @@ log = logging.getLogger(__name__)
 
 _MIN_DET_SCORE = 0.50
 _analyzer = None
+_analyzer_lock = threading.Lock()
 
 # Cache local de embeddings ativos em memória
 _CACHE_TTL_SECONDS = 180.0  # 3 minutos
@@ -34,13 +36,15 @@ _cached_ids: list[str] = []
 _cached_names: list[str] = []
 _cached_matrix: np.ndarray | None = None
 _last_cache_time: float = 0.0
+_cache_lock = threading.Lock()
 
 
 def invalidate_embeddings_cache() -> None:
     """Invalida o cache local de embeddings forçando recarregamento no próximo request."""
     global _last_cache_time, _cached_matrix
-    _last_cache_time = 0.0
-    _cached_matrix = None
+    with _cache_lock:
+        _last_cache_time = 0.0
+        _cached_matrix = None
 
 
 def _get_analyzer():
@@ -65,7 +69,9 @@ def _get_analyzer():
 def _analyzer_instance():
     global _analyzer
     if _analyzer is None:
-        _analyzer = _get_analyzer()
+        with _analyzer_lock:
+            if _analyzer is None:
+                _analyzer = _get_analyzer()
     return _analyzer
 
 
@@ -218,7 +224,11 @@ def extract_primary_face_data(
 
     # 2. Detecção de Vivacidade Passiva (PAD)
     if check_pad:
-        is_live, pad_score, pad_reason = verify_liveness(face_crop)
+        is_live, pad_score, pad_reason = verify_liveness(
+            face_crop,
+            full_bgr=bgr,
+            bbox=face.bbox,
+        )
         if not is_live:
             log.warning(
                 "Vivacidade (PAD) rejeitada: score=%.4f (min=%.2f), motivo=%s",
@@ -257,38 +267,62 @@ def _load_embeddings(use_cache: bool = True) -> tuple[list[str], list[str], np.n
     ):
         return _cached_ids, _cached_names, _cached_matrix
 
-    try:
-        rows = (
-            get_client()
-            .table("face_embeddings")
-            .select("profile_id, embedding, profiles!inner(active, name)")
-            .eq("profiles.active", True)
-            .execute()
-        ).data or []
-    except Exception as exc:
-        log.error("Erro ao consultar embeddings no Supabase: %s", exc)
-        rows = []
+    with _cache_lock:
+        if (
+            use_cache
+            and _cached_matrix is not None
+            and (now - _last_cache_time) < _CACHE_TTL_SECONDS
+        ):
+            return _cached_ids, _cached_names, _cached_matrix
 
-    if not rows:
-        _cached_ids, _cached_names, _cached_matrix = [], [], None
-        return None
+        # Supabase PostgREST has a default page size of 1 000 rows — silent truncation beyond.
+        # Fetch all pages explicitly.
+        _PAGE_SIZE = 1000
+        rows: list[dict] = []
+        page_start = 0
+        try:
+            while True:
+                page = (
+                    get_client()
+                    .table("face_embeddings")
+                    .select("profile_id, embedding, profiles!inner(active, name)")
+                    .eq("profiles.active", True)
+                    .range(page_start, page_start + _PAGE_SIZE - 1)
+                    .execute()
+                ).data or []
+                rows.extend(page)
+                if len(page) < _PAGE_SIZE:
+                    break  # última página
+                page_start += _PAGE_SIZE
+                log.debug("_load_embeddings: paginando (offset=%d, acumulado=%d)", page_start, len(rows))
+        except Exception as exc:
+            log.error("Erro ao consultar embeddings no Supabase: %s", exc)
+            rows = []
 
-    _cached_ids = [r["profile_id"] for r in rows]
-    _cached_names = [r["profiles"]["name"] for r in rows]
-    _cached_matrix = np.array([r["embedding"] for r in rows], dtype=np.float64)
-    _last_cache_time = now
-    return _cached_ids, _cached_names, _cached_matrix
+        if not rows:
+            _cached_ids, _cached_names, _cached_matrix = [], [], None
+            return None
+
+        _cached_ids = [r["profile_id"] for r in rows]
+        _cached_names = [r["profiles"]["name"] for r in rows]
+        _cached_matrix = np.array([r["embedding"] for r in rows], dtype=np.float64)
+        _last_cache_time = now
+        log.info("_load_embeddings: %d embeddings carregados (%d páginas)", len(rows), (page_start // _PAGE_SIZE) + 1)
+        return _cached_ids, _cached_names, _cached_matrix
 
 
 def _match_face_pgvector(enc: np.ndarray) -> dict | None:
     """Busca o perfil mais similar via RPC match_face do Supabase com pgvector e HNSW."""
     try:
         db = get_client()
+        # Limiar máximo de distância cosseno para incluir candidatos até a zona incerta (0.62)
+        # Distância cosseno no pgvector: d = 1 - cos(theta)
+        max_distance = float(round(1.0 - settings.face_uncertain_cosine, 4))
         res = db.rpc(
             "match_face",
             {
                 "query_embedding": enc.tolist(),
-                "match_threshold": settings.face_min_cosine,
+                "match_threshold": max_distance,
                 "match_count": 1,
             },
         ).execute()
@@ -300,10 +334,49 @@ def _match_face_pgvector(enc: np.ndarray) -> dict | None:
                 "message": "Rosto não reconhecido na base.",
             }
         top = rows[0]
-        cosine_sim = float(top["similarity"])
+        # Se a RPC retornar 'similarity', usa-a; se retornar 'distance', calcula 1.0 - distance
+        if "similarity" in top and top["similarity"] is not None:
+            cosine_sim = float(top["similarity"])
+        elif "distance" in top and top["distance"] is not None:
+            cosine_sim = float(1.0 - float(top["distance"]))
+        else:
+            cosine_sim = 0.0
+
         # Para vetores unitários L2: dist = sqrt(2 * (1 - cos))
         euclidean_dist = float(np.sqrt(max(0.0, 2.0 * (1.0 - cosine_sim))))
         confidence = compute_calibrated_confidence(cosine_sim)
+
+        # Regra rigorosa de 3 zonas (alinhada com a busca em memória)
+        if cosine_sim < settings.face_uncertain_cosine:
+            log.warning(
+                "Rosto rejeitado (pgvector / zona fria): candidato='%s' (%s), dist=%.4f, cos=%.4f (limiar=%.2f)",
+                top.get("name"), top.get("profile_id"), euclidean_dist, cosine_sim, settings.face_uncertain_cosine,
+            )
+            return {
+                "recognized": False,
+                "status": "not_recognized",
+                "message": "Rosto não reconhecido na base.",
+                "distance": round(euclidean_dist, 4),
+                "cosine_similarity": round(cosine_sim, 4),
+            }
+
+        if cosine_sim < settings.face_min_cosine or euclidean_dist > settings.face_threshold:
+            log.warning(
+                "Rosto em zona incerta (pgvector): candidato='%s' (%s), dist=%.4f, cos=%.4f "
+                "(aceite_min=%.2f, dist_max=%.2f) — requer second-factor.",
+                top.get("name"), top.get("profile_id"), euclidean_dist, cosine_sim,
+                settings.face_min_cosine, settings.face_threshold,
+            )
+            return {
+                "recognized": False,
+                "status": "uncertain",
+                "confidence": confidence,
+                "distance": round(euclidean_dist, 4),
+                "cosine_similarity": round(cosine_sim, 4),
+                "similarity": cosine_sim,
+                "message": "Similaridade insuficiente para reconhecimento automático. Confirmação adicional necessária.",
+            }
+
         return {
             "recognized": True,
             "status": "ok",
@@ -312,6 +385,7 @@ def _match_face_pgvector(enc: np.ndarray) -> dict | None:
             "confidence": confidence,
             "distance": round(euclidean_dist, 4),
             "cosine_similarity": round(cosine_sim, 4),
+            "similarity": cosine_sim,
         }
     except Exception as exc:
         log.warning("Falha na busca pgvector via RPC, acionando fallback em memória: %s", exc)
@@ -362,21 +436,36 @@ def identify(image_bytes: bytes) -> dict:
     # Para vetores com ||u|| = ||v|| = 1: cos(theta) = 1 - (dist^2) / 2
     cosine_sim = float(np.dot(matrix[idx], enc))
 
-    # 2. Verificação do Limiar Estrito Calibrado
-    if dist > settings.face_threshold or cosine_sim < settings.face_min_cosine:
+    # 2. Decisão em 3 zonas:
+    #    ACEITE:    cos >= face_min_cosine (0.68) e dist <= face_threshold (0.80)
+    #    INCERTA:   face_uncertain_cosine (0.62) <= cos < face_min_cosine (0.68)
+    #    REJEIÇÃO:  cos < face_uncertain_cosine (0.62)
+    if cosine_sim < settings.face_uncertain_cosine:
+        # Zona de rejeição definitiva
         log.warning(
-            "Rosto não reconhecido: candidato mais próximo='%s' (%s), dist=%.4f (max=%.2f), cos=%.4f (min=%.2f)",
-            names[idx],
-            ids[idx],
-            dist,
-            settings.face_threshold,
-            cosine_sim,
-            settings.face_min_cosine,
+            "Rosto rejeitado (zona fria): candidato='%s' (%s), dist=%.4f, cos=%.4f (limiar=%.2f)",
+            names[idx], ids[idx], dist, cosine_sim, settings.face_uncertain_cosine,
         )
         return {
             "recognized": False,
             "status": "not_recognized",
             "message": "Rosto não reconhecido na base.",
+            "distance": round(dist, 4),
+            "cosine_similarity": round(cosine_sim, 4),
+        }
+
+    if cosine_sim < settings.face_min_cosine or dist > settings.face_threshold:
+        # Zona incerta: similaridade insuficiente para aceite automático
+        log.warning(
+            "Rosto em zona incerta: candidato='%s' (%s), dist=%.4f, cos=%.4f "
+            "(aceite_min=%.2f, dist_max=%.2f) — requer second-factor.",
+            names[idx], ids[idx], dist, cosine_sim,
+            settings.face_min_cosine, settings.face_threshold,
+        )
+        return {
+            "recognized": False,
+            "status": "uncertain",
+            "message": "Similaridade insuficiente para reconhecimento automático. Confirmação adicional necessária.",
             "distance": round(dist, 4),
             "cosine_similarity": round(cosine_sim, 4),
         }
@@ -415,28 +504,23 @@ def identify_frames(images: list[bytes]) -> dict:
     if len(images) == 1:
         return identify(images[0])
 
-    candidates = []
-    last_status = "no_face"
-    last_message = "Nenhum rosto confiável detectado nos frames."
+    results = []
+    for img_bytes in images:
+        results.append(identify(img_bytes))
 
-    for idx, img_bytes in enumerate(images):
-        res = identify(img_bytes)
-        if res.get("status") == "spoof_detected":
-            log.warning("Multi-frame: frame %d detectou spoofing. Rejeitando requisição.", idx + 1)
-            return res
+    # 1. Se qualquer frame indicar ataque de apresentação (spoof), rejeita imediatamente
+    for r in results:
+        if r.get("status") == "spoof_detected":
+            log.warning("Multi-frame: ataque de apresentação detectado em frame da sequência.")
+            return r
 
-        if res.get("recognized"):
-            candidates.append(res)
-        else:
-            last_status = res.get("status", last_status)
-            last_message = res.get("message", last_message)
-
+    # Se há candidatos reconhecidos, seleciona o de maior confiança calibrada
+    candidates = [r for r in results if r.get("recognized")]
     if candidates:
-        # Seleciona o frame com maior confiança calibrada
         candidates.sort(key=lambda c: c.get("confidence", 0.0), reverse=True)
         best = candidates[0]
         log.info(
-            "Multi-frame reconhecimento: %d/%d frames válidos. Melhor candidato: '%s' (conf=%.4f)",
+            "Multi-frame: %d/%d frames reconhecidos. Melhor candidato: '%s' (conf=%.4f)",
             len(candidates),
             len(images),
             best.get("name"),
@@ -444,9 +528,8 @@ def identify_frames(images: list[bytes]) -> dict:
         )
         return best
 
-    return {
-        "recognized": False,
-        "status": last_status,
-        "message": last_message,
-    }
+    # Se nenhum foi reconhecido, retorna o erro de maior prioridade
+    priority = {"not_recognized": 5, "spoof_detected": 4, "blur_detected": 3, "face_too_small": 2, "no_face": 1}
+    results.sort(key=lambda r: priority.get(r.get("status", ""), 0), reverse=True)
+    return results[0]
 

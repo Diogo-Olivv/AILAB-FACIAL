@@ -145,12 +145,12 @@ def enroll(name: str, matricula: str | None, images: list[bytes], consent: bool)
 
     # 4. Persistência do vetor biométrico
     try:
+        vec_list = mean_vector.tolist()
         embedding_payload = {
             "profile_id": profile_id,
-            "embedding": mean_vector.tolist(),
+            "embedding": vec_list,
+            "vec": vec_list,
         }
-        if settings.use_pgvector:
-            embedding_payload["vec"] = mean_vector.tolist()
 
         db.table("face_embeddings").insert(embedding_payload).execute()
         # Invalida o cache para que o novo membro possa bater ponto imediatamente
@@ -217,11 +217,15 @@ def refresh_embedding(profile_id: str, images: list[bytes]) -> dict:
         )
 
     mean_vector, photos_used = _validate_intra_burst_consistency(valid_encs)
+
+    # Guarda de troca de identidade: impede sobrescrever a biometria com o rosto de outro membro
     _guard_against_identity_swap(profile_id, mean_vector)
 
-    payload = {"embedding": mean_vector.tolist()}
-    if settings.use_pgvector:
-        payload["vec"] = mean_vector.tolist()
+    vec_list = mean_vector.tolist()
+    payload = {
+        "embedding": vec_list,
+        "vec": vec_list,
+    }
 
     existing = db.table("face_embeddings").select("profile_id").eq("profile_id", profile_id).execute()
     if existing.data:

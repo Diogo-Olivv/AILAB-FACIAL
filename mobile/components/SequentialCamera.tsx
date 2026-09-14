@@ -41,10 +41,22 @@ export function SequentialCamera({ visible, onComplete, onCancel }: Props) {
     setCaptured(0);
     const uris: string[] = [];
     for (let i = 0; i < ENROLL_PHOTO_COUNT; i++) {
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
-        skipProcessing: true,
-      });
+      let photo;
+      try {
+        photo = await cameraRef.current.takePictureAsync({
+          quality: 0.7,
+          skipProcessing: true,
+        });
+      } catch {
+        // Fallback resiliente para sensores que exigem pós-processamento
+        try {
+          photo = await cameraRef.current.takePictureAsync({
+            quality: 0.7,
+          });
+        } catch {
+          // Ignora falha de frame isolado
+        }
+      }
       if (photo?.uri) uris.push(photo.uri);
       setCaptured(uris.length);
       if (i < ENROLL_PHOTO_COUNT - 1) {

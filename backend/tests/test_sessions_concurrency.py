@@ -123,8 +123,12 @@ def test_total_hours_month_filter_no_day_32_error():
 # ── Teste de Sweep Justo com Teto e auto_closed ──────────────────────────────
 
 
-def test_close_stale_sessions_applies_cap_and_auto_closed():
-    """Sessões esquecidas devem receber check_out capped com auto_closed=True em vez de anulação."""
+def test_close_stale_sessions_sets_voided_at_and_zero_hours():
+    """Sessões esquecidas devem ser anuladas (voided_at preenchido) contando 0 horas.
+
+    Comportamento documentado no README: saída esquecida → 0 horas creditadas.
+    O campo voided_at indica que a sessão não deve ser contabilizada nos relatórios.
+    """
     mock_db = MagicMock()
 
     # Sessão aberta iniciada há 14 horas
@@ -134,16 +138,18 @@ def test_close_stale_sessions_applies_cap_and_auto_closed():
         {"id": 55, "check_in": stale_check_in}
     ]
 
-    with (
-        patch("app.services.session_service.get_client", return_value=mock_db),
-        patch.object(settings, "max_session_cap_hours", 4),
-    ):
+    with patch("app.services.session_service.get_client", return_value=mock_db):
         res = close_stale_sessions()
         assert res["auto_closed"] == 1
 
-        # Verifica se o update foi chamado com auto_closed=True
+        # Verifica que o update foi chamado com voided_at e auto_closed=True
         update_call = mock_db.table.return_value.update
         assert update_call.called
         update_payload = update_call.call_args[0][0]
         assert update_payload["auto_closed"] is True
+        assert "voided_at" in update_payload, (
+            "voided_at deve ser preenchido para garantir 0 horas creditadas (conforme README)"
+        )
         assert "check_out" in update_payload
+        # voided_at e check_out devem ser iguais (timestamp do momento do sweep)
+        assert update_payload["voided_at"] == update_payload["check_out"]

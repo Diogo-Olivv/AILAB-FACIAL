@@ -89,7 +89,7 @@ create index if not exists idx_face_embeddings_profile
 create index if not exists idx_face_embeddings_hnsw
   on public.face_embeddings
   using hnsw (vec vector_cosine_ops)
-  with (m = 16, ef_construction = 64);
+  with (m = 24, ef_construction = 128);
 
 -- ── Row Level Security (RLS) Mandatório ──────────────────────────────────────────
 
@@ -116,8 +116,10 @@ drop policy if exists "anon_select_open_sessions" on public.sessions;
 
 drop policy if exists "authenticated_select_profiles" on public.profiles;
 drop policy if exists "authenticated_update_profiles" on public.profiles;
+drop policy if exists "tutor_write_profiles" on public.profiles;
 drop policy if exists "authenticated_select_sessions" on public.sessions;
 drop policy if exists "authenticated_manage_sessions" on public.sessions;
+drop policy if exists "tutor_write_sessions" on public.sessions;
 drop policy if exists "authenticated_select_logs" on public.face_logs;
 
 -- 1. Políticas para service_role (Backend FastAPI via SUPABASE_SERVICE_KEY)
@@ -152,17 +154,21 @@ create policy "authenticated_select_profiles"
   on public.profiles for select to authenticated
   using (true);
 
-create policy "authenticated_update_profiles"
-  on public.profiles for update to authenticated
-  using (true) with check (true);
+-- Escrita restrita a usuários com role 'tutor' no JWT app_metadata (Fail-Closed / Migração 05)
+create policy "tutor_write_profiles"
+  on public.profiles for all to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'tutor')
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'tutor');
 
 create policy "authenticated_select_sessions"
   on public.sessions for select to authenticated
   using (true);
 
-create policy "authenticated_manage_sessions"
+-- Gestão de sessões restrita a usuários com role 'tutor' no JWT app_metadata (Fail-Closed / Migração 05)
+create policy "tutor_write_sessions"
   on public.sessions for all to authenticated
-  using (true) with check (true);
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'tutor')
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'tutor');
 
 create policy "authenticated_select_logs"
   on public.face_logs for select to authenticated
@@ -171,16 +177,21 @@ create policy "authenticated_select_logs"
 -- ── Funções e RPCs ─────────────────────────────────────────────────────────────
 
 -- RPC match_face: busca vetorial acelerada por HNSW e distância cosseno (<=>)
+-- match_threshold opera em distância cosseno (1 - cos): <= 0.32 corresponde a similaridade >= 0.68
+drop function if exists public.match_face(vector(512), float8, int);
+drop function if exists public.match_face(vector, float8, int);
+drop function if exists public.match_face(vector(512), float, int);
+
 create or replace function public.match_face(
   query_embedding vector(512),
-  match_threshold float default 0.68,
+  match_threshold float8 default 0.32,
   match_count int default 1
 )
 returns table (
   profile_id uuid,
   name text,
   avatar_url text,
-  similarity float
+  similarity float8
 )
 language plpgsql
 security definer
@@ -192,19 +203,19 @@ begin
     p.id as profile_id,
     p.name,
     p.avatar_url,
-    (1 - (fe.vec <=> query_embedding))::float as similarity
+    (1.0 - (fe.vec <=> query_embedding))::float8 as similarity
   from public.face_embeddings fe
   join public.profiles p on p.id = fe.profile_id
   where p.active = true
     and (fe.vec is not null)
-    and (1 - (fe.vec <=> query_embedding)) >= match_threshold
+    and (fe.vec <=> query_embedding) <= match_threshold
   order by fe.vec <=> query_embedding asc
   limit match_count;
 end;
 $$;
 
-revoke all on function public.match_face(vector(512), float, int) from public, anon, authenticated;
-grant execute on function public.match_face(vector(512), float, int) to service_role;
+revoke all on function public.match_face(vector(512), float8, int) from public, anon, authenticated;
+grant execute on function public.match_face(vector(512), float8, int) to service_role;
 
 -- ── Notificação para Reload de Cache no PostgREST ────────────────────────────────
 

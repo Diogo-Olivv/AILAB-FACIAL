@@ -76,9 +76,15 @@ def test_verify_cron_or_api_key_rejects_empty_or_invalid():
         assert exc.value.status_code == 401
 
 
-def test_verify_cron_or_api_key_with_valid_google_oidc():
-    """Valida token JWT emitido pelo Google Cloud para o Cloud Scheduler."""
-    # Simula payload JWT de conta de serviço Google
+def test_verify_cron_or_api_key_rejects_unverified_oidc_signature():
+    """Token JWT com assinatura falsa ('fake_signature') deve ser REJEITADO.
+
+    Guarda contra: OIDC bypass via fallback sem verificação de assinatura
+    (ImportError + decode base64 do payload sem verificar RSA). Após a remediação
+    P0-4, o código não possui mais esse caminho de fallback — qualquer token JWT
+    deve passar pela verificação de assinatura RSA via google-auth. Se google-auth
+    não estiver instalada, a dependência falha com HTTP 500 (fail-closed).
+    """
     header = base64.urlsafe_b64encode(b'{"alg":"RS256"}').decode().rstrip("=")
     claims = {
         "iss": "https://accounts.google.com",
@@ -90,29 +96,77 @@ def test_verify_cron_or_api_key_with_valid_google_oidc():
 
     with (
         patch.object(settings, "api_key", "secret-key"),
+        patch.object(settings, "service_url", "https://ailab-facial-backend.a.run.app"),
         patch.object(settings, "cloud_scheduler_sa_email", "ailab-scheduler@gserviceaccount.com"),
     ):
-        # Deve passar na validação OIDC
-        verify_cron_or_api_key(api_key=None, authorization=f"Bearer {fake_jwt}")
+        # Token com assinatura inválida deve ser rejeitado — nunca aceito
+        with pytest.raises(HTTPException) as exc:
+            verify_cron_or_api_key(api_key=None, authorization=f"Bearer {fake_jwt}")
+        assert exc.value.status_code in (401, 500), (
+            f"Esperado 401 ou 500 para token inválido, obtido {exc.value.status_code}"
+        )
 
 
 def test_verify_cron_or_api_key_rejects_unauthorized_service_account():
-    """Rejeita token OIDC emitido para Service Account não autorizada."""
-    header = base64.urlsafe_b64encode(b'{"alg":"RS256"}').decode().rstrip("=")
-    claims = {
+    """Rejeita token OIDC cujas claims pertencem a uma Service Account não autorizada.
+
+    Simula cenário onde o RSA é válido (mock) mas o e-mail das claims pertence
+    a um atacante. O código deve rejeitar com HTTP 403.
+    """
+    import sys
+    from types import ModuleType
+
+    attacker_claims = {
         "iss": "https://accounts.google.com",
         "email": "attacker@evil.com",
+        "aud": "https://ailab-facial-backend.a.run.app",
     }
-    payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).decode().rstrip("=")
-    fake_jwt = f"{header}.{payload}.fake_signature"
 
-    with (
-        patch.object(settings, "api_key", "secret-key"),
-        patch.object(settings, "cloud_scheduler_sa_email", "ailab-scheduler@gserviceaccount.com"),
-    ):
-        with pytest.raises(HTTPException) as exc:
-            verify_cron_or_api_key(api_key=None, authorization=f"Bearer {fake_jwt}")
-        assert exc.value.status_code == 403
+    # Cria módulos falsos para google.oauth2 e google.auth.transport
+    mock_id_token = MagicMock()
+    mock_id_token.verify_oauth2_token.return_value = attacker_claims
+
+    mock_requests = MagicMock()
+    mock_requests.Request.return_value = MagicMock()
+
+    google_mod = ModuleType("google")
+    google_oauth2_mod = ModuleType("google.oauth2")
+    google_oauth2_mod.id_token = mock_id_token
+    google_auth_mod = ModuleType("google.auth")
+    google_auth_transport_mod = ModuleType("google.auth.transport")
+    google_auth_transport_mod.requests = mock_requests
+
+    google_mod.oauth2 = google_oauth2_mod
+    google_mod.auth = google_auth_mod
+    google_auth_mod.transport = google_auth_transport_mod
+
+    modules_backup = {}
+    for key in ("google", "google.oauth2", "google.oauth2.id_token",
+                "google.auth", "google.auth.transport", "google.auth.transport.requests"):
+        modules_backup[key] = sys.modules.get(key)
+
+    sys.modules["google"] = google_mod
+    sys.modules["google.oauth2"] = google_oauth2_mod
+    sys.modules["google.oauth2.id_token"] = mock_id_token
+    sys.modules["google.auth"] = google_auth_mod
+    sys.modules["google.auth.transport"] = google_auth_transport_mod
+    sys.modules["google.auth.transport.requests"] = mock_requests
+
+    try:
+        with (
+            patch.object(settings, "api_key", "secret-key"),
+            patch.object(settings, "service_url", "https://ailab-facial-backend.a.run.app"),
+            patch.object(settings, "cloud_scheduler_sa_email", "ailab-scheduler@gserviceaccount.com"),
+        ):
+            with pytest.raises(HTTPException) as exc:
+                verify_cron_or_api_key(api_key=None, authorization="Bearer any.valid.token")
+            assert exc.value.status_code == 403
+    finally:
+        for key, val in modules_backup.items():
+            if val is None:
+                sys.modules.pop(key, None)
+            else:
+                sys.modules[key] = val
 
 
 # ── 3. Testes de Busca Vetorial pgvector e Fallback ───────────────────────────

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 from typing import Tuple
 
 import numpy as np
@@ -23,36 +24,41 @@ log = logging.getLogger(__name__)
 
 _onnx_session = None
 _onnx_initialized = False
+_pad_lock = threading.Lock()
 
 
 def _init_onnx_pad():
-    """Inicializa a sessão ONNX se houver modelo PAD disponível."""
+    """Inicializa a sessão ONNX se houver modelo PAD disponível (thread-safe)."""
     global _onnx_session, _onnx_initialized
     if _onnx_initialized:
         return _onnx_session
 
-    _onnx_initialized = True
-    model_paths = [
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "pad.onnx")),
-        os.path.expanduser(os.path.join(settings.insightface_root, "pad.onnx")),
-        os.path.expanduser("~/.insightface/pad.onnx"),
-    ]
-    for p in model_paths:
-        if os.path.exists(p) and os.path.getsize(p) > 100_000:
-            try:
-                import onnxruntime as ort  # type: ignore
+    with _pad_lock:
+        if _onnx_initialized:
+            return _onnx_session
 
-                opts = ort.SessionOptions()
-                opts.intra_op_num_threads = 1
-                opts.inter_op_num_threads = 1
-                _onnx_session = ort.InferenceSession(
-                    p, sess_options=opts, providers=["CPUExecutionProvider"]
-                )
-                log.info("Modelo ONNX PAD (MiniFASNetV2) carregado com sucesso de %s", p)
-                return _onnx_session
-            except Exception as exc:
-                log.warning("Falha ao carregar modelo ONNX PAD de %s: %s", p, exc)
-    return None
+        _onnx_initialized = True
+        model_paths = [
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "pad.onnx")),
+            os.path.expanduser(os.path.join(settings.insightface_root, "pad.onnx")),
+            os.path.expanduser("~/.insightface/pad.onnx"),
+        ]
+        for p in model_paths:
+            if os.path.exists(p) and os.path.getsize(p) > 100_000:
+                try:
+                    import onnxruntime as ort  # type: ignore
+
+                    opts = ort.SessionOptions()
+                    opts.intra_op_num_threads = 1
+                    opts.inter_op_num_threads = 1
+                    _onnx_session = ort.InferenceSession(
+                        p, sess_options=opts, providers=["CPUExecutionProvider"]
+                    )
+                    log.info("Modelo ONNX PAD (MiniFASNetV2) carregado com sucesso de %s", p)
+                    return _onnx_session
+                except Exception as exc:
+                    log.warning("Falha ao carregar modelo ONNX PAD de %s: %s", p, exc)
+        return None
 
 
 def compute_laplacian_variance(gray: np.ndarray) -> float:
@@ -171,6 +177,11 @@ def _analyze_chroma_and_specularity(face_bgr: np.ndarray) -> float:
     g = face_bgr[:, :, 1].astype(np.float32)
     r = face_bgr[:, :, 2].astype(np.float32)
 
+    # Imagem monocromática / papel P&B (sem dispersão de cores naturais)
+    chroma_spread = float(np.mean(np.abs(r - b) + np.abs(r - g) + np.abs(g - b)))
+    if chroma_spread < 6.0:
+        return 0.10
+
     # Proporção de pixels brancos saturados (glare em telas de celular)
     saturated = (r > 245) & (g > 245) & (b > 245)
     glare_ratio = float(np.mean(saturated))
@@ -191,7 +202,40 @@ def _analyze_chroma_and_specularity(face_bgr: np.ndarray) -> float:
     return float(np.clip(0.35 + 0.65 * skin_fraction, 0.0, 1.0))
 
 
-def verify_liveness(face_bgr: np.ndarray) -> Tuple[bool, float, str]:
+def extract_pad_patch(
+    full_bgr: np.ndarray,
+    bbox: list | np.ndarray,
+    scale: float = 2.7,
+    out_size: int = 80,
+) -> np.ndarray:
+    """Extrai o patch facial 2.7x recomendado para o modelo MiniFASNetV2."""
+    src_h, src_w = full_bgr.shape[:2]
+    x1, y1, x2, y2 = [float(v) for v in bbox]
+    box_w = max(1.0, x2 - x1)
+    box_h = max(1.0, y2 - y1)
+
+    scale = min((src_h - 1) / box_h, min((src_w - 1) / box_w, scale))
+    new_w = box_w * scale
+    new_h = box_h * scale
+    cx = x1 + box_w / 2.0
+    cy = y1 + box_h / 2.0
+
+    lt_x = int(max(0, cx - new_w / 2.0))
+    lt_y = int(max(0, cy - new_h / 2.0))
+    rb_x = int(min(src_w - 1, cx + new_w / 2.0))
+    rb_y = int(min(src_h - 1, cy + new_h / 2.0))
+
+    patch = full_bgr[lt_y : rb_y + 1, lt_x : rb_x + 1]
+    if patch.size == 0:
+        patch = full_bgr[int(y1) : int(y2), int(x1) : int(x2)]
+    return np.array(Image.fromarray(patch.astype(np.uint8)).resize((out_size, out_size)))
+
+
+def verify_liveness(
+    face_bgr: np.ndarray,
+    full_bgr: np.ndarray | None = None,
+    bbox: list | np.ndarray | None = None,
+) -> Tuple[bool, float, str]:
     """Verifica a vivacidade do rosto contra ataques de apresentação (PAD).
 
     Retorna: (is_live, score, status_message)
@@ -199,51 +243,61 @@ def verify_liveness(face_bgr: np.ndarray) -> Tuple[bool, float, str]:
     if not settings.liveness_enabled:
         return True, 1.0, "liveness_disabled"
 
-    gray = (
-        0.114 * face_bgr[:, :, 0]
-        + 0.587 * face_bgr[:, :, 1]
-        + 0.299 * face_bgr[:, :, 2]
-    ).astype(np.float32)
+    # Verificação preliminar de dispersão cromática (mitiga impressões P&B / papel fosco)
+    b = face_bgr[:, :, 0].astype(np.float32)
+    g = face_bgr[:, :, 1].astype(np.float32)
+    r = face_bgr[:, :, 2].astype(np.float32)
+    chroma_spread = float(np.mean(np.abs(r - b) + np.abs(r - g) + np.abs(g - b)))
+    if chroma_spread < 6.0:
+        log.warning("PAD: face monocromática/P&B detectada (chroma_spread=%.2f)", chroma_spread)
+        return False, 0.05, "spoof_detected"
 
     # 1. Pipeline primário: Rede Neural Especializada (MiniFASNetV2 ONNX)
     session = _init_onnx_pad()
     if session is not None:
         try:
             input_name = session.get_inputs()[0].name
-            # Mantém BGR para MiniFASNet
-            resized = np.array(
-                Image.fromarray(face_bgr).resize((80, 80))
-            ).astype(np.float32)
-            inp = np.transpose(resized, (2, 0, 1))[np.newaxis, ...] / 255.0
+            if full_bgr is not None and bbox is not None:
+                patch = extract_pad_patch(full_bgr, bbox, scale=2.7, out_size=80)
+            else:
+                patch = np.array(Image.fromarray(face_bgr.astype(np.uint8)).resize((80, 80)))
+
+            # MiniFASNet requer formato float32 com valores [0.0, 255.0] BGR no formato NCHW
+            inp = np.transpose(patch.astype(np.float32), (2, 0, 1))[np.newaxis, ...]
+
             outputs = session.run(None, {input_name: inp})
             logits = outputs[0][0]
             exp_logits = np.exp(logits - np.max(logits))
             probs = exp_logits / np.sum(exp_logits)
-            # MiniFASNet: Classe 1 = Live; Classes 0 e 2 = Spoof
-            live_prob = float(probs[1]) if len(probs) > 1 else float(probs[0])
 
-            lbp_score = _analyze_lbp_texture(gray)
-
-            # Rejeição imediata se a rede neural indicar forte probabilidade de spoofing
-            if live_prob < 0.40:
-                log.warning("PAD MiniFASNet rejeitou spoof direto: live_prob=%.4f", live_prob)
-                return False, round(live_prob, 4), "spoof_detected"
-
-            # Score combinado: 80% modelo ML + 20% micro-textura LBP
-            pad_score = round(0.80 * live_prob + 0.20 * lbp_score, 4)
-            is_live = pad_score >= settings.liveness_min_score
-            status = "onnx_pass" if is_live else "spoof_detected"
-            return is_live, pad_score, status
+            # MiniFASNet 2.7_80x80: Classe 1 = Live; Classe 0 = Print attack; Classe 2 = Replay attack
+            live_prob = float(probs[1])
+            is_live = live_prob >= settings.liveness_min_score
+            log.info(
+                "PAD MiniFASNet: live_prob=%.4f (min=%.2f), replay=%.4f, print=%.4f -> %s",
+                live_prob,
+                settings.liveness_min_score,
+                float(probs[2]),
+                float(probs[0]),
+                "Aprovado" if is_live else "Rejeitado",
+            )
+            return is_live, round(live_prob, 4), "onnx_pass" if is_live else "spoof_detected"
         except Exception as exc:
             log.warning("Falha na inferência ONNX PAD: %s. Aplicando analisador estatístico.", exc)
 
-    # 2. Pipeline passivo estatístico (LBP + FFT Moiré + Cromática)
+    # 2. Pipeline passivo estatístico (LBP + FFT Moiré + Cromática) de contingência
+    gray = (
+        0.114 * face_bgr[:, :, 0]
+        + 0.587 * face_bgr[:, :, 1]
+        + 0.299 * face_bgr[:, :, 2]
+    ).astype(np.float32)
+
     lbp_score = _analyze_lbp_texture(gray)
     moire_score = _analyze_frequency_and_moire(gray)
     chroma_score = _analyze_chroma_and_specularity(face_bgr)
 
     # Se reflexo severo ou ausência crítica de textura
-    if chroma_score <= 0.25 or moire_score <= 0.25:
+    if chroma_score <= 0.20 or moire_score <= 0.20:
         final_score = min(chroma_score, moire_score)
     else:
         final_score = 0.40 * lbp_score + 0.30 * moire_score + 0.30 * chroma_score
