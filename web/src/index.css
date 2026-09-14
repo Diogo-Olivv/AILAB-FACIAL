@@ -7,15 +7,23 @@
   --color-navy-dark: #141E40;
   --color-green: #166534;
   --color-green-light: #22C55E;
-  --color-cream: #F4EFE4;
-  --color-card: #FBF8F1;
-  --color-ink: #141A33;
-  --color-muted: #525866;
-  --color-line: rgba(30, 45, 95, 0.14);
+  --color-cream: #F5F5F7;
+  --color-card: #FFFFFF;
+  --color-ink: #111827;
+  --color-muted: #6B7280;
+  --color-line: rgba(0, 0, 0, 0.07);
   --color-gold: #C9A961;
   --color-warn: #DC2626;
   --color-amber: #B45309;
   --focus-ring: rgba(30, 45, 95, 0.45);
+}
+
+.shadow-apple {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.shadow-apple-hover {
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
 }
 
 @layer base {

@@ -69,7 +69,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-xs transition-all sm:overflow-x-auto">
+      <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-apple transition-all duration-300 sm:overflow-x-auto">
         <table className="w-full table-fixed text-left text-sm text-ink" aria-label="Tabela de permanência dos integrantes">
           <thead className="sticky top-0 z-10 bg-navy text-white select-none">
             <tr>
@@ -174,7 +174,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                   {row.sessionCount}
                 </td>
                 <td className="whitespace-nowrap px-2 py-2.5 sm:px-5 sm:py-3.5 text-right sm:text-left font-extrabold text-navy text-xs sm:text-sm tabular-nums">
-                  {formatDuration(row.totalSeconds)}
+                  {formatDuration(row.totalSeconds, row.present)}
                 </td>
                 <td className="whitespace-nowrap px-2 py-2.5 sm:px-5 sm:py-3.5 text-right sm:text-left">
                   {row.present ? (

@@ -9,7 +9,7 @@ import {
   type SessionRecord,
 } from "../lib/reports";
 import { rangeFor, type PeriodKey } from "../lib/period";
-import { formatDuration, groupByDay, sessionSeconds, totalsByMember, type MemberTotal } from "../lib/aggregate";
+import { formatDuration, groupByDay, sessionSeconds, totalsByMember } from "../lib/aggregate";
 import { Header } from "../components/Header";
 import { PeriodSelector } from "../components/PeriodSelector";
 import { TotalsTable } from "../components/TotalsTable";
@@ -36,11 +36,20 @@ export function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [now, setNow] = useState<Date>(() => new Date());
+
+  // Ticker de 1 segundo para atualizar sessões em aberto em tempo real com fluidez
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Modais e Drawer
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isTutorWarningOpen, setIsTutorWarningOpen] = useState(false);
-  const [selectedMemberTotal, setSelectedMemberTotal] = useState<MemberTotal | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   const loadMembers = useCallback(async () => {
     try {
@@ -124,10 +133,15 @@ export function Dashboard() {
   }, [refreshData]);
 
   const totals = useMemo(() => {
-    return totalsByMember(members, sessions, presentIds, new Date());
-  }, [members, sessions, presentIds]);
+    return totalsByMember(members, sessions, presentIds, now);
+  }, [members, sessions, presentIds, now]);
 
-  const days = useMemo(() => groupByDay(members, sessions, new Date()), [members, sessions]);
+  const days = useMemo(() => groupByDay(members, sessions, now), [members, sessions, now]);
+
+  const selectedMemberTotal = useMemo(() => {
+    if (!selectedMemberId) return null;
+    return totals.find((t) => t.member.id === selectedMemberId) ?? null;
+  }, [totals, selectedMemberId]);
 
   // Filtragem dinâmica por nome e matrícula
   const filteredTotals = useMemo(() => {
@@ -239,7 +253,7 @@ export function Dashboard() {
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4 animate-fade-in">
             {/* Presentes Agora */}
-            <div className="rounded-2xl border border-line/70 bg-card p-3.5 sm:p-5 shadow-2xs transition-all duration-200 hover:border-navy/20 hover:shadow-xs">
+            <div className="rounded-2xl border border-black/[0.06] bg-white p-3.5 sm:p-5 shadow-apple transition-all duration-300 hover:shadow-apple-hover">
               <div className="flex items-center justify-between">
                 <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
                   Presentes
@@ -257,7 +271,7 @@ export function Dashboard() {
             </div>
 
             {/* Total de Horas */}
-            <div className="rounded-2xl border border-line/70 bg-card p-3.5 sm:p-5 shadow-2xs transition-all duration-200 hover:border-navy/20 hover:shadow-xs">
+            <div className="rounded-2xl border border-black/[0.06] bg-white p-3.5 sm:p-5 shadow-apple transition-all duration-300 hover:shadow-apple-hover">
               <div className="flex items-center justify-between">
                 <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
                   Horas Totais
@@ -275,7 +289,7 @@ export function Dashboard() {
             </div>
 
             {/* Integrantes com Registro */}
-            <div className="rounded-2xl border border-line/70 bg-card p-3.5 sm:p-5 shadow-2xs transition-all duration-200 hover:border-navy/20 hover:shadow-xs">
+            <div className="rounded-2xl border border-black/[0.06] bg-white p-3.5 sm:p-5 shadow-apple transition-all duration-300 hover:shadow-apple-hover">
               <div className="flex items-center justify-between">
                 <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
                   Ativos
@@ -292,7 +306,7 @@ export function Dashboard() {
             </div>
 
             {/* Total de Sessões */}
-            <div className="rounded-2xl border border-line/70 bg-card p-3.5 sm:p-5 shadow-2xs transition-all duration-200 hover:border-navy/20 hover:shadow-xs">
+            <div className="rounded-2xl border border-black/[0.06] bg-white p-3.5 sm:p-5 shadow-apple transition-all duration-300 hover:shadow-apple-hover">
               <div className="flex items-center justify-between">
                 <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
                   Sessões
@@ -321,16 +335,16 @@ export function Dashboard() {
         />
 
         {/* Barra de Navegação e Busca Integrada */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 rounded-2xl border border-line/80 bg-card p-2.5 sm:p-3 shadow-2xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 rounded-2xl border border-black/[0.06] bg-white p-2.5 sm:p-3 shadow-apple transition-all duration-300">
           {/* Segmented control para alternar entre Totais e Histórico */}
-          <div className="grid grid-cols-2 sm:flex rounded-xl bg-navy/[0.04] p-1 border border-line/60 gap-1 w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex rounded-xl bg-[#EBEBED]/80 p-1 border border-black/[0.03] gap-1 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setView("totals")}
-              className={`flex items-center justify-center py-2 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-lg transition-all active:scale-95 cursor-pointer min-h-[38px] ${
+              className={`flex items-center justify-center py-2 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 active:scale-95 cursor-pointer min-h-[38px] ${
                 view === "totals"
-                  ? "bg-navy text-white shadow-xs font-bold"
-                  : "text-muted hover:text-ink hover:bg-white/60"
+                  ? "bg-white text-navy shadow-sm font-bold"
+                  : "text-muted hover:text-ink"
               }`}
             >
               Totais por Integrante
@@ -338,10 +352,10 @@ export function Dashboard() {
             <button
               type="button"
               onClick={() => setView("history")}
-              className={`flex items-center justify-center py-2 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-lg transition-all active:scale-95 cursor-pointer min-h-[38px] ${
+              className={`flex items-center justify-center py-2 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 active:scale-95 cursor-pointer min-h-[38px] ${
                 view === "history"
-                  ? "bg-navy text-white shadow-xs font-bold"
-                  : "text-muted hover:text-ink hover:bg-white/60"
+                  ? "bg-white text-navy shadow-sm font-bold"
+                  : "text-muted hover:text-ink"
               }`}
             >
               Histórico Diário
@@ -358,7 +372,7 @@ export function Dashboard() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nome ou matrícula..."
-              className="w-full rounded-xl border border-line bg-white py-2 pl-8 pr-7 text-xs sm:text-sm text-ink placeholder:text-muted/70 focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20 shadow-2xs min-h-[38px]"
+              className="w-full rounded-xl border border-black/[0.08] bg-[#F5F5F7]/70 py-2 pl-8 pr-7 text-xs sm:text-sm text-ink placeholder:text-muted/70 focus:border-navy focus:bg-white focus:outline-none focus:ring-2 focus:ring-navy/15 shadow-2xs min-h-[38px] transition-all"
               aria-label="Buscar integrantes por nome ou matrícula"
             />
             {searchQuery && (
@@ -395,7 +409,7 @@ export function Dashboard() {
             {view === "totals" ? (
               <TotalsTable
                 rows={filteredTotals}
-                onSelectMember={(row) => setSelectedMemberTotal(row)}
+                onSelectMember={(row) => setSelectedMemberId(row.member.id)}
               />
             ) : (
               <DailyHistory days={filteredDays} />
@@ -435,7 +449,7 @@ export function Dashboard() {
         sessions={sessions}
         isPresent={Boolean(selectedMemberTotal?.present)}
         totalSeconds={selectedMemberTotal?.totalSeconds ?? 0}
-        onClose={() => setSelectedMemberTotal(null)}
+        onClose={() => setSelectedMemberId(null)}
       />
     </div>
   );

@@ -1,8 +1,12 @@
 import type { Member, SessionRecord } from "./reports";
 
-export function formatDuration(totalSeconds: number): string {
+export function formatDuration(totalSeconds: number, includeSeconds = false): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  if (includeSeconds) {
+    return `${hours}h ${minutes.toString().padStart(2, "0")}m ${seconds.toString().padStart(2, "0")}s`;
+  }
   return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
 }
 
