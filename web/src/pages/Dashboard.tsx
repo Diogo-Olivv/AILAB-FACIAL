@@ -229,68 +229,74 @@ export function Dashboard() {
         {loading ? (
           <KpiSkeleton />
         ) : (
-          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4 sm:gap-4 animate-fade-in">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4 animate-fade-in">
             {/* Presentes Agora */}
-            <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
+            <div className="rounded-2xl border border-line/70 bg-card p-3.5 sm:p-5 shadow-2xs transition-all duration-200 hover:border-navy/20 hover:shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
                   Presentes
                 </span>
-                <span className="relative flex h-3 w-3">
+                <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green opacity-75" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-green" />
                 </span>
               </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-ink">{presentCount}</span>
-                <span className="text-xs font-bold text-green">ao vivo</span>
+              <div className="mt-2 flex items-baseline gap-1.5 sm:gap-2">
+                <span className="text-2xl sm:text-3xl font-extrabold text-ink tabular-nums">{presentCount}</span>
+                <span className="text-2xs sm:text-xs font-bold text-green">ao vivo</span>
               </div>
-              <p className="text-xs text-muted mt-1">no laboratório agora</p>
+              <p className="text-2xs sm:text-xs text-muted mt-0.5 truncate">no laboratório agora</p>
             </div>
 
             {/* Total de Horas */}
-            <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
+            <div className="rounded-2xl border border-line/70 bg-card p-3.5 sm:p-5 shadow-2xs transition-all duration-200 hover:border-navy/20 hover:shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
                   Horas Totais
                 </span>
-                <span className="text-sm">⏱️</span>
+                <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-navy/5 text-xs sm:text-sm">
+                  ⏱️
+                </span>
               </div>
               <div className="mt-2">
-                <span className="text-2xl sm:text-3xl font-extrabold text-navy">
+                <span className="text-xl sm:text-3xl font-extrabold text-navy tabular-nums">
                   {formatDuration(totalLabSeconds)}
                 </span>
               </div>
-              <p className="text-xs text-muted mt-1">acumuladas no período</p>
+              <p className="text-2xs sm:text-xs text-muted mt-0.5 truncate">acumuladas no período</p>
             </div>
 
             {/* Integrantes com Registro */}
-            <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
+            <div className="rounded-2xl border border-line/70 bg-card p-3.5 sm:p-5 shadow-2xs transition-all duration-200 hover:border-navy/20 hover:shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Ativos no Período
+                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
+                  Ativos
                 </span>
-                <span className="text-sm">👥</span>
+                <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-navy/5 text-xs sm:text-sm">
+                  👥
+                </span>
               </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-ink">{activeMembersCount}</span>
-                <span className="text-xs text-muted">de {members.length}</span>
+              <div className="mt-2 flex items-baseline gap-1.5 sm:gap-2">
+                <span className="text-2xl sm:text-3xl font-extrabold text-ink tabular-nums">{activeMembersCount}</span>
+                <span className="text-2xs sm:text-xs text-muted">de {members.length}</span>
               </div>
-              <p className="text-xs text-muted mt-1">integrantes com presença</p>
+              <p className="text-2xs sm:text-xs text-muted mt-0.5 truncate">integrantes presentes</p>
             </div>
 
             {/* Total de Sessões */}
-            <div className="rounded-2xl border border-line bg-card p-4 sm:p-5 shadow-2xs transition-all duration-200 hover:shadow-md">
+            <div className="rounded-2xl border border-line/70 bg-card p-3.5 sm:p-5 shadow-2xs transition-all duration-200 hover:border-navy/20 hover:shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Total Sessões
+                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-muted">
+                  Sessões
                 </span>
-                <span className="text-sm">📌</span>
+                <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-navy/5 text-xs sm:text-sm">
+                  📌
+                </span>
               </div>
               <div className="mt-2">
-                <span className="text-3xl font-extrabold text-ink">{totalSessionsCount}</span>
+                <span className="text-2xl sm:text-3xl font-extrabold text-ink tabular-nums">{totalSessionsCount}</span>
               </div>
-              <p className="text-xs text-muted mt-1">registros válidos</p>
+              <p className="text-2xs sm:text-xs text-muted mt-0.5 truncate">registros válidos</p>
             </div>
           </div>
         )}
@@ -306,25 +312,28 @@ export function Dashboard() {
           onCustomTo={setCustomTo}
         />
 
-        {/* Barra de Filtros com Busca Integrada por Nome e Matrícula */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card p-3 shadow-2xs">
-          <div className="flex gap-2">
+        {/* Barra de Navegação e Busca Integrada */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 rounded-2xl border border-line/80 bg-card p-2.5 sm:p-3 shadow-2xs">
+          {/* Segmented control para alternar entre Totais e Histórico */}
+          <div className="grid grid-cols-2 sm:flex rounded-xl bg-navy/[0.04] p-1 border border-line/60 gap-1 w-full sm:w-auto">
             <button
+              type="button"
               onClick={() => setView("totals")}
-              className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer min-h-[44px] ${
+              className={`flex items-center justify-center py-2 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-lg transition-all active:scale-95 cursor-pointer min-h-[38px] ${
                 view === "totals"
-                  ? "bg-navy text-white shadow-sm ring-2 ring-navy/20"
-                  : "border border-line bg-card text-muted hover:text-ink hover:bg-navy/5"
+                  ? "bg-navy text-white shadow-xs font-bold"
+                  : "text-muted hover:text-ink hover:bg-white/60"
               }`}
             >
               Totais por Integrante
             </button>
             <button
+              type="button"
               onClick={() => setView("history")}
-              className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer min-h-[44px] ${
+              className={`flex items-center justify-center py-2 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-lg transition-all active:scale-95 cursor-pointer min-h-[38px] ${
                 view === "history"
-                  ? "bg-navy text-white shadow-sm ring-2 ring-navy/20"
-                  : "border border-line bg-card text-muted hover:text-ink hover:bg-navy/5"
+                  ? "bg-navy text-white shadow-xs font-bold"
+                  : "text-muted hover:text-ink hover:bg-white/60"
               }`}
             >
               Histórico Diário
@@ -332,7 +341,7 @@ export function Dashboard() {
           </div>
 
           {/* Campo de Busca Reativa por Nome ou Matrícula */}
-          <div className="relative flex-1 min-w-[220px] max-w-sm">
+          <div className="relative w-full sm:w-72">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted pointer-events-none text-xs">
               🔍
             </span>
@@ -341,11 +350,12 @@ export function Dashboard() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nome ou matrícula..."
-              className="w-full rounded-xl border border-line bg-white py-2 pl-8 pr-7 text-xs sm:text-sm text-ink placeholder:text-muted/70 focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20 shadow-2xs"
+              className="w-full rounded-xl border border-line bg-white py-2 pl-8 pr-7 text-xs sm:text-sm text-ink placeholder:text-muted/70 focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20 shadow-2xs min-h-[38px]"
               aria-label="Buscar integrantes por nome ou matrícula"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery("")}
                 className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-muted hover:text-ink cursor-pointer text-xs"
                 aria-label="Limpar busca"
