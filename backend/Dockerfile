@@ -6,6 +6,8 @@ WORKDIR /build
 # Ferramentas de compilação restritas a este estágio de compilação
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Cria virtualenv dedicado para isolar os pacotes
