@@ -281,16 +281,19 @@ export function Dashboard() {
                   🟢
                 </span>
               </div>
-              <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                <span className="text-2xl sm:text-3xl font-semibold text-[#171715] font-mono-data tracking-tight">
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-2xl sm:text-3xl font-semibold text-[#171715] font-mono-data tracking-tight leading-none">
                   {presentCount}
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-2xs font-medium text-emerald-800 font-mono-data">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  ao vivo
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-300/80 px-2 py-0.5 text-2xs font-semibold text-emerald-800 font-sans shadow-2xs leading-none">
+                  <span className="relative flex h-2 w-2 items-center justify-center">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                  </span>
+                  <span>ao vivo</span>
                 </span>
               </div>
-              <p className="text-[11px] text-[#706E6A] mt-1 truncate">No laboratório</p>
+              <p className="text-[11px] text-[#706E6A] mt-1.5 truncate">No laboratório</p>
             </div>
 
             {/* Total de Horas */}
