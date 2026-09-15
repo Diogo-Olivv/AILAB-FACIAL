@@ -60,22 +60,22 @@ export function PeriodSelector({
   };
 
   return (
-    <div className="claude-card space-y-3 rounded-3xl p-3.5 sm:p-4 transition-all duration-300 hover:shadow-claude-hover">
-      {/* Segmented Control refinado estilo Perplexity com deslize físico */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl p-2.5 sm:p-3 shadow-[0_4px_20px_rgba(23,23,21,0.02)] transition-all duration-300">
+      {/* Segmented Control refinado estilo Apple & Perplexity com deslize suave */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div
           ref={containerRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={() => setIsDragging(false)}
-          className="relative grid grid-cols-3 w-full sm:w-[320px] rounded-2xl bg-stone-200/60 p-1 select-none cursor-pointer touch-none shadow-inner"
+          className="relative grid grid-cols-3 w-full sm:w-[320px] rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] p-1 select-none cursor-pointer touch-none"
           role="tablist"
           aria-label="Seletor de período"
         >
-          {/* Pílula branca flutuante com sombra suave e física de mola */}
+          {/* Pílula branca flutuante com borda sutil e física suave */}
           <div
-            className="absolute top-1 bottom-1 rounded-xl bg-white shadow-[0_2px_8px_rgba(23,23,21,0.06),0_1px_2px_rgba(23,23,21,0.03)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+            className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
             style={{
               width: "calc(33.333% - 2px)",
               transform: `translateX(${activeIndex * 100}%)`,
@@ -95,8 +95,8 @@ export function PeriodSelector({
                   e.stopPropagation();
                   onPeriod(key);
                 }}
-                className={`relative z-10 flex items-center justify-center py-2 px-2 text-xs sm:text-sm font-semibold rounded-xl transition-colors duration-200 cursor-pointer min-h-[38px] ${
-                  isActive ? "text-slate-900 font-bold" : "text-stone-500 hover:text-slate-900"
+                className={`relative z-10 flex items-center justify-center py-2 px-2 text-xs sm:text-sm font-sans rounded-xl transition-colors duration-200 cursor-pointer min-h-[38px] ${
+                  isActive ? "text-[#171715] font-semibold" : "text-[#706E6A] font-medium hover:text-[#171715]"
                 }`}
               >
                 <span>{PERIOD_LABELS[key]}</span>
@@ -107,17 +107,10 @@ export function PeriodSelector({
 
         {/* Indicador de intervalo de datas com tipografia mono precisa */}
         <div className="flex items-center justify-between sm:justify-end gap-2 px-1">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-stone-200/80 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 shadow-2xs font-mono-data">
-            <span className="text-xs">📅</span>
-            <span>{formatRange(range)}</span>
-          </span>
-          <span className="text-2xs font-bold text-stone-400 uppercase tracking-wider hidden sm:inline">
-            {safePeriod === "day"
-              ? "Hoje"
-              : safePeriod === "week"
-              ? "Semana Corrente"
-              : "Mês Corrente"}
-          </span>
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#E5E2DC] bg-[#FAF9F5] px-3.5 py-1.5 text-xs text-[#171715] shadow-2xs font-mono-data">
+            <span className="text-xs text-[#706E6A]">📅</span>
+            <span className="font-medium text-[#171715]">{formatRange(range)}</span>
+          </div>
         </div>
       </div>
     </div>

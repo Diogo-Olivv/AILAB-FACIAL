@@ -28,19 +28,19 @@ export function Header({
           <img
             src={logo}
             alt="AiLab Makers Logo"
-            className="h-9 w-9 sm:h-11 sm:w-11 rounded-2xl border border-stone-200/80 object-cover shadow-claude ring-1 ring-black/5"
+            className="h-9 w-9 sm:h-11 sm:w-11 rounded-2xl border border-[#E5E2DC] object-cover shadow-2xs"
           />
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-editorial text-base sm:text-xl font-semibold tracking-tight text-slate-900 leading-none">
+              <span className="font-editorial text-base sm:text-xl font-normal tracking-tight text-[#171715] leading-none">
                 AiLab Makers
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-bold text-emerald-800 tracking-wider uppercase font-mono-data">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-2xs font-medium text-emerald-800 font-mono-data">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>ao vivo</span>
               </span>
             </div>
-            <p className="text-2xs sm:text-xs text-stone-500 font-medium leading-none mt-1">
+            <p className="text-2xs sm:text-xs text-[#706E6A] font-sans leading-none mt-1">
               Controle Acadêmico de Permanência
             </p>
           </div>

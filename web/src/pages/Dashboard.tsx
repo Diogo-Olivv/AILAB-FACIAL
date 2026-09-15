@@ -274,8 +274,8 @@ export function Dashboard() {
             {/* Presentes Agora */}
             <div className="rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] bg-white/85 shadow-[0_4px_20px_rgba(23,23,21,0.03)] hover:border-[#706E6A]/30 transition-all duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#706E6A]">
-                  Presentes
+                <span className="text-xs font-sans font-medium text-[#706E6A]">
+                  Presentes agora
                 </span>
                 <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs shadow-2xs">
                   🟢
@@ -296,8 +296,8 @@ export function Dashboard() {
             {/* Total de Horas */}
             <div className="rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] bg-white/85 shadow-[0_4px_20px_rgba(23,23,21,0.03)] hover:border-[#706E6A]/30 transition-all duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#706E6A]">
-                  Horas Totais
+                <span className="text-xs font-sans font-medium text-[#706E6A]">
+                  Total de horas
                 </span>
                 <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-200/80 text-blue-800 text-xs shadow-2xs">
                   ⏱️
@@ -314,8 +314,8 @@ export function Dashboard() {
             {/* Integrantes Ativos */}
             <div className="rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] bg-white/85 shadow-[0_4px_20px_rgba(23,23,21,0.03)] hover:border-[#706E6A]/30 transition-all duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#706E6A]">
-                  Ativos
+                <span className="text-xs font-sans font-medium text-[#706E6A]">
+                  Integrantes ativos
                 </span>
                 <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-purple-50 border border-purple-200/80 text-purple-800 text-xs shadow-2xs">
                   👥
@@ -333,8 +333,8 @@ export function Dashboard() {
             {/* Total de Sessões */}
             <div className="rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] bg-white/85 shadow-[0_4px_20px_rgba(23,23,21,0.03)] hover:border-[#706E6A]/30 transition-all duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#706E6A]">
-                  Sessões
+                <span className="text-xs font-sans font-medium text-[#706E6A]">
+                  Total de sessões
                 </span>
                 <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-xs shadow-2xs">
                   📌
