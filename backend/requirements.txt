@@ -8,7 +8,7 @@ supabase>=2.4,<3
 
 # Face recognition
 insightface>=0.7
-onnxruntime>=1.17,<2
+onnxruntime>=1.30.0,<2
 Pillow>=10.0,<12
 numpy>=1.26,<2
 
