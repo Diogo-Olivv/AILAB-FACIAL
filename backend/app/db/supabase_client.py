@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 _client: Any = None
 
 
-def get_client() -> Any:
+def get_client() -> Client | Any:
     global _client
     if _client is None:
         try:

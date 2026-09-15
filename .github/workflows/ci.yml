@@ -1,4 +1,4 @@
-﻿name: Continuous Integration & Shift-Left Security (CI)
+name: Continuous Integration & Shift-Left Security (CI)
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
 
@@ -56,7 +56,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: mobile/package-lock.json
 
@@ -94,7 +94,7 @@ jobs:
           pip install ruff bandit
 
       - name: SAST - Static Code & Security Analysis (Ruff)
-        run: ruff check app/ --select E,F,W,B,S --ignore E501
+        run: ruff check app/ --select E,F,W,B,S --ignore E501,B008
 
       - name: SAST - Vulnerability & Injection Scanner (Bandit)
         run: bandit -r app/ -ll -x tests/

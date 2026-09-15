@@ -90,8 +90,8 @@ def _last_event_ts(profile_id: str) -> datetime | None:
         val = row.data
         if val:
             return _parse_ts(str(val))
-    except Exception:
-        pass
+    except Exception as exc:
+        log.debug("last_event_time RPC fallback: %s", exc)
 
     # Fallback por query direta indexada
     try:

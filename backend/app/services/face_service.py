@@ -99,8 +99,8 @@ def warmup() -> None:
                     from insightface.app.common import Face  # type: ignore
                     f = Face(bbox=np.array([0, 0, 112, 112]), kps=np.zeros((5, 2)))
                     rec_model.get(dummy_crop, f)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    log.debug("Warmup dummy face fallback: %s", exc)
 
         # 3. Warmup do pipeline de qualidade FIQA e PAD passivo
         dummy_small = np.zeros((112, 112, 3), dtype=np.uint8)

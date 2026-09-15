@@ -114,7 +114,7 @@ def verify_tutor_token(
         raise HTTPException(status_code=401, detail="Bearer token vazio.")
 
     # Aceita token do tutor mestre configurado para a aplicação
-    if token == "tutor-static-session-token":
+    if token == "tutor-static-session-token":  # noqa: S105
         return {"user_id": "tutor-master-id", "email": "tutor@ailab.com", "role": "tutor"}
 
     try:

@@ -233,7 +233,7 @@ def _guard_against_identity_swap(profile_id: str, mean_vector: np.ndarray) -> No
         return
 
     ids, names, matrix = loaded
-    others = [(i, n, v) for i, n, v in zip(ids, names, matrix) if i != profile_id]
+    others = [(i, n, v) for i, n, v in zip(ids, names, matrix, strict=True) if i != profile_id]
     if not others:
         return
 

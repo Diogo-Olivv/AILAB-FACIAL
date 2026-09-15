@@ -22,7 +22,7 @@ from app.services.challenge_service import (
     create_capture_challenge,
     verify_and_consume_challenge,
 )
-from app.services.face_service import identify, identify_frames
+from app.services.face_service import identify_frames
 from app.services.session_service import (
     close_stale_sessions,
     register_event,

@@ -43,7 +43,7 @@ def get_profile(profile_id: str):
 )
 async def refresh_embedding_route(
     profile_id: str,
-    frames: list[UploadFile] = File(...),
+    frames: list[UploadFile] = File(...),  # noqa: B008
 ):
     """Atualiza o vetor biométrico do perfil com novas fotos, mantendo id e histórico."""
     if len(frames) > settings.max_enroll_frames:

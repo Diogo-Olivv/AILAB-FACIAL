@@ -31,7 +31,7 @@ async def enroll_route(
     name: str = Form(...),
     consent: bool = Form(...),
     matricula: str = Form(""),
-    frames: list[UploadFile] = File(...),
+    frames: list[UploadFile] = File(...),  # noqa: B008
 ):
     """Recebe nome, consentimento e fotos; extrai e persiste o embedding."""
     if len(frames) > settings.max_enroll_frames:
