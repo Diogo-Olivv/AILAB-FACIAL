@@ -10,7 +10,7 @@
     "test": "node --experimental-strip-types --test src/lib/aggregate.test.ts src/lib/e2e_all_flows.test.ts src/lib/mutation.test.ts src/lib/property_based.test.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
+    "@supabase/supabase-js": "^2.116.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.3"
