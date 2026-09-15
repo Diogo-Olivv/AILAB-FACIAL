@@ -14,6 +14,7 @@ import { RecognitionPanel } from "@/components/RecognitionPanel";
 import { PresenceSidebar } from "@/components/PresenceSidebar";
 import { TutorPinModal } from "@/components/TutorPinModal";
 import { TermsModal } from "@/components/TermsModal";
+import { triggerHaptic } from "@/lib/sound";
 
 const logo = require("../assets/ailab_makers.jpeg");
 
@@ -29,6 +30,7 @@ export default function Home() {
   const [pendingMode, setPendingMode] = useState<"enroll" | "refresh">("enroll");
 
   const openTutorAuth = (mode: "enroll" | "refresh") => {
+    triggerHaptic("tap");
     setPendingMode(mode);
     setPinModalVisible(true);
   };
@@ -47,12 +49,21 @@ export default function Home() {
       >
         <View style={styles.brand}>
           <Image source={logo} style={styles.brandLogo} />
-          <Text style={styles.title}>AILAB Makers</Text>
+          <View style={styles.brandTextGroup}>
+            <Text style={styles.title}>AILAB Makers</Text>
+            <View style={styles.statusPill}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusText}>Totem Ativo</Text>
+            </View>
+          </View>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.termsBtn}
-            onPress={() => setTermsVisible(true)}
+            onPress={() => {
+              triggerHaptic("tap");
+              setTermsVisible(true);
+            }}
             activeOpacity={0.75}
             accessibilityRole="button"
             accessibilityLabel="Abrir termos de privacidade e LGPD"
@@ -63,7 +74,10 @@ export default function Home() {
           {isCompact && (
             <TouchableOpacity
               style={styles.presenceToggleBtn}
-              onPress={() => setPresenceModalVisible(true)}
+              onPress={() => {
+                triggerHaptic("tap");
+                setPresenceModalVisible(true);
+              }}
               activeOpacity={0.75}
               accessibilityRole="button"
               accessibilityLabel="Ver integrantes presentes no laboratório"
@@ -162,11 +176,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E2DC",
   },
+  brandTextGroup: { gap: 1 },
   title: {
     color: "#171715",
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: "700",
     letterSpacing: -0.4,
+  },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#10B981",
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#059669",
+    letterSpacing: 0.1,
   },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 9 },
   termsBtn: {

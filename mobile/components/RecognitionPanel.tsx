@@ -13,7 +13,7 @@ import { useCameraFocus } from "@/hooks/useCameraFocus";
 import { triggerPresenceRefresh } from "@/hooks/usePresence";
 import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
 import { extractErrorMessage, GENERIC_ERROR_MESSAGE } from "@/lib/errors";
-import { playAudioFeedback } from "@/lib/sound";
+import { notifyInteraction, triggerHaptic } from "@/lib/sound";
 
 export function RecognitionPanel() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -84,14 +84,14 @@ export function RecognitionPanel() {
         const res = await recognize(captured, action);
 
         if (!res) {
-          playAudioFeedback("error");
+          notifyInteraction("error");
           setBadgeData({
             type: "error",
             title: "Falha de Conexão",
             message: "Não foi possível comunicar com o servidor do laboratório.",
           });
         } else if (!res.recognized || !res.event) {
-          playAudioFeedback("warning");
+          notifyInteraction("warning");
           if (res.status === "spoof_detected") {
             setBadgeData({
               type: "spoof_detected",
@@ -144,7 +144,7 @@ export function RecognitionPanel() {
           const evtAction = res.event.action;
 
           if (evtAction === "check_in") {
-            playAudioFeedback("check_in");
+            notifyInteraction("check_in");
             setBadgeData({
               type: "check_in",
               name: res.name || "Integrante",
@@ -152,7 +152,7 @@ export function RecognitionPanel() {
               message: "Presença confirmada no AILAB Makers. Bom trabalho!",
             });
           } else if (evtAction === "check_out") {
-            playAudioFeedback("check_out");
+            notifyInteraction("check_out");
             const rawMins = res.event.duration_minutes;
             let displayMins: string | number | undefined;
             let durationMsg = "Saída registrada com sucesso no sistema.";
@@ -176,7 +176,7 @@ export function RecognitionPanel() {
               message: durationMsg,
             });
           } else if (evtAction === "already_in") {
-            playAudioFeedback("warning");
+            notifyInteraction("warning");
             setBadgeData({
               type: "warning",
               name: res.name,
@@ -184,7 +184,7 @@ export function RecognitionPanel() {
               message: "Sua entrada já está ativa. Caso deseje sair, clique no botão 'Saída'.",
             });
           } else if (evtAction === "not_in") {
-            playAudioFeedback("warning");
+            notifyInteraction("warning");
             setBadgeData({
               type: "warning",
               name: res.name,
@@ -192,14 +192,14 @@ export function RecognitionPanel() {
               message: "Você ainda não deu entrada no laboratório hoje. Clique em 'Entrada'.",
             });
           } else if (evtAction === "debounced") {
-            playAudioFeedback("warning");
+            notifyInteraction("warning");
             setBadgeData({
               type: "warning",
               title: "Registro Recente",
               message: "Aguarde alguns segundos antes de registrar nova presença.",
             });
           } else {
-            playAudioFeedback(action === "check_in" ? "check_in" : "check_out");
+            notifyInteraction(action === "check_in" ? "check_in" : "check_out");
             setBadgeData({
               type: action === "check_in" ? "check_in" : "check_out",
               name: res.name,
@@ -209,7 +209,7 @@ export function RecognitionPanel() {
         }
       } catch (err: any) {
         console.error("[RecognitionPanel] Erro ao registrar biometria:", err);
-        playAudioFeedback("error");
+        notifyInteraction("error");
         setBadgeData({
           type: "error",
           title: "Erro de Comunicação",
@@ -327,10 +327,11 @@ function SmoothActionButton({
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
+    triggerHaptic("tap");
     Animated.spring(scaleAnim, {
-      toValue: 0.96,
+      toValue: 0.95,
       friction: 6,
-      tension: 140,
+      tension: 180,
       useNativeDriver: true,
     }).start();
   };
@@ -339,7 +340,7 @@ function SmoothActionButton({
     Animated.spring(scaleAnim, {
       toValue: 1,
       friction: 5,
-      tension: 100,
+      tension: 120,
       useNativeDriver: true,
     }).start();
   };
@@ -607,17 +608,17 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   entrada: {
-    backgroundColor: "#0F5132",
-    borderColor: "rgba(16, 185, 129, 0.40)",
+    backgroundColor: "#059669",
+    borderColor: "rgba(16, 185, 129, 0.45)",
     shadowColor: "#059669",
   },
   saida: {
-    backgroundColor: "#171715",
-    borderColor: "rgba(255, 255, 255, 0.16)",
-    shadowColor: "#000000",
+    backgroundColor: "#1E293B",
+    borderColor: "rgba(255, 255, 255, 0.18)",
+    shadowColor: "#0F172A",
   },
   actionBusy: {
-    backgroundColor: "#2A2925",
+    backgroundColor: "#334155",
     borderColor: "rgba(255, 255, 255, 0.30)",
   },
   disabled: { opacity: 0.65 },
