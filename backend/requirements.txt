@@ -7,7 +7,7 @@ pydantic-settings>=2.15.0,<3
 supabase>=2.31.0,<3
 
 # Face recognition
-insightface>=0.7
+insightface>=2.0
 onnxruntime>=1.17,<2
 Pillow>=12.3.0,<13
 numpy>=2.5.3,<3
