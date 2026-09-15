@@ -29,7 +29,11 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
     setError("");
     setSuccess(false);
 
-    const cleanUsername = emailUsername.trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
+    let clean = emailUsername.trim().toLowerCase();
+    if (clean.includes("@")) {
+      clean = clean.split("@")[0];
+    }
+    const cleanUsername = clean.replace(/[^a-z0-9._-]/g, "");
     if (!cleanUsername) {
       setError("Informe o nome de usuário institucional desejado.");
       return;

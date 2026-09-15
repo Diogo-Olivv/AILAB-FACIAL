@@ -62,7 +62,26 @@ export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
         }
       }
     } catch {
-      // Prossegue para os fallbacks locais caso offline ou erro de rede
+      // Prossegue para verificação via RPC
+    }
+
+    // 2. Consulta a RPC verify_tutor_login no Supabase
+    try {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc("verify_tutor_login", {
+        p_email: cleanEmail,
+        p_password: cleanPassword,
+      });
+
+      if (!rpcErr && rpcRes && rpcRes.valid) {
+        setEmail("");
+        setPassword("");
+        setErrorMsg(null);
+        setLoading(false);
+        onSuccess("tutor-static-session-token");
+        return;
+      }
+    } catch {
+      // Prossegue para os fallbacks estáticos locais caso offline
     }
 
     // 2. Verificação de credenciais personalizadas salvas localmente

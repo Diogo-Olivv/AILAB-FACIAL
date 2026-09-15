@@ -57,11 +57,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: session?.user ?? null,
       loading,
       signIn: async (password: string, email?: string) => {
-        const cleanEmail = (
+        let cleanEmail = (
           email && email.trim().length > 0 ? email.trim() : VIEWER_EMAIL
         ).toLowerCase();
 
-        // 1. Verifica credenciais personalizadas salvas previamente pelo tutor
+        // Se o usuário digitou apenas o nome de usuário institucional sem o domínio, auto-completa
+        if (!cleanEmail.includes("@")) {
+          cleanEmail = `${cleanEmail}@ailab.com`;
+        }
+
+        // 1. Tenta autenticação padrão oficial no Supabase Auth (GoTrue)
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password,
+          });
+
+          if (!error && data?.session) {
+            setSession(data.session);
+            localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(data.session));
+            localStorage.setItem("ailab_site_access_granted", "true");
+            return;
+          }
+        } catch {
+          // Prossegue para verificação via RPC e contingências
+        }
+
+        // 2. Consulta a RPC segura verify_tutor_login no Supabase
+        try {
+          const { data: rpcRes, error: rpcErr } = await supabase.rpc("verify_tutor_login", {
+            p_email: cleanEmail,
+            p_password: password,
+          });
+
+          if (!rpcErr && rpcRes && rpcRes.valid) {
+            const tutorUser: User = {
+              id: rpcRes.user_id || "tutor-master-id",
+              aud: "authenticated",
+              role: "authenticated",
+              email: rpcRes.email || cleanEmail,
+              app_metadata: { role: "tutor", provider: "email" },
+              user_metadata: {
+                role: "tutor",
+                name: rpcRes.name || cleanEmail.split("@")[0],
+              },
+              created_at: new Date().toISOString(),
+            } as User;
+
+            const tutorSession: Session = {
+              access_token: "tutor-static-session-token",
+              token_type: "bearer",
+              user: tutorUser,
+              expires_in: 3600 * 24 * 7,
+              expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 7,
+              refresh_token: "tutor-refresh-token",
+            };
+
+            setSession(tutorSession);
+            localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(tutorSession));
+            localStorage.setItem("ailab_site_access_granted", "true");
+            return;
+          }
+        } catch {
+          // Prossegue para contingência local
+        }
+
+        // 3. Verificação de credenciais personalizadas salvas localmente
         let isCustomMatch = false;
         try {
           const rawCustom = localStorage.getItem(TUTOR_CUSTOM_CREDENTIALS_KEY);
@@ -80,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Ignora erro de parse
         }
 
-        // 2. Verificação do primeiro acesso padrão (tutor@ailab.com) ou credenciais personalizadas
+        // 4. Verificação estática master (tutor@ailab.com / apenasParaTutores@42)
         const isStaticMatch =
           cleanEmail === TUTOR_STATIC_EMAIL && password === TUTOR_STATIC_PASSWORD;
 
@@ -107,40 +168,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             refresh_token: "tutor-refresh-token",
           };
 
-          // Tenta também autenticar no Supabase Auth caso a conta exista lá
-          try {
-            const { data } = await supabase.auth.signInWithPassword({
-              email: cleanEmail,
-              password,
-            });
-            if (data?.session) {
-              setSession(data.session);
-              localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(data.session));
-              localStorage.setItem("ailab_site_access_granted", "true");
-              return;
-            }
-          } catch {
-            // Em caso de ausência no Supabase, mantém a sessão do tutor local autorizada
-          }
-
           setSession(tutorSession);
           localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(tutorSession));
           localStorage.setItem("ailab_site_access_granted", "true");
           return;
         }
 
-        // Caso contrário, tenta login padrão no Supabase
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
-
-        if (error || !data.session) {
-          throw error || new Error("Credenciais inválidas.");
-        }
-
-        setSession(data.session);
-        localStorage.setItem("ailab_site_access_granted", "true");
+        throw new Error("E-mail ou senha de tutor incorretos.");
       },
       signOut: async () => {
         localStorage.removeItem(TUTOR_STORAGE_KEY);
@@ -149,7 +183,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null);
       },
       updateTutorCredentials: async (newEmail: string, newPassword: string) => {
-        const cleanEmail = newEmail.trim().toLowerCase();
+        let cleanEmail = newEmail.trim().toLowerCase();
+        if (!cleanEmail.includes("@")) {
+          cleanEmail = `${cleanEmail}@ailab.com`;
+        }
         if (!cleanEmail.endsWith("@ailab.com")) {
           throw new Error("O e-mail institucional deve terminar obrigatoriamente com @ailab.com");
         }
@@ -157,28 +194,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error("A nova senha deve possuir pelo menos 6 caracteres.");
         }
 
-        // 1. Sincroniza credenciais diretamente no Supabase Auth via RPC
+        // 1. Sincroniza credenciais no Supabase Auth via RPC (auth.users e auth.identities)
         const currentEmail = session?.user?.email || "tutor@ailab.com";
-        try {
-          const { error: rpcErr } = await supabase.rpc("sync_tutor_credentials", {
-            p_current_email: currentEmail,
-            p_new_email: cleanEmail,
-            p_new_password: newPassword,
-          });
-          if (rpcErr) {
-            console.warn("Aviso ao sincronizar credenciais no Supabase:", rpcErr.message);
-          }
-        } catch (rpcEx) {
-          console.warn("Exceção na chamada RPC de sincronização:", rpcEx);
+        const { data: syncRes, error: rpcErr } = await supabase.rpc("sync_tutor_credentials", {
+          p_current_email: currentEmail,
+          p_new_email: cleanEmail,
+          p_new_password: newPassword,
+        });
+
+        if (rpcErr) {
+          throw new Error(rpcErr.message || "Erro ao sincronizar credenciais no banco.");
         }
 
-        // 2. Armazena as novas credenciais personalizadas localmente
+        // 2. Salva localmente para contingência
         localStorage.setItem(
           TUTOR_CUSTOM_CREDENTIALS_KEY,
           JSON.stringify({ email: cleanEmail, password: newPassword })
         );
 
-        // 3. Tenta autenticar no Supabase Auth para obter o JWT assinado oficial
+        // 3. Tenta autenticar no GoTrue para obter JWT assinado
         try {
           const { data: signData } = await supabase.auth.signInWithPassword({
             email: cleanEmail,
@@ -190,13 +224,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
         } catch {
-          // Fallback para sessão local se offline
+          // Fallback para sessão direta
         }
 
-        // 4. Fallback: Atualiza a sessão ativa imediatamente
+        // 4. Fallback imediato de sessão ativa
         const updatedUser: User = {
           ...(session?.user ?? ({} as User)),
-          id: session?.user?.id || "tutor-master-id",
+          id: (syncRes as any)?.user_id || session?.user?.id || "tutor-master-id",
           aud: "authenticated",
           role: "authenticated",
           email: cleanEmail,

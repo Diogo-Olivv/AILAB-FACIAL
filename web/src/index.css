@@ -80,6 +80,14 @@
 }
 
 @layer base {
+  html {
+    font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01", "ss02", "tnum" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     margin: 0;
     background-color: #F6F8FD;
@@ -89,9 +97,17 @@
       radial-gradient(at 50% 35%, rgba(139, 92, 246, 0.06) 0px, transparent 50%);
     background-attachment: fixed;
     color: var(--color-ink);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
   }
 
   /* Foco Visível Acessível (WCAG 2.2 AA - 2.4.7 e 2.4.11) */
@@ -100,6 +116,48 @@
     outline-offset: 2.5px;
     box-shadow: 0 0 0 4px rgba(30, 45, 95, 0.2);
   }
+}
+
+/* ── Utilitários de Tipografia Apple ────────────────────────────────────────── */
+
+.apple-heading-1 {
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: -0.032em;
+  line-height: 1.18;
+  font-weight: 800;
+}
+
+.apple-heading-2 {
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.apple-heading-3 {
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: -0.02em;
+  line-height: 1.32;
+  font-weight: 600;
+}
+
+.apple-body {
+  font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: -0.011em;
+  line-height: 1.48;
+}
+
+.apple-caption {
+  font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+}
+
+.apple-stat-num {
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  font-weight: 800;
 }
 
 /* ── Animações Suaves e Transições Modernas ─────────────────────────────────── */
