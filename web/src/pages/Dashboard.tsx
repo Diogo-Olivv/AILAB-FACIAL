@@ -350,45 +350,46 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* Seletor de Período estilo Apple & Perplexity */}
-        <PeriodSelector
-          period={period}
-          range={range}
-          onPeriod={setPeriod}
-        />
+        {/* Controles de Período, Visualização e Busca perfeitamente simétricos */}
+        <div className="space-y-3">
+          <PeriodSelector
+            period={period}
+            range={range}
+            onPeriod={setPeriod}
+          />
 
-        {/* Barra de Navegação e Busca Integrada com Estilo Perplexity */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-3xl p-2.5 sm:p-3 border border-[#E5E2DC] bg-white/85 backdrop-blur-xl shadow-[0_4px_20px_rgba(23,23,21,0.03)] transition-all duration-300">
-          {/* Segmented control de visualizações */}
-          <ViewSelector view={view} onViewChange={setView} />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-3xl p-3 sm:p-3.5 border border-[#E5E2DC] bg-white/85 backdrop-blur-xl shadow-[0_4px_20px_rgba(23,23,21,0.02)] transition-all duration-300">
+            {/* Segmented control de visualizações */}
+            <ViewSelector view={view} onViewChange={setView} />
 
-          {/* Campo de Busca Reativa estilo Perplexity Command Bar */}
-          <div className="relative w-full sm:w-80 group">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#706E6A] group-focus-within:text-[#C15F3D] transition-colors">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
+            {/* Campo de Busca Reativa estilo Perplexity Command Bar */}
+            <div className="relative w-full sm:w-80 group">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#706E6A] group-focus-within:text-[#C15F3D] transition-colors">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar integrante ou matrícula..."
+                className="w-full h-11 rounded-2xl border border-[#E5E2DC] bg-[#FAF9F5] py-2.5 pl-10 pr-9 text-xs sm:text-sm text-[#171715] placeholder:text-[#706E6A]/60 font-sans font-medium focus:border-[#C15F3D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#C15F3D]/10 transition-all"
+                aria-label="Buscar integrantes por nome ou matrícula"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#706E6A] hover:text-[#171715] cursor-pointer"
+                  aria-label="Limpar busca"
+                >
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#E5E2DC] text-[10px] font-bold text-[#171715] hover:bg-[#D5D2CC]">
+                    ✕
+                  </span>
+                </button>
+              )}
             </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar integrante ou matrícula..."
-              className="w-full rounded-2xl border border-[#E5E2DC] bg-[#FAF9F5] py-2.5 pl-10 pr-9 text-xs sm:text-sm text-[#171715] placeholder:text-[#706E6A]/60 font-sans font-medium focus:border-[#C15F3D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#C15F3D]/10 min-h-[40px] transition-all"
-              aria-label="Buscar integrantes por nome ou matrícula"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#706E6A] hover:text-[#171715] cursor-pointer"
-                aria-label="Limpar busca"
-              >
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#E5E2DC] text-[10px] font-bold text-[#171715] hover:bg-[#D5D2CC]">
-                  ✕
-                </span>
-              </button>
-            )}
           </div>
         </div>
 
@@ -463,6 +464,11 @@ export function Dashboard() {
         totalSeconds={selectedMemberTotal?.totalSeconds ?? 0}
         onClose={() => setSelectedMemberId(null)}
         onSessionUpdated={() => refreshData(true)}
+        onMemberRemoved={async () => {
+          setSelectedMemberId(null);
+          await loadMembers();
+          await refreshData(true);
+        }}
       />
     </div>
   );

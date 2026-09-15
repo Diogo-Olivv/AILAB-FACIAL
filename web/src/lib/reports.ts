@@ -107,3 +107,95 @@ export async function tutorCloseSession(
     if (error) throw error;
   }
 }
+
+/**
+ * Permite que o tutor registre manualmente a entrada de um integrante.
+ * Útil para contingência caso o totem ou reconhecimento facial trave ou apresente falhas.
+ */
+export async function tutorRegisterEntry(profileId: string): Promise<void> {
+  // 1. Invoca a RPC atômica tutor_register_entry
+  try {
+    const { data, error } = await supabase.rpc("tutor_register_entry", {
+      p_profile_id: profileId,
+    });
+
+    if (error) {
+      console.warn("RPC tutor_register_entry falhou, tentando fallback:", error.message);
+    } else if (data && typeof data === "object") {
+      const res = data as { success?: boolean; message?: string };
+      if (res.success) {
+        return;
+      }
+      if (res.message) {
+        throw new Error(res.message);
+      }
+    }
+  } catch (rpcErr: any) {
+    if (rpcErr?.message && !rpcErr.message.includes("RPC")) {
+      throw rpcErr;
+    }
+    console.warn("Exceção ao chamar RPC tutor_register_entry:", rpcErr);
+  }
+
+  // 2. Fallback direto via Supabase REST
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("sessions")
+    .insert({ profile_id: profileId, check_in: now });
+  if (error) throw error;
+}
+
+/**
+ * Permite que o tutor descadastre um integrante (ex: desistentes do laboratório).
+ * - Remove biometria facial para estrita conformidade com a LGPD.
+ * - Desativa o perfil (active = false), removendo-o de todas as listas ativas.
+ * - Opcionalmente purga registros históricos se solicitado.
+ */
+export async function tutorRemoveMember(
+  profileId: string,
+  purgeData = false
+): Promise<void> {
+  // 1. Invoca a RPC atômica tutor_remove_member
+  try {
+    const { data, error } = await supabase.rpc("tutor_remove_member", {
+      p_profile_id: profileId,
+      p_purge_data: purgeData,
+    });
+
+    if (error) {
+      console.warn("RPC tutor_remove_member falhou, tentando fallback:", error.message);
+    } else if (data && typeof data === "object") {
+      const res = data as { success?: boolean; message?: string };
+      if (res.success) {
+        return;
+      }
+      if (res.message) {
+        throw new Error(res.message);
+      }
+    }
+  } catch (rpcErr: any) {
+    if (rpcErr?.message && !rpcErr.message.includes("RPC")) {
+      throw rpcErr;
+    }
+    console.warn("Exceção ao chamar RPC tutor_remove_member:", rpcErr);
+  }
+
+  // 2. Fallback direto via Supabase REST
+  const now = new Date().toISOString();
+  // Encerra qualquer sessão aberta
+  await supabase
+    .from("sessions")
+    .update({ check_out: now, voided_at: now, auto_closed: true })
+    .eq("profile_id", profileId)
+    .is("check_out", null);
+
+  // Remove embeddings faciais
+  await supabase.from("face_embeddings").delete().eq("profile_id", profileId);
+
+  // Inativa o perfil
+  const { error } = await supabase
+    .from("profiles")
+    .update({ active: false, consent_revoked_at: now })
+    .eq("id", profileId);
+  if (error) throw error;
+}

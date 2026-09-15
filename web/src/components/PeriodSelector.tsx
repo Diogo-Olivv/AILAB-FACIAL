@@ -60,54 +60,55 @@ export function PeriodSelector({
   };
 
   return (
-    <div className="rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl p-2.5 sm:p-3 shadow-[0_4px_20px_rgba(23,23,21,0.02)] transition-all duration-300">
-      {/* Segmented Control refinado estilo Apple & Perplexity com deslize suave */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+    <div className="rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl p-3 sm:p-3.5 shadow-[0_4px_20px_rgba(23,23,21,0.02)] transition-all duration-300">
+      {/* Segmented Control refinado estilo Apple & Perplexity com alinhamento simétrico milimétrico */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div
           ref={containerRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={() => setIsDragging(false)}
-          className="relative grid grid-cols-3 w-full sm:w-[320px] rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] p-1 select-none cursor-pointer touch-none"
+          className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] p-1 select-none cursor-pointer touch-none"
           role="tablist"
           aria-label="Seletor de período"
         >
-          {/* Pílula branca flutuante com borda sutil e física suave */}
+          {/* Pílula branca flutuante perfeitamente centralizada e simétrica em todos os eixos */}
           <div
             className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
             style={{
-              width: "calc(33.333% - 2px)",
-              transform: `translateX(${activeIndex * 100}%)`,
-              left: "1px",
+              left: `calc(4px + ${activeIndex} * ((100% - 8px) / 3))`,
+              width: "calc((100% - 8px) / 3)",
             }}
           />
 
-          {KEYS.map((key) => {
-            const isActive = safePeriod === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPeriod(key);
-                }}
-                className={`relative z-10 flex items-center justify-center py-2 px-2 text-xs sm:text-sm font-sans rounded-xl transition-colors duration-200 cursor-pointer min-h-[38px] ${
-                  isActive ? "text-[#171715] font-semibold" : "text-[#706E6A] font-medium hover:text-[#171715]"
-                }`}
-              >
-                <span>{PERIOD_LABELS[key]}</span>
-              </button>
-            );
-          })}
+          <div className="relative z-10 grid grid-cols-3 h-full">
+            {KEYS.map((key) => {
+              const isActive = safePeriod === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPeriod(key);
+                  }}
+                  className={`flex items-center justify-center px-2 text-xs sm:text-sm font-sans rounded-xl transition-colors duration-200 cursor-pointer h-full select-none ${
+                    isActive ? "text-[#171715] font-semibold" : "text-[#706E6A] font-medium hover:text-[#171715]"
+                  }`}
+                >
+                  <span>{PERIOD_LABELS[key]}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Indicador de intervalo de datas com tipografia mono precisa */}
-        <div className="flex items-center justify-between sm:justify-end gap-2 px-1">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#E5E2DC] bg-[#FAF9F5] px-3.5 py-1.5 text-xs text-[#171715] shadow-2xs font-mono-data">
+        {/* Indicador de intervalo de datas com tipografia mono precisa e altura alinhada */}
+        <div className="flex items-center justify-between sm:justify-end gap-2">
+          <div className="h-11 inline-flex items-center gap-2 rounded-2xl border border-[#E5E2DC] bg-[#FAF9F5] px-4 py-2 text-xs text-[#171715] shadow-2xs font-mono-data">
             <span className="text-xs text-[#706E6A]">📅</span>
             <span className="font-medium text-[#171715]">{formatRange(range)}</span>
           </div>

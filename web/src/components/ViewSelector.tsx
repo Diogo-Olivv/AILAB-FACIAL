@@ -62,40 +62,41 @@ export function ViewSelector({ view, onViewChange }: Props) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={() => setIsDragging(false)}
-      className="relative grid grid-cols-2 w-full sm:w-[350px] rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] p-1 select-none cursor-pointer touch-none"
+      className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] p-1 select-none cursor-pointer touch-none"
       role="tablist"
       aria-label="Alternar entre totais e histórico"
     >
-      {/* Pílula branca flutuante */}
+      {/* Pílula branca flutuante com alinhamento milimétrico idêntico ao Seletor de Período */}
       <div
         className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
         style={{
-          width: "calc(50% - 2px)",
-          transform: `translateX(${activeIndex * 100}%)`,
-          left: "1px",
+          left: `calc(4px + ${activeIndex} * ((100% - 8px) / 2))`,
+          width: "calc((100% - 8px) / 2)",
         }}
       />
 
-      {VIEWS.map((v) => {
-        const isActive = view === v.key;
-        return (
-          <button
-            key={v.key}
-            type="button"
-            role="tab"
-            aria-selected={isActive}
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewChange(v.key);
-            }}
-            className={`relative z-10 flex items-center justify-center py-2 px-3 text-xs sm:text-sm font-sans font-medium rounded-xl transition-colors duration-200 cursor-pointer min-h-[38px] ${
-              isActive ? "text-[#171715] font-semibold" : "text-[#706E6A] hover:text-[#171715]"
-            }`}
-          >
-            {v.label}
-          </button>
-        );
-      })}
+      <div className="relative z-10 grid grid-cols-2 h-full">
+        {VIEWS.map((v) => {
+          const isActive = view === v.key;
+          return (
+            <button
+              key={v.key}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewChange(v.key);
+              }}
+              className={`flex items-center justify-center px-3 text-xs sm:text-sm font-sans rounded-xl transition-colors duration-200 cursor-pointer h-full select-none ${
+                isActive ? "text-[#171715] font-semibold" : "text-[#706E6A] font-medium hover:text-[#171715]"
+              }`}
+            >
+              <span>{v.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
