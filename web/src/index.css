@@ -139,11 +139,28 @@ html.dark .glass-table-header {
     text-wrap: balance;
   }
 
-  /* Foco Visível Acessível (WCAG 2.2 AA) */
-  :focus-visible {
+  /* Foco Visível Acessível (WCAG 2.2 AA) apenas para botões e links de navegação por teclado */
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
     outline: 2px solid #C96442;
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(201, 100, 66, 0.15);
+  }
+
+  /* Previne qualquer contorno ou quadrado indesejado ao selecionar inputs de texto */
+  input,
+  textarea,
+  select,
+  input:focus,
+  input:focus-visible,
+  textarea:focus,
+  textarea:focus-visible,
+  select:focus,
+  select:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
   }
 }
 

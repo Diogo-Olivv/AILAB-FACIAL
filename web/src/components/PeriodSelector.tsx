@@ -75,7 +75,7 @@ export function PeriodSelector({
         >
           {/* Pílula flutuante perfeitamente centralizada e simétrica em todos os eixos */}
           <div
-            className="absolute top-1 bottom-1 rounded-xl bg-white border border-orange-200/90 shadow-xs dark:bg-slate-900 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+            className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs dark:bg-slate-900 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
             style={{
               left: `calc(4px + ${activeIndex} * ((100% - 8px) / 3))`,
               width: "calc((100% - 8px) / 3)",
@@ -97,7 +97,7 @@ export function PeriodSelector({
                   }}
                   className={`flex items-center justify-center px-2 text-xs sm:text-sm font-sans rounded-xl transition-colors duration-200 cursor-pointer h-full select-none ${
                     isActive
-                      ? "text-[#C15F3D] dark:text-amber-300 font-bold"
+                      ? "text-[#171715] dark:text-slate-100 font-semibold"
                       : "text-[#706E6A] dark:text-slate-400 font-medium hover:text-[#171715] dark:hover:text-slate-200"
                   }`}
                 >

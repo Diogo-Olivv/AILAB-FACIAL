@@ -149,7 +149,7 @@ export function Login() {
                 autoFocus
                 autoCapitalize="none"
                 autoCorrect="off"
-                className="w-full bg-transparent text-sm font-sans text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/50 dark:placeholder:text-slate-500 outline-none font-medium"
+                className="w-full bg-transparent border-none text-sm font-sans text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/50 dark:placeholder:text-slate-500 outline-none focus:outline-none focus:ring-0 font-medium"
               />
               {!emailInput.includes("@") && emailInput.trim().length > 0 && (
                 <span className="text-xs text-[#C15F3D] dark:text-amber-400 font-mono-data font-semibold bg-[#FAF5F0] dark:bg-amber-950/60 border border-[#F0DCD3] dark:border-amber-800/60 px-2 py-0.5 rounded-md shrink-0 select-none ml-1 animate-fade-in">
@@ -167,7 +167,7 @@ export function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800/80 px-4 py-3 text-sm font-mono-data text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/50 dark:placeholder:text-slate-500 outline-none focus:border-[#C15F3D] dark:focus:border-amber-400 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-[#C15F3D]/10 dark:focus:ring-amber-400/10 shadow-2xs transition-all font-medium"
+              className="w-full rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800/80 px-4 py-3 text-sm font-mono-data text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/50 dark:placeholder:text-slate-500 outline-none focus:outline-none focus:border-[#C15F3D] dark:focus:border-amber-400 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-[#C15F3D]/10 dark:focus:ring-amber-400/10 shadow-2xs transition-all font-medium"
             />
           </div>
 

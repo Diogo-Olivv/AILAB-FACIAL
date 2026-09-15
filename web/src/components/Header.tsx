@@ -48,13 +48,6 @@ export function Header({
               <span className="font-editorial text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
                 AiLab Makers
               </span>
-              <span className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-emerald-100/90 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-700/80 px-2.5 py-0.5 text-2xs font-mono-data font-bold text-emerald-800 dark:text-emerald-300 shadow-2xs">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600 dark:bg-emerald-400" />
-                </span>
-                Totem Ativo
-              </span>
             </div>
             <p className="text-[10.5px] sm:text-xs text-stone-500 dark:text-slate-400 font-sans font-medium tracking-normal mt-0.5">
               Controle Acadêmico de Permanência
