@@ -5,7 +5,6 @@ import hashlib
 import os
 import tempfile
 from unittest.mock import MagicMock, patch
-import pytest
 
 from app.config import settings
 
