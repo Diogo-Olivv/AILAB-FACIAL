@@ -134,7 +134,7 @@ def test_close_stale_sessions_sets_voided_at_and_zero_hours():
     # Sessão aberta iniciada há 14 horas
     now = datetime.now(UTC)
     stale_check_in = (now - timedelta(hours=14)).isoformat()
-    mock_db.table.return_value.select.return_value.is_.return_value.lt.return_value.execute.return_value.data = [
+    mock_db.table.return_value.select.return_value.is_.return_value.execute.return_value.data = [
         {"id": 55, "check_in": stale_check_in}
     ]
 
@@ -153,6 +153,49 @@ def test_close_stale_sessions_sets_voided_at_and_zero_hours():
         assert "check_out" in update_payload
         # voided_at e check_out devem ser iguais (timestamp do momento do sweep)
         assert update_payload["voided_at"] == update_payload["check_out"]
+
+
+def test_close_stale_sessions_midnight_crossing_voids_session():
+    """Sessão que cruzou a meia-noite (check-in ontem no fuso BRT) deve ser anulada, mesmo com < 10h."""
+    from zoneinfo import ZoneInfo
+    from app.services.session_service import _is_stale, BRT
+
+    # Simula avaliação à meia-noite e 5 minutos de hoje (00:05 BRT de 15/09)
+    eval_now = datetime(2026, 9, 15, 0, 5, 0, tzinfo=BRT)
+    # Check-in ontem às 21:00 BRT (14/09) — apenas 3h05 de permanência
+    check_in_yesterday = datetime(2026, 9, 14, 21, 0, 0, tzinfo=BRT).astimezone(UTC).isoformat()
+
+    assert _is_stale(check_in_yesterday, eval_now) is True, (
+        "Sessão que cruzou a virada da noite (ontem para hoje) deve ser considerada stale e anulada"
+    )
+
+
+def test_close_stale_sessions_same_day_recent_remains_open():
+    """Sessão iniciada hoje no mesmo dia com menos de 10 horas NÃO deve ser anulada."""
+    from app.services.session_service import _is_stale, BRT
+
+    # Avaliação às 17:00 BRT de hoje (15/09)
+    eval_now = datetime(2026, 9, 15, 17, 0, 0, tzinfo=BRT)
+    # Check-in às 14:00 BRT de hoje (15/09) — 3 horas no mesmo dia
+    check_in_today = datetime(2026, 9, 15, 14, 0, 0, tzinfo=BRT).astimezone(UTC).isoformat()
+
+    assert _is_stale(check_in_today, eval_now) is False, (
+        "Sessão recente do mesmo dia (< 10h) deve continuar aberta"
+    )
+
+
+def test_close_stale_sessions_same_day_over_10_hours_is_stale():
+    """Sessão iniciada hoje no mesmo dia que atingiu 10h de permanência deve ser anulada."""
+    from app.services.session_service import _is_stale, BRT
+
+    # Avaliação às 18:30 BRT de hoje (15/09)
+    eval_now = datetime(2026, 9, 15, 18, 30, 0, tzinfo=BRT)
+    # Check-in às 08:00 BRT de hoje (15/09) — 10h30 no mesmo dia
+    check_in_today = datetime(2026, 9, 15, 8, 0, 0, tzinfo=BRT).astimezone(UTC).isoformat()
+
+    assert _is_stale(check_in_today, eval_now) is True, (
+        "Sessão do mesmo dia que atingiu 10h de permanência contínua deve ser anulada"
+    )
 
 
 # ── Testes de Encerramento Manual de Sessão por Tutor (/sessions/tutor-close) ─

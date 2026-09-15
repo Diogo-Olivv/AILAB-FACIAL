@@ -11,12 +11,14 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import logging
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from app.config import settings
 from app.db.supabase_client import get_client
 
 log = logging.getLogger(__name__)
 UTC = timezone.utc
+BRT = ZoneInfo("America/Sao_Paulo")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -46,8 +48,17 @@ def _parse_ts(value: str) -> datetime:
 
 
 def _is_stale(check_in_iso: str, now: datetime) -> bool:
-    """True se a sessão passou de max_session_hours (saída esquecida)."""
-    return (now - _parse_ts(check_in_iso)) >= timedelta(hours=settings.max_session_hours)
+    """True se a sessão passou de max_session_hours (10h) OU se cruzou a meia-noite (America/Sao_Paulo)."""
+    ci_dt = _parse_ts(check_in_iso)
+    # 1. Limite de permanência máxima contínua (ex: 10 horas)
+    if (now - ci_dt) >= timedelta(hours=settings.max_session_hours):
+        return True
+    # 2. Virada da noite: check_in ocorreu em dia anterior no fuso horário de Brasília
+    ci_brt = ci_dt.astimezone(BRT)
+    now_brt = now.astimezone(BRT)
+    if ci_brt.date() < now_brt.date():
+        return True
+    return False
 
 
 def _close_stale_session(sess_id: int, check_in_iso: str) -> None:
@@ -193,22 +204,28 @@ def register_event(profile_id: str, action: str | None = None) -> dict[str, Any]
 
 
 def close_stale_sessions() -> dict[str, int]:
-    """Fecha sessões esquecidas aplicando anulação (voided_at) para computar 0 horas."""
+    """Fecha sessões esquecidas aplicando anulação (voided_at) para computar 0 horas.
+
+    Critérios de anulação:
+    1. Sessões cuja duração em aberto atingiu ou ultrapassou max_session_hours (10h).
+    2. Sessões cujo check_in ocorreu em dia anterior no horário de Brasília (virada da meia-noite).
+    """
     now = datetime.now(UTC)
-    cutoff = now - timedelta(hours=settings.max_session_hours)
     rows = (
         get_client()
         .table("sessions")
         .select("id, check_in")
         .is_("check_out", "null")
-        .lt("check_in", cutoff.isoformat())
         .execute()
         .data
     ) or []
 
+    closed_count = 0
     for r in rows:
-        _close_stale_session(r["id"], r["check_in"])
-    return {"auto_closed": len(rows)}
+        if _is_stale(r["check_in"], now):
+            _close_stale_session(r["id"], r["check_in"])
+            closed_count += 1
+    return {"auto_closed": closed_count}
 
 
 def total_hours(

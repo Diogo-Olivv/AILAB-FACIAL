@@ -2,7 +2,8 @@ name: Nightly Maintenance Cleanup
 
 on:
   schedule:
-    - cron: "59 2 * * *"  # 23:59 horário de Brasília (UTC-3 = 02:59 UTC)
+    - cron: "0 * * * *"   # A cada hora cheia (sweep de sessões >= 10h)
+    - cron: "59 2 * * *"  # 23:59 horário de Brasília (virada da noite)
   workflow_dispatch:
 
 jobs:

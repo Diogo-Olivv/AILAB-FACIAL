@@ -37,7 +37,35 @@ export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
     setLoading(true);
     setErrorMsg(null);
 
-    // 1. Verificação de credenciais personalizadas salvas pelo tutor
+    // 1. Tenta autenticar diretamente no Supabase Auth com as credenciais informadas (tutor@ailab.com ou nome@ailab.com)
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: cleanPassword,
+      });
+
+      if (data?.session) {
+        const role = data.session.user?.app_metadata?.role;
+        if (role === "tutor" || cleanEmail.endsWith("@ailab.com")) {
+          const token = data.session.access_token;
+          setEmail("");
+          setPassword("");
+          setErrorMsg(null);
+          setLoading(false);
+          onSuccess(token);
+          return;
+        } else {
+          await supabase.auth.signOut();
+          setErrorMsg("Acesso negado. Esta conta não possui privilégios de tutor.");
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Prossegue para os fallbacks locais caso offline ou erro de rede
+    }
+
+    // 2. Verificação de credenciais personalizadas salvas localmente
     let isCustomMatch = false;
     try {
       if (typeof window !== "undefined" && window.localStorage) {
@@ -58,62 +86,21 @@ export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
       // Ignora erro de parse
     }
 
+    // 3. Verificação do primeiro acesso padrão (tutor@ailab.com) ou custom match local
     const isStaticMatch =
       cleanEmail === TUTOR_STATIC_EMAIL && cleanPassword === TUTOR_STATIC_PASSWORD;
 
     if (isStaticMatch || isCustomMatch) {
-      try {
-        const { data } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password: cleanPassword,
-        });
-        const token = data?.session?.access_token || "tutor-static-session-token";
-        setEmail("");
-        setPassword("");
-        setErrorMsg(null);
-        setLoading(false);
-        onSuccess(token);
-        return;
-      } catch {
-        // Se Supabase falhar ou usuário não existir na base de dados, libera localmente
-        setEmail("");
-        setPassword("");
-        setErrorMsg(null);
-        setLoading(false);
-        onSuccess("tutor-static-session-token");
-        return;
-      }
-    }
-
-    // 2. Fallback para autenticação de contas de tutor no Supabase
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: cleanPassword,
-      });
-
-      if (error || !data.session) {
-        setErrorMsg(error?.message || "Credenciais de tutor inválidas.");
-        return;
-      }
-
-      const role = data.session.user?.app_metadata?.role;
-      if (role !== "tutor") {
-        await supabase.auth.signOut();
-        setErrorMsg("Acesso negado. Esta conta não possui privilégios de tutor.");
-        return;
-      }
-
-      const token = data.session.access_token;
       setEmail("");
       setPassword("");
       setErrorMsg(null);
-      onSuccess(token);
-    } catch (err: any) {
-      setErrorMsg(err?.message || "Falha de comunicação com o serviço de autenticação.");
-    } finally {
       setLoading(false);
+      onSuccess("tutor-static-session-token");
+      return;
     }
+
+    setErrorMsg("E-mail ou senha de tutor incorretos. Utilize seu e-mail @ailab.com.");
+    setLoading(false);
   }
 
   function handleClose() {

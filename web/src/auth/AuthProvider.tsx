@@ -157,13 +157,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error("A nova senha deve possuir pelo menos 6 caracteres.");
         }
 
-        // Armazena as novas credenciais personalizadas
+        // 1. Sincroniza credenciais diretamente no Supabase Auth via RPC
+        const currentEmail = session?.user?.email || "tutor@ailab.com";
+        try {
+          const { error: rpcErr } = await supabase.rpc("sync_tutor_credentials", {
+            p_current_email: currentEmail,
+            p_new_email: cleanEmail,
+            p_new_password: newPassword,
+          });
+          if (rpcErr) {
+            console.warn("Aviso ao sincronizar credenciais no Supabase:", rpcErr.message);
+          }
+        } catch (rpcEx) {
+          console.warn("Exceção na chamada RPC de sincronização:", rpcEx);
+        }
+
+        // 2. Armazena as novas credenciais personalizadas localmente
         localStorage.setItem(
           TUTOR_CUSTOM_CREDENTIALS_KEY,
           JSON.stringify({ email: cleanEmail, password: newPassword })
         );
 
-        // Atualiza a sessão ativa imediatamente
+        // 3. Tenta autenticar no Supabase Auth para obter o JWT assinado oficial
+        try {
+          const { data: signData } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: newPassword,
+          });
+          if (signData?.session) {
+            setSession(signData.session);
+            localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(signData.session));
+            return;
+          }
+        } catch {
+          // Fallback para sessão local se offline
+        }
+
+        // 4. Fallback: Atualiza a sessão ativa imediatamente
         const updatedUser: User = {
           ...(session?.user ?? ({} as User)),
           id: session?.user?.id || "tutor-master-id",
