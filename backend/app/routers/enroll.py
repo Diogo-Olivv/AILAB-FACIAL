@@ -15,6 +15,7 @@ except ImportError:
 
 from app.config import settings
 from app.deps import validate_image, verify_tutor_token
+from app.routers.contracts import EnrollResponse
 from app.services.enroll_service import EnrollError, enroll
 
 router = APIRouter(prefix="/api/v1", tags=["enroll"])
@@ -25,7 +26,7 @@ def _postgrest_detail(exc: APIError) -> str:
     return " | ".join(parts) or "Erro ao persistir no banco."
 
 
-@router.post("/enroll", dependencies=[Depends(verify_tutor_token)])
+@router.post("/enroll", response_model=EnrollResponse, dependencies=[Depends(verify_tutor_token)])
 async def enroll_route(
     name: str = Form(...),
     consent: bool = Form(...),

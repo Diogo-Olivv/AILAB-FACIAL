@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from app.config import settings
 from app.db.supabase_client import get_client
 from app.deps import validate_image, verify_api_key, verify_kiosk_key, verify_tutor_token
+from app.routers.contracts import ChallengeResponse, RecognizeResponse
 from app.services.challenge_service import (
     create_capture_challenge,
     verify_and_consume_challenge,
@@ -61,14 +62,14 @@ def clear_rate_limits_for_testing() -> None:
         _request_history.clear()
 
 
-@router.post("/recognize/challenge", dependencies=[Depends(verify_kiosk_key)])
-@router.get("/recognize/challenge", dependencies=[Depends(verify_kiosk_key)])
+@router.post("/recognize/challenge", response_model=ChallengeResponse, dependencies=[Depends(verify_kiosk_key)])
+@router.get("/recognize/challenge", response_model=ChallengeResponse, dependencies=[Depends(verify_kiosk_key)])
 def request_challenge():
     """Emite token de desafio criptográfico assinado com TTL para captura temporal anti-injeção."""
     return create_capture_challenge()
 
 
-@router.post("/recognize", dependencies=[Depends(verify_kiosk_key)])
+@router.post("/recognize", response_model=RecognizeResponse, dependencies=[Depends(verify_kiosk_key)])
 async def recognize(
     request: Request,
     x_challenge_id: str | None = Header(None, alias="X-Challenge-Id"),

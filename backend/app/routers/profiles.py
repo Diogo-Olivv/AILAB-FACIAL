@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from app.config import settings
 from app.db.supabase_client import get_client
 from app.deps import validate_image, verify_api_key, verify_tutor_token
+from app.routers.contracts import EnrollResponse, RevokeConsentResponse
 from app.services.enroll_service import EnrollError, ProfileNotFound, refresh_embedding
 from app.services.face_service import invalidate_embeddings_cache
 
@@ -35,7 +36,11 @@ def get_profile(profile_id: str):
     return res.data[0]
 
 
-@router.post("/{profile_id}/refresh-embedding", dependencies=[Depends(verify_tutor_token)])
+@router.post(
+    "/{profile_id}/refresh-embedding",
+    response_model=EnrollResponse,
+    dependencies=[Depends(verify_tutor_token)],
+)
 async def refresh_embedding_route(
     profile_id: str,
     frames: list[UploadFile] = File(...),
@@ -63,7 +68,11 @@ async def refresh_embedding_route(
         raise HTTPException(422, str(exc)) from exc
 
 
-@router.post("/{profile_id}/revoke-consent", dependencies=[Depends(verify_tutor_token)])
+@router.post(
+    "/{profile_id}/revoke-consent",
+    response_model=RevokeConsentResponse,
+    dependencies=[Depends(verify_tutor_token)],
+)
 def revoke_consent(profile_id: str):
     """Revoga o consentimento LGPD do titular: expurga biometria e inativa o perfil."""
     db = get_client()
