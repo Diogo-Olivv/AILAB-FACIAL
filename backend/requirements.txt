@@ -4,7 +4,7 @@ python-multipart>=0.0.9
 pydantic-settings>=2.2,<3
 
 # Supabase
-supabase>=2.4,<3
+supabase>=2.31.0,<3
 
 # Face recognition
 insightface>=0.7
