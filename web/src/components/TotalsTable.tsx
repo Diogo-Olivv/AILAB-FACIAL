@@ -16,7 +16,7 @@ const AVATAR_GRADIENTS = [
   "from-teal-500 to-emerald-600 text-white shadow-teal-500/25",
 ];
 
-function getAvatarStyle(name: string): string {
+export function getAvatarStyle(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);

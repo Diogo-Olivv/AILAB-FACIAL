@@ -342,27 +342,31 @@ export function Dashboard() {
           {/* Segmented control estilo Apple com deslizamento e arrasto */}
           <ViewSelector view={view} onViewChange={setView} />
 
-          {/* Campo de Busca Reativa estilo Apple Spotlight */}
-          <div className="relative w-full sm:w-72">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted pointer-events-none text-xs">
-              🔍
-            </span>
+          {/* Campo de Busca Reativa estilo Apple Spotlight com alto contraste */}
+          <div className="relative w-full sm:w-80 group">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 group-focus-within:text-blue-600 transition-colors">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nome ou matrícula..."
-              className="w-full rounded-2xl border border-white/80 bg-white/65 backdrop-blur-md py-2 pl-8 pr-7 text-xs sm:text-sm text-ink placeholder:text-muted/60 focus:border-navy/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-navy/15 shadow-2xs min-h-[38px] transition-all"
+              className="w-full rounded-2xl border border-black/15 bg-white/95 backdrop-blur-md py-2.5 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 font-medium focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/15 shadow-xs min-h-[40px] transition-all"
               aria-label="Buscar integrantes por nome ou matrícula"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-muted hover:text-ink cursor-pointer text-xs"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 cursor-pointer"
                 aria-label="Limpar busca"
               >
-                ✕
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">
+                  ✕
+                </span>
               </button>
             )}
           </div>

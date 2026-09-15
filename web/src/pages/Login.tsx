@@ -29,51 +29,51 @@ export function Login() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-cream px-4 py-8 selection:bg-green/20">
+    <div className="grid min-h-screen place-items-center bg-transparent px-4 py-8 selection:bg-blue-500/20">
       <form
         onSubmit={submit}
-        className="w-full max-w-sm space-y-4 rounded-3xl border border-line bg-card p-6 sm:p-8 shadow-sm"
+        className="w-full max-w-sm space-y-4 rounded-3xl border border-white/80 bg-white/85 backdrop-blur-2xl p-6 sm:p-8 shadow-apple animate-scale-up"
       >
-        <div className="flex items-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-navy text-white text-lg">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xl shadow-md shadow-blue-500/25">
             🎓
           </span>
           <div>
-            <h1 className="text-xl font-bold text-ink">Área do Tutor</h1>
-            <p className="text-xs text-muted">Acesso administrativo e acadêmico</p>
+            <h1 className="text-xl font-black text-slate-900">Área do Tutor</h1>
+            <p className="text-xs text-slate-500">Acesso administrativo e acadêmico</p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-navy/10 bg-navy/[0.03] p-3 text-2xs text-muted leading-relaxed">
+        <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/[0.06] to-indigo-500/[0.02] p-3 text-2xs text-slate-600 leading-relaxed">
           O login de tutor permite realizar auditoria de frequência semanal, aplicar advertências para permanência inferior a 4 horas e autorizar novos cadastros biométricos.
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-ink">E-mail institucional do Tutor</label>
+          <label className="text-xs font-bold text-slate-700">E-mail institucional do Tutor</label>
           <input
             type="email"
             placeholder="tutor@ailab.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-ink outline-none focus:border-navy focus:ring-2 focus:ring-navy/20 text-sm"
+            className="w-full rounded-2xl border border-black/15 bg-white px-3.5 py-2.5 text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 text-sm shadow-xs transition-all"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-ink">Senha de acesso</label>
+          <label className="text-xs font-bold text-slate-700">Senha de acesso</label>
           <input
             type="password"
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-ink outline-none focus:border-navy focus:ring-2 focus:ring-navy/20 text-sm"
+            className="w-full rounded-2xl border border-black/15 bg-white px-3.5 py-2.5 text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 text-sm shadow-xs transition-all"
           />
         </div>
 
         {error && (
-          <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs text-warn font-semibold">
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 font-semibold text-center">
             ⚠️ {error}
           </div>
         )}
@@ -81,7 +81,7 @@ export function Login() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-xl bg-navy py-3 font-bold text-white shadow-sm transition-all hover:bg-navy/90 active:scale-95 disabled:opacity-50 cursor-pointer min-h-[44px]"
+          className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 font-bold text-white shadow-sm shadow-blue-500/25 transition-all hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 disabled:opacity-50 cursor-pointer min-h-[44px]"
         >
           {busy ? "Validando credenciais..." : "Entrar como Tutor"}
         </button>
@@ -89,9 +89,9 @@ export function Login() {
         <div className="text-center pt-2">
           <Link
             to="/dashboard"
-            className="text-xs text-muted hover:text-navy underline transition-colors"
+            className="text-xs text-slate-500 hover:text-blue-600 font-medium transition-colors"
           >
-            ← Voltar para o painel público de permanência
+            ← Voltar para o painel de permanência
           </Link>
         </div>
       </form>

@@ -4,12 +4,12 @@ import { formatDuration, formatTime } from "../lib/aggregate";
 export function DailyHistory({ days }: { days: DayGroup[] }) {
   if (days.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-line bg-card p-12 text-center shadow-xs">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-navy/5 text-xl">
+      <div className="flex flex-col items-center justify-center rounded-3xl border border-white/80 bg-white/70 backdrop-blur-xl p-12 text-center shadow-apple">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-xl text-blue-600">
           📅
         </div>
-        <p className="text-base font-medium text-ink">Nenhum registro no período</p>
-        <p className="text-sm text-muted mt-1">Nenhuma sessão encontrada para as datas selecionadas.</p>
+        <p className="text-base font-bold text-slate-900">Nenhum registro no período</p>
+        <p className="text-sm text-slate-500 mt-1">Nenhuma sessão encontrada para as datas selecionadas.</p>
       </div>
     );
   }
@@ -19,45 +19,53 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
       {days.map((day) => (
         <div
           key={day.key}
-          className="overflow-hidden rounded-2xl border border-line bg-card shadow-xs transition-shadow duration-200 hover:shadow-md"
+          className="overflow-hidden rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-apple transition-all duration-300"
         >
-          <div className="flex items-center justify-between gap-2 bg-navy px-4 py-3 sm:px-5">
-            <span className="text-sm font-semibold capitalize text-white tracking-wide">
-              {day.label}
-            </span>
-            <span className="whitespace-nowrap rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/90">
+          {/* Cabeçalho do Dia estilo Apple Glass */}
+          <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-blue-500/[0.08] via-indigo-500/[0.04] to-transparent border-b border-black/[0.05] px-4 py-3 sm:px-5">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-blue-500" />
+              <span className="text-xs sm:text-sm font-bold capitalize text-slate-900 tracking-tight">
+                {day.label}
+              </span>
+            </div>
+            <span className="whitespace-nowrap rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 sm:px-3 sm:py-1 text-2xs sm:text-xs font-bold text-blue-900 shadow-2xs">
               Total: {formatDuration(day.totalSeconds)}
             </span>
           </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm text-ink">
-              <tbody className="divide-y divide-line/60">
+            <table className="w-full text-left text-xs sm:text-sm text-slate-800">
+              <tbody className="divide-y divide-black/[0.04]">
                 {day.entries.map((entry, index) => (
                   <tr
                     key={index}
-                    className="transition-colors duration-150 hover:bg-navy/[0.03]"
+                    className="transition-colors duration-150 hover:bg-white/90"
                   >
-                    <td className="px-2.5 py-2.5 sm:px-5 sm:py-3 font-semibold text-ink truncate max-w-[130px] sm:max-w-none">
+                    <td className="px-3.5 py-3 sm:px-5 font-semibold text-slate-900 truncate max-w-[140px] sm:max-w-none">
                       {entry.memberName}
                     </td>
-                    <td className="px-2 py-2.5 sm:px-5 sm:py-3 text-muted text-2xs sm:text-xs">
+                    <td className="px-2 py-3 sm:px-5 text-slate-500 text-2xs sm:text-xs">
                       {formatTime(entry.checkIn)} às{" "}
                       {entry.voided ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-warn/10 px-1.5 py-0.5 text-2xs font-semibold text-warn">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10.5px] font-semibold text-amber-800">
                           ⚠️ anulada
                         </span>
                       ) : entry.open ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green/15 px-2 py-0.5 text-2xs font-bold text-green">
-                          <span className="h-1.5 w-1.5 rounded-full bg-green animate-pulse" />
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 border border-emerald-500/25 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-700 shadow-2xs">
+                          <span className="relative flex h-1.5 w-1.5 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                          </span>
                           em andamento
                         </span>
                       ) : (
                         formatTime(entry.checkOut!)
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-2.5 py-2.5 sm:px-5 sm:py-3 text-right font-bold text-navy tabular-nums text-xs sm:text-sm">
+                    <td className="whitespace-nowrap px-3.5 py-3 sm:px-5 text-right font-mono font-bold text-slate-900 tabular-nums text-xs sm:text-sm">
                       {entry.voided ? (
-                        <span className="text-muted/50 text-xs">—</span>
+                        <span className="text-slate-400 text-xs">—</span>
                       ) : (
                         formatDuration(entry.seconds)
                       )}

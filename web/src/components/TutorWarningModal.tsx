@@ -188,111 +188,116 @@ Pedimos que regularize suas horas até o encerramento da semana para manter sua 
       aria-labelledby="tutor-modal-title"
     >
       <div
-        className="relative w-full max-w-3xl max-h-[90vh] bg-card rounded-2xl sm:rounded-3xl border border-line shadow-2xl flex flex-col overflow-hidden animate-scale-up"
+        className="relative w-full max-w-3xl max-h-[90vh] bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl flex flex-col overflow-hidden animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header com Identificação do Tutor */}
-        <div className="flex items-center justify-between border-b border-line bg-cream px-4 py-3.5 sm:px-6 sm:py-4 gap-3">
+        {/* Header com Identificação do Tutor estilo Apple Glass */}
+        <div className="flex items-center justify-between border-b border-black/[0.05] bg-gradient-to-b from-slate-50/90 to-white/95 px-5 py-4 sm:px-6 gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-navy text-white font-bold text-lg">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-bold text-lg shadow-sm shadow-amber-500/25">
               🎓
             </div>
             <div className="min-w-0">
-              <h2 id="tutor-modal-title" className="text-base sm:text-lg font-bold text-ink truncate">
+              <h2 id="tutor-modal-title" className="text-base sm:text-lg font-black text-slate-900 truncate">
                 Auditoria Semanal & Advertências do Tutor
               </h2>
-              <p className="text-xs text-muted truncate">
-                Tutor ativo: <strong>{tutorEmail}</strong> · Meta semanal: <strong>4h 00m</strong>
+              <p className="text-xs text-slate-500 truncate">
+                Tutor ativo: <strong className="text-slate-700">{tutorEmail}</strong> · Meta semanal: <strong className="text-slate-700">4h 00m</strong>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Fechar auditoria do tutor"
-            className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl border border-line bg-white text-muted hover:bg-navy/5 hover:text-ink transition-colors cursor-pointer"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        {/* Resumo de Metas e Indicadores */}
-        <div className="p-4 sm:p-5 border-b border-line bg-white grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-line bg-cream/50 p-3">
-            <span className="text-2xs sm:text-xs font-semibold uppercase tracking-wider text-muted block">
+        {/* Resumo de Metas e Indicadores estilo Apple Glass */}
+        <div className="p-4 sm:p-5 border-b border-black/[0.05] bg-white/50 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="rounded-2xl border border-black/[0.06] bg-slate-50/80 p-3.5 shadow-2xs">
+            <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-slate-500 block">
               Total de Alunos
             </span>
-            <span className="text-xl sm:text-2xl font-extrabold text-ink mt-0.5 block">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 block tabular-nums">
               {totalStudents}
             </span>
           </div>
 
-          <div className="rounded-xl border border-warn/30 bg-warn/10 p-3">
-            <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-warn block">
+          <div className="rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/[0.08] to-orange-500/[0.03] p-3.5 shadow-2xs">
+            <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-amber-800 block">
               Abaixo da Meta (&lt; 4h)
             </span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xl sm:text-2xl font-extrabold text-warn">
+              <span className="text-xl sm:text-2xl font-black text-amber-900 tabular-nums">
                 {underTargetStudents.length}
               </span>
-              <span className="text-2xs text-warn/80 font-bold">em débito</span>
+              <span className="text-2xs text-amber-800/80 font-bold">em débito</span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-green/30 bg-green/10 p-3 col-span-2 sm:col-span-1">
-            <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-green block">
+          <div className="rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/[0.08] to-teal-500/[0.03] p-3.5 shadow-2xs col-span-2 sm:col-span-1">
+            <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-emerald-800 block">
               Meta Cumprida (&ge; 4h)
             </span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xl sm:text-2xl font-extrabold text-green">
+              <span className="text-xl sm:text-2xl font-black text-emerald-900 tabular-nums">
                 {metTargetCount}
               </span>
-              <span className="text-2xs text-green/80 font-bold">regularizados</span>
+              <span className="text-2xs text-emerald-800/80 font-bold">regularizados</span>
             </div>
           </div>
         </div>
 
-        {/* Barra de Filtros e Busca */}
-        <div className="p-3 sm:p-4 border-b border-line bg-card flex flex-wrap items-center justify-between gap-2.5">
+        {/* Barra de Filtros e Busca estilo Apple Spotlight */}
+        <div className="p-3 sm:p-4 border-b border-black/[0.05] bg-white/70 flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex gap-1.5">
             <button
               onClick={() => setFilterMode("under")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                 filterMode === "under"
-                  ? "bg-warn text-white shadow-2xs"
-                  : "border border-line bg-white text-muted hover:text-ink"
+                  ? "bg-amber-500 text-white shadow-2xs"
+                  : "border border-black/[0.08] bg-white text-slate-600 hover:text-slate-900"
               }`}
             >
               Em Débito (&lt; 4h) ({underTargetStudents.length})
             </button>
             <button
               onClick={() => setFilterMode("met")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                 filterMode === "met"
-                  ? "bg-green text-white shadow-2xs"
-                  : "border border-line bg-white text-muted hover:text-ink"
+                  ? "bg-emerald-600 text-white shadow-2xs"
+                  : "border border-black/[0.08] bg-white text-slate-600 hover:text-slate-900"
               }`}
             >
               Meta Cumprida ({metTargetCount})
             </button>
             <button
               onClick={() => setFilterMode("all")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                 filterMode === "all"
-                  ? "bg-navy text-white shadow-2xs"
-                  : "border border-line bg-white text-muted hover:text-ink"
+                  ? "bg-blue-600 text-white shadow-2xs"
+                  : "border border-black/[0.08] bg-white text-slate-600 hover:text-slate-900"
               }`}
             >
               Todos ({totalStudents})
             </button>
           </div>
 
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <div className="relative flex-1 min-w-[200px] max-w-xs group">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400 group-focus-within:text-blue-600">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </div>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar aluno na auditoria..."
-              className="w-full rounded-xl border border-line bg-white py-1.5 pl-3 pr-8 text-xs text-ink placeholder:text-muted/70 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy/20 shadow-2xs"
+              className="w-full rounded-xl border border-black/15 bg-white py-1.5 pl-8 pr-8 text-xs text-slate-900 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/15 shadow-2xs"
             />
             {search && (
               <button
@@ -423,14 +428,14 @@ Pedimos que regularize suas horas até o encerramento da semana para manter sua 
           )}
         </div>
 
-        {/* Footer com instruções */}
-        <div className="flex items-center justify-between border-t border-line bg-cream px-4 py-3 sm:px-6 sm:py-3.5 text-xs text-muted">
+        {/* Footer com instruções estilo Apple */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-black/[0.05] bg-white/80 px-5 py-4 sm:px-6 text-xs text-slate-500">
           <span>
             * O botão de advertência copia automaticamente o comunicado formatado para envio direto ao aluno.
           </span>
           <button
             onClick={onClose}
-            className="rounded-xl bg-navy px-5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-navy/90 active:scale-95 cursor-pointer"
+            className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer shrink-0"
           >
             Concluir Auditoria
           </button>

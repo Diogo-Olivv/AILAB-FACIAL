@@ -1,5 +1,6 @@
 import type { Member, SessionRecord } from "../lib/reports";
 import { formatDuration, formatTime } from "../lib/aggregate";
+import { getAvatarStyle } from "./TotalsTable";
 
 interface Props {
   member: Member | null;
@@ -26,66 +27,75 @@ export function MemberDetailDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-end bg-ink/50 backdrop-blur-xs transition-opacity animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-xs transition-opacity animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="drawer-member-name"
     >
       <div
-        className="h-full w-full max-w-full sm:max-w-md bg-card border-l border-line shadow-2xl flex flex-col overflow-hidden animate-slide-left"
+        className="h-full w-full max-w-full sm:max-w-md bg-white/95 backdrop-blur-2xl border-l border-white/80 shadow-2xl flex flex-col overflow-hidden animate-slide-left"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drawer Header */}
-        <div className="flex items-center justify-between border-b border-line bg-cream p-5">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-muted">
-              Ficha do Integrante
-            </span>
-            <h2 id="drawer-member-name" className="text-xl font-bold text-ink">
-              {member.name}
-            </h2>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-muted">
-                Matrícula: <strong>{member.matricula ?? "Não informada"}</strong>
+        {/* Drawer Header estilo Apple Sheet */}
+        <div className="flex items-start justify-between border-b border-black/[0.05] bg-gradient-to-b from-slate-50/90 to-white/95 p-5 gap-3">
+          <div className="flex items-center gap-3.5 min-w-0">
+            {/* Avatar estilo Apple com gradiente e sombra */}
+            <div
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${getAvatarStyle(member.name)} text-base font-bold ring-2 ring-white shadow-md`}
+            >
+              {member.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 block">
+                Ficha do Integrante
               </span>
-              <span>•</span>
-              {isPresent ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 shadow-2xs">
-                  <span className="relative flex h-1.5 w-1.5 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+              <h2 id="drawer-member-name" className="text-lg sm:text-xl font-black text-slate-900 truncate">
+                {member.name}
+              </h2>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {member.matricula && (
+                  <span className="rounded-full bg-slate-100 border border-black/[0.06] px-2 py-0.5 text-2xs font-mono font-semibold text-slate-600">
+                    {member.matricula}
                   </span>
-                  Presente no laboratório
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-black/[0.03] border border-black/[0.05] px-2.5 py-0.5 text-xs font-medium text-muted">
-                  <span className="h-1.5 w-1.5 rounded-full bg-black/20 shrink-0" />
-                  Ausente
-                </span>
-              )}
+                )}
+                {isPresent ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 border border-emerald-500/25 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-700 shadow-2xs">
+                    <span className="relative flex h-1.5 w-1.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                    </span>
+                    Presente
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/[0.05] border border-slate-400/15 px-2 py-0.5 text-[10.5px] font-medium text-slate-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400/50 shrink-0" />
+                    Ausente
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Fechar detalhes do integrante"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-line bg-white text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-navy cursor-pointer"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        {/* Total stats card */}
-        <div className="p-5 border-b border-line bg-white grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-line bg-cream/50 p-3">
-            <span className="text-xs font-semibold text-muted block">Total de Permanência</span>
-            <span className="text-xl font-bold text-navy mt-1 block">
+        {/* Total stats card estilo Apple Glass */}
+        <div className="p-5 border-b border-black/[0.05] bg-white/50 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/[0.08] to-indigo-500/[0.03] p-3.5 shadow-2xs">
+            <span className="text-2xs font-bold uppercase tracking-wider text-blue-800 block">Total de Permanência</span>
+            <span className="text-2xl font-black text-blue-950 mt-1 block font-mono">
               {formatDuration(totalSeconds)}
             </span>
           </div>
-          <div className="rounded-xl border border-line bg-cream/50 p-3">
-            <span className="text-xs font-semibold text-muted block">Sessões Registradas</span>
-            <span className="text-xl font-bold text-ink mt-1 block">
+          <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/[0.08] to-orange-500/[0.03] p-3.5 shadow-2xs">
+            <span className="text-2xs font-bold uppercase tracking-wider text-amber-800 block">Sessões Registradas</span>
+            <span className="text-2xl font-black text-slate-900 mt-1 block tabular-nums">
               {memberSessions.length}
             </span>
           </div>
@@ -93,12 +103,12 @@ export function MemberDetailDrawer({
 
         {/* Sessions List */}
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
             Histórico de Sessões no Período
           </h3>
 
           {memberSessions.length === 0 ? (
-            <div className="rounded-2xl border border-line bg-white p-8 text-center text-muted text-sm">
+            <div className="rounded-2xl border border-black/[0.05] bg-white/60 p-8 text-center text-slate-500 text-sm">
               Nenhuma sessão registrada para este integrante nas datas selecionadas.
             </div>
           ) : (
@@ -116,32 +126,32 @@ export function MemberDetailDrawer({
                 return (
                   <div
                     key={idx}
-                    className="rounded-xl border border-line bg-white p-3.5 shadow-2xs space-y-1.5 transition-colors hover:border-navy/30"
+                    className="rounded-2xl border border-black/[0.06] bg-white/80 p-3.5 shadow-2xs space-y-1.5 transition-all hover:border-black/15"
                   >
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-ink capitalize">{dateLabel}</span>
+                      <span className="font-bold text-slate-900 capitalize">{dateLabel}</span>
                       {isVoided ? (
-                        <span className="rounded bg-warn/10 px-2 py-0.5 font-medium text-warn text-2xs">
+                        <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 font-semibold text-amber-800 text-2xs">
                           ⚠️ Saída esquecida
                         </span>
                       ) : isOpenSession ? (
-                        <span className="rounded-full bg-green/15 px-2 py-0.5 font-bold text-green text-2xs animate-pulse">
+                        <span className="rounded-full bg-emerald-500/12 border border-emerald-500/25 px-2 py-0.5 font-semibold text-emerald-700 text-2xs animate-pulse">
                           ● Em andamento
                         </span>
                       ) : (
-                        <span className="font-bold text-navy">
+                        <span className="font-mono font-bold text-slate-900">
                           {s.durationS ? formatDuration(s.durationS) : "0 min"}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-muted">
+                    <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>
-                        Entrada: <strong className="text-ink">{formatTime(s.checkIn)}</strong>
+                        Entrada: <strong className="text-slate-800 font-semibold">{formatTime(s.checkIn)}</strong>
                       </span>
                       <span>
                         Saída:{" "}
-                        <strong className="text-ink">
+                        <strong className="text-slate-800 font-semibold">
                           {isOpenSession ? "—" : formatTime(s.checkOut!)}
                         </strong>
                       </span>
@@ -154,10 +164,10 @@ export function MemberDetailDrawer({
         </div>
 
         {/* Drawer Footer */}
-        <div className="border-t border-line bg-cream p-4">
+        <div className="border-t border-black/[0.05] bg-white/80 p-4">
           <button
             onClick={onClose}
-            className="w-full rounded-xl bg-navy py-2.5 text-sm font-bold text-white transition-all hover:bg-navy/90 active:scale-95 cursor-pointer"
+            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3 text-sm font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer"
           >
             Fechar Detalhes
           </button>

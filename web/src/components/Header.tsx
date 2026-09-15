@@ -7,7 +7,7 @@ interface HeaderProps {
   onOpenTerms: () => void;
   onRefresh: () => void;
   isRefreshing: boolean;
-  presentCount: number;
+  presentCount?: number;
 }
 
 export function Header({
@@ -16,7 +16,6 @@ export function Header({
   onOpenTerms,
   onRefresh,
   isRefreshing,
-  presentCount,
 }: HeaderProps) {
   return (
     <header
@@ -36,10 +35,6 @@ export function Header({
               <h1 className="text-sm sm:text-lg font-extrabold tracking-tight text-ink leading-tight">
                 Tempo de permanência
               </h1>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-2xs sm:text-xs font-bold text-emerald-700 shadow-[0_1px_4px_rgba(16,185,129,0.08)]">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {presentCount} ao vivo
-              </span>
             </div>
             <p className="text-2xs sm:text-xs text-muted leading-none hidden sm:block mt-0.5">
               AiLab Makers · Painel de Frequência do Laboratório
