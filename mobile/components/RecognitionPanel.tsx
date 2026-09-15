@@ -12,7 +12,7 @@ import { useRecognize } from "@/hooks/useRecognize";
 import { useCameraFocus } from "@/hooks/useCameraFocus";
 import { triggerPresenceRefresh } from "@/hooks/usePresence";
 import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
-import { GENERIC_ERROR_MESSAGE } from "@/lib/errors";
+import { extractErrorMessage, GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 import { playAudioFeedback } from "@/lib/sound";
 
 export function RecognitionPanel() {
@@ -126,16 +126,27 @@ export function RecognitionPanel() {
             });
           } else if (evtAction === "check_out") {
             playAudioFeedback("check_out");
-            const mins = res.event.duration_minutes;
+            const rawMins = res.event.duration_minutes;
+            let displayMins: string | number | undefined;
+            let durationMsg = "Saída registrada com sucesso no sistema.";
+
+            if (rawMins != null) {
+              if (rawMins < 1) {
+                displayMins = "< 1";
+                durationMsg = "Sessão encerrada com menos de 1 minuto computado.";
+              } else {
+                const roundedMins = Math.round(rawMins);
+                displayMins = roundedMins;
+                durationMsg = `Sessão encerrada com ${roundedMins} ${roundedMins === 1 ? "minuto" : "minutos"} computados.`;
+              }
+            }
+
             setBadgeData({
               type: "check_out",
               name: res.name || "Integrante",
               title: "Saída Registrada",
-              durationMinutes: mins ?? undefined,
-              message:
-                mins != null
-                  ? `Sessão encerrada com ${mins} minutos computados.`
-                  : "Saída registrada com sucesso no sistema.",
+              durationMinutes: displayMins,
+              message: durationMsg,
             });
           } else if (evtAction === "already_in") {
             playAudioFeedback("warning");
@@ -169,12 +180,13 @@ export function RecognitionPanel() {
             });
           }
         }
-      } catch {
+      } catch (err: any) {
+        console.error("[RecognitionPanel] Erro ao registrar biometria:", err);
         playAudioFeedback("error");
         setBadgeData({
           type: "error",
           title: "Erro de Comunicação",
-          message: GENERIC_ERROR_MESSAGE,
+          message: extractErrorMessage(err) || GENERIC_ERROR_MESSAGE,
         });
       } finally {
         setBusy(false);

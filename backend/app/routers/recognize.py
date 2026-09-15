@@ -151,6 +151,7 @@ def open_sessions():
         .table("sessions")
         .select("id, check_in, profiles(id, name, avatar_url, matricula)")
         .is_("check_out", "null")
+        .is_("voided_at", "null")
         .order("check_in", desc=False)
         .execute()
     )

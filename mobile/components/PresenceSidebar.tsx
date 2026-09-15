@@ -26,8 +26,8 @@ export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
     const q = search.trim().toLowerCase();
     if (!q) return members;
     return members.filter((m) =>
-      m.profile.name.toLowerCase().includes(q) ||
-      (m.profile.matricula ? m.profile.matricula.includes(q) : false)
+      (m.profile?.name ? m.profile.name.toLowerCase().includes(q) : false) ||
+      (m.profile?.matricula ? m.profile.matricula.includes(q) : false)
     );
   }, [members, search]);
 
@@ -109,14 +109,16 @@ function SidebarRow({ member }: { member: PresentMember }) {
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  const initials = member.profile.name
+  const memberName = member.profile?.name || "Integrante";
+  const initials = memberName
     .split(" ")
+    .filter(Boolean)
     .map((w) => w[0])
     .join("")
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase() || "IN";
 
-  const avatar = getAvatarColor(member.profile.name);
+  const avatar = getAvatarColor(memberName);
 
   return (
     <Animated.View
@@ -133,7 +135,7 @@ function SidebarRow({ member }: { member: PresentMember }) {
       </View>
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>
-          {member.profile.name}
+          {memberName}
         </Text>
         <Text style={styles.elapsed}>⏱️ {elapsed}</Text>
       </View>

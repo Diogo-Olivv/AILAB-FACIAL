@@ -52,6 +52,32 @@ def test_register_event_prevents_immediate_accidental_checkout():
         assert res["wait_seconds"] > 0
 
 
+def test_register_event_checkout_computes_fractional_duration_and_updates_db():
+    """Garante que checkout com tempo fracionário (ex: 25 min e 30 seg = 25.5 min) é calculado e retornado."""
+    profile_id = "user-uuid-checkout"
+    now = datetime.now(UTC)
+    # Check-in há 25 minutos e 30 segundos (1530 segundos = 25.5 min)
+    check_in_dt = now - timedelta(minutes=25, seconds=30)
+    open_sess = {"id": 202, "check_in": check_in_dt.isoformat()}
+
+    mock_db = MagicMock()
+    mock_db.table.return_value.update.return_value.eq.return_value.execute.return_value.data = [{"id": 202}]
+
+    with (
+        patch("app.services.session_service.get_client", return_value=mock_db),
+        patch("app.services.session_service._last_event_ts", return_value=None),
+        patch("app.services.session_service._open_session", return_value=open_sess),
+        patch.object(settings, "debounce_seconds", 60),
+    ):
+        res = register_event(profile_id, action="check_out")
+        assert res["action"] == "check_out"
+        assert res["profile_id"] == profile_id
+        assert res["session_id"] == 202
+        assert isinstance(res["duration_minutes"], float)
+        assert abs(res["duration_minutes"] - 25.5) < 0.2
+        assert mock_db.table.return_value.update.called
+
+
 # ── Teste de Concorrência: Captura de Colisão 23505 (Índice Único) ────────────
 
 

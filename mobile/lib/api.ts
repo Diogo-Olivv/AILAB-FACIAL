@@ -79,6 +79,7 @@ export interface RecognizeResult {
   message?: string;
   event?: {
     action: RecognitionAction;
+    profile_id?: string;
     session_id?: number;
     timestamp?: string;
     duration_minutes?: number;

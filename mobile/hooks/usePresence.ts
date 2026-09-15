@@ -49,6 +49,7 @@ export function usePresence() {
       .from("sessions")
       .select("id, check_in, profiles(id, name, matricula, avatar_url)")
       .is("check_out", null)
+      .is("voided_at", null)
       .order("check_in", { ascending: true });
 
     if (err) {

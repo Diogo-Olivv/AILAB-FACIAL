@@ -22,7 +22,7 @@ export interface FeedbackBadgeData {
   name?: string;
   message?: string;
   detail?: string;
-  durationMinutes?: number;
+  durationMinutes?: number | string;
 }
 
 interface Props {
@@ -255,7 +255,7 @@ export function FeedbackBadge({ data, onDismiss, autoCloseMs = 4500 }: Props) {
             </Text>
 
             {/* Pílula de Duração em Monospace */}
-            {data.durationMinutes != null && data.durationMinutes > 0 && (
+            {data.durationMinutes != null && data.durationMinutes !== "" && (
               <View style={styles.metaRow}>
                 <View style={styles.durationTag}>
                   <Text style={styles.durationLabel}>

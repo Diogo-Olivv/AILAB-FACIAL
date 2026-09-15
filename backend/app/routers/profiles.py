@@ -96,10 +96,12 @@ def revoke_consent(profile_id: str):
     # 3. Invalida cache local do serviço facial
     invalidate_embeddings_cache()
 
-    log.info("Consentimento LGPD revogado para perfil %s. Biometria expurgada.", profile_id)
+    name = check.data[0].get("name", "") if check.data else ""
+    log.info("Consentimento LGPD revogado para perfil %s (%s). Biometria expurgada.", profile_id, name)
     return {
         "revoked": True,
         "profile_id": profile_id,
+        "name": name,
         "revoked_at": now_iso,
         "message": "Consentimento revogado. Dados biométricos expurgados e perfil inativado.",
     }

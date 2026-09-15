@@ -50,3 +50,7 @@ web/.env
 web/.env.local
 web/dist/
 web/node_modules/
+
+# QR codes temporários
+qr_*.png
+

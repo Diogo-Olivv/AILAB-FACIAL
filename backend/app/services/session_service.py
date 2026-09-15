@@ -34,6 +34,7 @@ def _open_session(profile_id: str) -> dict[str, Any] | None:
         .select("id, check_in")
         .eq("profile_id", profile_id)
         .is_("check_out", "null")
+        .is_("voided_at", "null")
         .order("check_in", desc=True)
         .limit(1)
         .execute()
@@ -192,7 +193,7 @@ def register_event(profile_id: str, action: str | None = None) -> dict[str, Any]
     sess_id = open_sess["id"]
     db = get_client()
     db.table("sessions").update({"check_out": now.isoformat()}).eq("id", sess_id).execute()
-    duration_min = round((now - check_in_dt).total_seconds() / 60, 1)
+    duration_min = max(0.0, round((now - check_in_dt).total_seconds() / 60, 1))
 
     return {
         "action": "check_out",
