@@ -4,12 +4,14 @@ import { formatDuration, formatTime } from "../lib/aggregate";
 export function DailyHistory({ days }: { days: DayGroup[] }) {
   if (days.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-3xl border border-white/80 bg-white/70 backdrop-blur-xl p-12 text-center shadow-apple">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-xl text-blue-600">
+      <div className="flex flex-col items-center justify-center rounded-3xl border border-[#E5E2DC] bg-white/80 p-12 text-center shadow-xs">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] text-xl text-[#706E6A]">
           📅
         </div>
-        <p className="text-base font-bold text-slate-900">Nenhum registro no período</p>
-        <p className="text-sm text-slate-500 mt-1">Nenhuma sessão encontrada para as datas selecionadas.</p>
+        <p className="font-editorial text-lg text-[#171715]">Nenhum registro no período</p>
+        <p className="text-xs sm:text-sm text-[#706E6A] mt-1 max-w-xs">
+          Nenhuma sessão encontrada para as datas selecionadas.
+        </p>
       </div>
     );
   }
@@ -19,40 +21,40 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
       {days.map((day) => (
         <div
           key={day.key}
-          className="overflow-hidden rounded-3xl border border-white/80 bg-white/75 backdrop-blur-xl shadow-apple transition-all duration-300"
+          className="overflow-hidden rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl shadow-[0_4px_24px_rgba(23,23,21,0.03)] transition-all duration-300"
         >
-          {/* Cabeçalho do Dia estilo Apple Glass */}
-          <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-blue-500/[0.08] via-indigo-500/[0.04] to-transparent border-b border-black/[0.05] px-4 py-3 sm:px-5">
-            <div className="flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-blue-500" />
-              <span className="text-xs sm:text-sm font-bold capitalize text-slate-900 tracking-tight">
+          {/* Cabeçalho do Dia estilo Claude Paper */}
+          <div className="flex items-center justify-between gap-2 bg-[#FAF9F5]/90 border-b border-[#E5E2DC] px-4 py-3 sm:px-5">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-2 w-2 rounded-full bg-[#C15F3D]" />
+              <span className="font-editorial font-serif text-sm sm:text-base font-normal capitalize text-[#171715] tracking-tight">
                 {day.label}
               </span>
             </div>
-            <span className="whitespace-nowrap rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 sm:px-3 sm:py-1 text-2xs sm:text-xs font-bold text-blue-900 shadow-2xs">
+            <span className="whitespace-nowrap rounded-full bg-white border border-[#E5E2DC] px-3 py-1 text-xs font-mono-data font-semibold text-[#171715] shadow-2xs">
               Total: {formatDuration(day.totalSeconds)}
             </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm text-slate-800">
-              <tbody className="divide-y divide-black/[0.04]">
+            <table className="w-full text-left text-xs sm:text-sm text-[#171715]">
+              <tbody className="divide-y divide-[#E5E2DC]/70">
                 {day.entries.map((entry, index) => (
                   <tr
                     key={index}
-                    className="transition-colors duration-150 hover:bg-white/90"
+                    className="transition-colors duration-150 hover:bg-[#FAF9F5]"
                   >
-                    <td className="px-3.5 py-3 sm:px-5 font-semibold text-slate-900 truncate max-w-[140px] sm:max-w-none">
+                    <td className="px-3.5 py-3 sm:px-5 font-sans font-medium text-[#171715] truncate max-w-[140px] sm:max-w-none">
                       {entry.memberName}
                     </td>
-                    <td className="px-2 py-3 sm:px-5 text-slate-500 text-2xs sm:text-xs">
+                    <td className="px-2 py-3 sm:px-5 text-[#706E6A] font-mono-data text-xs">
                       {formatTime(entry.checkIn)} às{" "}
                       {entry.voided ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10.5px] font-semibold text-amber-800">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#FAF5F0] border border-[#F0DCD3] px-2 py-0.5 text-[10px] font-medium text-[#C15F3D]">
                           ⚠️ anulada
                         </span>
                       ) : entry.open ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 border border-emerald-500/25 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-700 shadow-2xs">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10px] font-medium text-emerald-800 shadow-2xs">
                           <span className="relative flex h-1.5 w-1.5 shrink-0">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
@@ -63,9 +65,9 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
                         formatTime(entry.checkOut!)
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-3.5 py-3 sm:px-5 text-right font-mono font-bold text-slate-900 tabular-nums text-xs sm:text-sm">
+                    <td className="whitespace-nowrap px-3.5 py-3 sm:px-5 text-right font-mono-data font-semibold text-[#171715] text-xs sm:text-sm">
                       {entry.voided ? (
-                        <span className="text-slate-400 text-xs">—</span>
+                        <span className="text-[#706E6A]/50 text-xs">—</span>
                       ) : (
                         formatDuration(entry.seconds)
                       )}

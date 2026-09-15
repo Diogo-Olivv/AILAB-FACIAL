@@ -68,42 +68,42 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
 
   if (sortedRows.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-line bg-card p-12 text-center shadow-xs">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-navy/5 text-xl">
+      <div className="flex flex-col items-center justify-center rounded-3xl border border-[#E5E2DC] bg-white/80 p-12 text-center shadow-xs">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] text-xl text-[#706E6A]">
           📋
         </div>
-        <p className="text-base font-bold text-ink">Nenhum integrante encontrado</p>
-        <p className="text-sm text-muted mt-1">
-          Verifique o termo de busca ou altere o período selecionado.
+        <p className="font-editorial text-lg text-[#171715]">Nenhum integrante encontrado</p>
+        <p className="text-xs sm:text-sm text-[#706E6A] mt-1 max-w-xs">
+          Verifique o termo de busca ou altere o período selecionado no topo da página.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between px-1.5 text-xs text-muted font-medium">
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between px-1 text-xs text-[#706E6A] font-sans">
         <span className="hidden sm:inline">
-          Exibindo <strong>{sortedRows.length}</strong> integrantes (clique no nome para ver sessões detalhadas)
+          Exibindo <strong className="font-mono-data font-semibold text-[#171715]">{sortedRows.length}</strong> integrantes (clique no nome para abrir o histórico detalhado)
         </span>
         <span className="sm:hidden text-[11px]">
-          <strong>{sortedRows.length}</strong> integrantes · toque para detalhes
+          <strong className="font-mono-data font-semibold text-[#171715]">{sortedRows.length}</strong> integrantes · toque para detalhes
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-3xl border border-white/80 bg-white/70 backdrop-blur-xl shadow-apple transition-all duration-300 sm:overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm text-ink" aria-label="Tabela de permanência dos integrantes">
-          <thead className="sticky top-0 z-10 glass-table-header select-none">
+      <div className="overflow-hidden rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl shadow-[0_4px_24px_rgba(23,23,21,0.03)] transition-all duration-300 sm:overflow-x-auto">
+        <table className="w-full table-fixed text-left text-sm text-[#171715]" aria-label="Tabela de permanência dos integrantes">
+          <thead className="sticky top-0 z-10 glass-table-header select-none border-b border-[#E5E2DC]">
             <tr>
               <th
                 scope="col"
                 aria-sort={sortField === "name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
                 onClick={() => handleSort("name")}
-                className="w-[45%] sm:w-auto px-2.5 py-2.5 sm:px-5 sm:py-3.5 font-semibold text-muted text-xs cursor-pointer hover:text-ink transition-colors"
+                className="w-[45%] sm:w-auto px-3 py-3 sm:px-5 sm:py-3.5 font-sans font-semibold text-[#706E6A] text-[11px] uppercase tracking-wider cursor-pointer hover:text-[#171715] transition-colors"
               >
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <span>Integrante</span>
-                  <span className="text-2xs opacity-60">
+                  <span className="text-2xs opacity-60 font-mono-data">
                     {sortField === "name" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
                 </div>
@@ -112,11 +112,11 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 scope="col"
                 aria-sort={sortField === "matricula" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
                 onClick={() => handleSort("matricula")}
-                className="hidden sm:table-cell sm:w-36 px-4 py-3.5 font-semibold text-muted text-xs sm:px-5 cursor-pointer hover:text-ink transition-colors"
+                className="hidden sm:table-cell sm:w-36 px-4 py-3.5 font-sans font-semibold text-[#706E6A] text-[11px] uppercase tracking-wider sm:px-5 cursor-pointer hover:text-[#171715] transition-colors"
               >
                 <div className="flex items-center gap-1.5">
                   <span>Matrícula</span>
-                  <span className="text-2xs opacity-60">
+                  <span className="text-2xs opacity-60 font-mono-data">
                     {sortField === "matricula" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
                 </div>
@@ -125,11 +125,11 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 scope="col"
                 aria-sort={sortField === "sessions" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
                 onClick={() => handleSort("sessions")}
-                className="hidden sm:table-cell sm:w-28 px-4 py-3.5 font-semibold text-muted text-xs sm:px-5 text-center cursor-pointer hover:text-ink transition-colors"
+                className="hidden sm:table-cell sm:w-28 px-4 py-3.5 font-sans font-semibold text-[#706E6A] text-[11px] uppercase tracking-wider sm:px-5 text-center cursor-pointer hover:text-[#171715] transition-colors"
               >
                 <div className="flex items-center justify-center gap-1.5">
                   <span>Sessões</span>
-                  <span className="text-2xs opacity-60">
+                  <span className="text-2xs opacity-60 font-mono-data">
                     {sortField === "sessions" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
                 </div>
@@ -138,12 +138,12 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 scope="col"
                 aria-sort={sortField === "duration" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
                 onClick={() => handleSort("duration")}
-                className="w-[27%] sm:w-36 whitespace-nowrap px-1.5 py-2.5 sm:px-5 sm:py-3.5 font-semibold text-muted text-xs cursor-pointer hover:text-ink transition-colors text-right sm:text-left"
+                className="w-[27%] sm:w-40 whitespace-nowrap px-2 py-3 sm:px-5 sm:py-3.5 font-sans font-semibold text-[#706E6A] text-[11px] uppercase tracking-wider cursor-pointer hover:text-[#171715] transition-colors text-right sm:text-left"
               >
-                <div className="flex items-center justify-end sm:justify-start gap-1">
+                <div className="flex items-center justify-end sm:justify-start gap-1.5">
                   <span className="hidden sm:inline">Total Permanência</span>
                   <span className="sm:hidden">Tempo</span>
-                  <span className="text-2xs opacity-60">
+                  <span className="text-2xs opacity-60 font-mono-data">
                     {sortField === "duration" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
                 </div>
@@ -152,18 +152,18 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 scope="col"
                 aria-sort={sortField === "status" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
                 onClick={() => handleSort("status")}
-                className="w-[28%] sm:w-32 whitespace-nowrap pl-1 pr-3 py-2.5 sm:px-5 sm:py-3.5 font-semibold text-muted text-xs cursor-pointer hover:text-ink transition-colors text-right sm:text-left"
+                className="w-[28%] sm:w-32 whitespace-nowrap pl-1 pr-3 py-3 sm:px-5 sm:py-3.5 font-sans font-semibold text-[#706E6A] text-[11px] uppercase tracking-wider cursor-pointer hover:text-[#171715] transition-colors text-right sm:text-left"
               >
-                <div className="flex items-center justify-end sm:justify-start gap-1">
+                <div className="flex items-center justify-end sm:justify-start gap-1.5">
                   <span>Status</span>
-                  <span className="text-2xs opacity-60">
+                  <span className="text-2xs opacity-60 font-mono-data">
                     {sortField === "status" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
                 </div>
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-black/[0.04]">
+          <tbody className="divide-y divide-[#E5E2DC]/70">
             {sortedRows.map((row) => (
               <tr
                 key={row.member.id}
@@ -175,46 +175,51 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                     onSelectMember && onSelectMember(row);
                   }
                 }}
-                className="group transition-all duration-150 hover:bg-white/90 hover:backdrop-blur-md cursor-pointer focus-visible:bg-black/[0.03] focus-visible:outline-2 focus-visible:outline-navy"
+                className="group transition-all duration-150 hover:bg-[#FAF9F5] cursor-pointer focus-visible:bg-[#FAF9F5] focus-visible:outline-2 focus-visible:outline-[#C15F3D]"
                 role="button"
                 aria-label={`Ver sessões e histórico de ${row.member.name}`}
               >
-                <td className="px-2.5 py-2 sm:px-5 sm:py-3.5 text-ink overflow-hidden">
+                <td className="px-3 py-2.5 sm:px-5 sm:py-3.5 text-[#171715] overflow-hidden">
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                    {/* Avatar estilo Apple com gradiente dinâmico vibrante */}
                     <div
                       className={`flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarStyle(row.member.name)} text-[10px] sm:text-xs font-bold ring-1.5 sm:ring-2 ring-white shadow-2xs transition-transform duration-200 group-hover:scale-105`}
                     >
                       {row.member.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <span className="font-semibold text-ink group-hover:text-navy transition-colors block text-xs sm:text-sm truncate">
+                      <span className="font-sans font-medium text-[#171715] group-hover:text-[#C15F3D] transition-colors block text-xs sm:text-sm truncate">
                         {row.member.name}
                       </span>
                     </div>
                   </div>
                 </td>
-                <td className="hidden px-4 py-3.5 text-muted sm:table-cell sm:px-5 font-mono text-xs">
-                  {row.member.matricula ?? "—"}
+                <td className="hidden px-4 py-3.5 sm:table-cell sm:px-5 font-mono-data text-xs text-[#706E6A]">
+                  {row.member.matricula ? (
+                    <span className="inline-block rounded-md bg-[#FAF9F5] border border-[#E5E2DC] px-2 py-0.5">
+                      {row.member.matricula}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
                 </td>
-                <td className="hidden px-4 py-3.5 text-ink sm:table-cell sm:px-5 text-center font-medium">
+                <td className="hidden px-4 py-3.5 text-[#171715] sm:table-cell sm:px-5 text-center font-mono-data text-xs sm:text-sm font-medium">
                   {row.sessionCount}
                 </td>
-                <td className="whitespace-nowrap px-1.5 py-2 sm:px-5 sm:py-3.5 text-right sm:text-left text-[11px] sm:text-sm tabular-nums">
+                <td className="whitespace-nowrap px-2 py-2.5 sm:px-5 sm:py-3.5 text-right sm:text-left text-xs sm:text-sm font-mono-data">
                   {row.present ? (
-                    <span className="font-mono font-bold text-emerald-600">
+                    <span className="font-semibold text-emerald-700">
                       {formatDuration(row.totalSeconds, true)}
                     </span>
                   ) : (
-                    <span className="font-semibold text-ink/75">
+                    <span className="font-medium text-[#171715]">
                       {formatDuration(row.totalSeconds)}
                     </span>
                   )}
                 </td>
-                <td className="whitespace-nowrap pl-1 pr-3 py-2 sm:px-5 sm:py-3.5 text-right sm:text-left">
+                <td className="whitespace-nowrap pl-1 pr-3 py-2.5 sm:px-5 sm:py-3.5 text-right sm:text-left">
                   <div className="flex items-center justify-end sm:justify-start">
                     {row.present ? (
-                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-500/12 border border-emerald-500/25 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10.5px] sm:text-xs font-semibold text-emerald-700 shadow-2xs">
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 text-[11px] font-medium text-emerald-800 shadow-2xs">
                         <span className="relative flex h-1.5 w-1.5 shrink-0">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                           <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
@@ -222,8 +227,8 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                         <span>Presente</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-slate-500/[0.05] border border-slate-400/15 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10.5px] sm:text-xs font-medium text-slate-500">
-                        <span className="h-1.5 w-1.5 rounded-full bg-slate-400/50 shrink-0" />
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#FAF9F5] border border-[#E5E2DC] px-2.5 py-1 text-[11px] font-medium text-[#706E6A]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#706E6A]/40 shrink-0" />
                         <span>Ausente</span>
                       </span>
                     )}

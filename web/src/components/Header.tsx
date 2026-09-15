@@ -19,40 +19,44 @@ export function Header({
 }: HeaderProps) {
   return (
     <header
-      className="sticky top-0 z-30 border-b border-black/[0.05] bg-white/80 px-3 py-2.5 backdrop-blur-2xl transition-all sm:px-8 sm:py-3.5 shadow-[0_2px_16px_rgba(0,0,0,0.03)]"
+      className="sticky top-0 z-30 border-b border-stone-200/70 bg-white/85 px-3.5 py-3 backdrop-blur-2xl transition-all sm:px-8 sm:py-3.5 shadow-[0_2px_16px_rgba(23,23,21,0.02)]"
       role="banner"
     >
-      <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-2.5 sm:gap-4">
-        {/* Marca e Identidade */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
+      <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-3">
+        {/* Marca com Tipografia Editorial Claude */}
+        <div className="flex items-center gap-3">
           <img
             src={logo}
-            alt="AiLab Makers Foundation Logo"
-            className="h-9 w-9 sm:h-11 sm:w-11 rounded-2xl border border-white/80 object-cover shadow-2xs"
+            alt="AiLab Makers Logo"
+            className="h-9 w-9 sm:h-11 sm:w-11 rounded-2xl border border-stone-200/80 object-cover shadow-claude ring-1 ring-black/5"
           />
           <div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <h1 className="text-sm sm:text-lg font-extrabold tracking-tight text-ink leading-tight">
-                Tempo de permanência
-              </h1>
+            <div className="flex items-center gap-2">
+              <span className="font-editorial text-base sm:text-xl font-semibold tracking-tight text-slate-900 leading-none">
+                AiLab Makers
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-bold text-emerald-800 tracking-wider uppercase font-mono-data">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>ao vivo</span>
+              </span>
             </div>
-            <p className="text-2xs sm:text-xs text-muted leading-none hidden sm:block mt-0.5">
-              AiLab Makers · Painel de Frequência do Laboratório
+            <p className="text-2xs sm:text-xs text-stone-500 font-medium leading-none mt-1">
+              Controle Acadêmico de Permanência
             </p>
           </div>
         </div>
 
-        {/* Ações: Atualizar, Termos LGPD e Acesso Tutor */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* Ações Rápidas estilo Perplexity / Claude Pills */}
+        <div className="flex items-center gap-2">
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="liquid-glass-button inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold text-ink cursor-pointer min-h-[44px] min-w-[44px] disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-2xl border border-stone-200/80 bg-white/90 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:border-stone-300 shadow-claude transition-all cursor-pointer min-h-[40px] disabled:opacity-50"
             title="Atualizar dados de permanência agora"
             aria-label="Atualizar dados de permanência agora"
           >
             <svg
-              className={`h-4 w-4 transition-transform ${isRefreshing ? "animate-spin text-emerald-600" : "text-muted"}`}
+              className={`h-3.5 w-3.5 transition-transform ${isRefreshing ? "animate-spin text-teal-600" : "text-stone-400"}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -64,24 +68,24 @@ export function Header({
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               />
             </svg>
-            <span className="hidden sm:inline ml-1.5">
-              {isRefreshing ? "Atualizando..." : "Atualizar"}
+            <span className="hidden sm:inline ml-1.5 font-medium">
+              {isRefreshing ? "Sincronizando..." : "Atualizar"}
             </span>
           </button>
 
           <button
             onClick={onOpenTerms}
-            className="liquid-glass-button inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink cursor-pointer min-h-[44px]"
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-stone-200/80 bg-white/90 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:border-stone-300 shadow-claude transition-all cursor-pointer min-h-[40px]"
             title="Políticas de Privacidade Biométrica (LGPD Art. 11)"
           >
             <span className="text-xs">⚖️</span>
-            <span>Termos</span>
+            <span className="font-medium">Termos LGPD</span>
           </button>
 
           {user ? (
             <button
               onClick={signOut}
-              className="liquid-glass-button inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-xs font-bold text-warn border-warn/20 hover:border-warn/40 hover:bg-warn/10 cursor-pointer min-h-[44px]"
+              className="inline-flex items-center justify-center rounded-2xl border border-rose-200/80 bg-rose-50/70 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition-all cursor-pointer min-h-[40px]"
               title="Encerrar sessão de tutor"
             >
               Sair
@@ -89,10 +93,11 @@ export function Header({
           ) : (
             <Link
               to="/login"
-              className="liquid-glass-button inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-xs font-bold text-navy border-navy/20 hover:border-navy/40 hover:bg-navy/10 min-h-[44px]"
+              className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-2 text-xs font-bold text-white shadow-sm hover:from-black hover:to-slate-900 active:scale-98 transition-all min-h-[40px]"
               title="Área administrativa de tutores e coordenadores"
             >
-              Acesso Tutor
+              <span>🎓</span>
+              <span>Acesso Tutor</span>
             </Link>
           )}
         </div>

@@ -204,10 +204,10 @@ export function Dashboard() {
   }, [members, sessions]);
 
   return (
-    <div className="min-h-screen bg-transparent flex flex-col justify-between selection:bg-navy/20">
+    <div className="min-h-screen bg-transparent flex flex-col justify-between selection:bg-[#C15F3D]/20 text-[#171715]">
       {/* Linha sutil de carregamento superior em tempo real */}
       {isRefreshing && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-gradient-to-r from-transparent via-navy to-green animate-pulse" />
+        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-gradient-to-r from-transparent via-[#C15F3D] to-amber-500 animate-pulse" />
       )}
 
       {/* Cabeçalho limpo com contagem ao vivo e ações rápidas */}
@@ -222,24 +222,24 @@ export function Dashboard() {
 
       <main className="flex-1 px-3 py-5 sm:px-6 md:px-8 max-w-6xl mx-auto w-full relative">
         <div className={`space-y-6 transition-opacity duration-300 ${isRefreshing ? "opacity-75" : "opacity-100"}`}>
-        {/* Painel do Tutor (visível apenas para tutores autenticados) */}
+        {/* Painel do Tutor estilo Claude Paper */}
         {user && (
-          <div className="glass-panel rounded-3xl border border-navy/15 bg-navy/[0.03] p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-apple animate-fade-in">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl liquid-glass-pill text-navy text-xl shadow-2xs">
+          <div className="rounded-3xl border border-[#E5E2DC] bg-[#FAF9F5] p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-[0_4px_24px_rgba(23,23,21,0.03)] animate-fade-in">
+            <div className="flex items-center gap-3.5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FAF5F0] border border-[#F0DCD3] text-[#C15F3D] text-xl shadow-2xs">
                 🎓
               </span>
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm sm:text-base font-bold text-ink">
-                    Painel Exclusivo do Tutor
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-editorial text-lg sm:text-xl font-normal text-[#171715]">
+                    Painel da Tutoria
                   </h3>
-                  <span className="rounded-full bg-navy/10 border border-navy/15 px-2.5 py-0.5 text-2xs font-bold text-navy">
+                  <span className="font-mono-data rounded-md bg-white border border-[#E5E2DC] px-2.5 py-0.5 text-2xs font-medium text-[#706E6A]">
                     {user.email}
                   </span>
                 </div>
-                <p className="text-xs text-muted mt-0.5">
-                  Audite o cumprimento da meta semanal (4 horas) e emita advertências aos alunos em débito.
+                <p className="text-xs text-[#706E6A] font-sans mt-0.5">
+                  Audite o cumprimento da meta semanal obrigatória de 4 horas e emita comunicados acadêmicos.
                 </p>
               </div>
             </div>
@@ -248,7 +248,7 @@ export function Dashboard() {
               <button
                 type="button"
                 onClick={() => setIsTutorProfileOpen(true)}
-                className="liquid-glass-button inline-flex items-center gap-1.5 rounded-2xl bg-blue-500/10 border border-blue-500/25 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-blue-900 shadow-2xs hover:bg-blue-500/20 active:scale-95 cursor-pointer min-h-[44px]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E2DC] bg-white px-4 py-2 text-xs sm:text-sm font-medium text-[#171715] hover:bg-[#FAF9F5] hover:border-[#706E6A]/40 shadow-2xs active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
               >
                 <span>⚙️</span>
                 <span>Configurar Acesso (@ailab.com)</span>
@@ -257,108 +257,114 @@ export function Dashboard() {
               <button
                 type="button"
                 onClick={() => setIsTutorWarningOpen(true)}
-                className="liquid-glass-button inline-flex items-center gap-2 rounded-2xl bg-amber-500/10 border-amber-500/25 px-4 py-2.5 text-xs sm:text-sm font-bold text-amber-900 shadow-2xs hover:bg-amber-500/20 active:scale-95 cursor-pointer min-h-[44px]"
+                className="inline-flex items-center gap-2 rounded-full bg-[#171715] hover:bg-[#2A2925] px-4 py-2 text-xs sm:text-sm font-sans font-medium text-[#FAF9F5] shadow-sm active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
               >
                 <span>⚠️</span>
-                <span>Auditoria Semanal & Advertências ({studentsUnderFourHoursCount})</span>
+                <span>Auditoria Semanal & Metas ({studentsUnderFourHoursCount})</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* KPI Cards de Resumo Direto com Apple Glass */}
+        {/* KPI Cards de Resumo com Tipografia Claude & Perplexity */}
         {loading && members.length === 0 ? (
           <KpiSkeleton />
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4 animate-fade-in">
-            {/* Presentes Agora - Apple Emerald Glow */}
-            <div className="rounded-3xl p-3.5 sm:p-5 bg-gradient-to-br from-emerald-500/[0.09] via-white/85 to-teal-500/[0.04] backdrop-blur-xl border border-emerald-500/25 shadow-apple transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
+            {/* Presentes Agora */}
+            <div className="rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] bg-white/85 shadow-[0_4px_20px_rgba(23,23,21,0.03)] hover:border-[#706E6A]/30 transition-all duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-emerald-800">
+                <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#706E6A]">
                   Presentes
                 </span>
-                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-sm shadow-emerald-500/30 text-xs">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs shadow-2xs">
                   🟢
                 </span>
               </div>
               <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                <span className="text-2xl sm:text-3xl font-black text-ink tabular-nums">{presentCount}</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-2xs font-bold text-emerald-800 shadow-2xs">
+                <span className="text-2xl sm:text-3xl font-semibold text-[#171715] font-mono-data tracking-tight">
+                  {presentCount}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-2xs font-medium text-emerald-800 font-mono-data">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   ao vivo
                 </span>
               </div>
-              <p className="text-2xs sm:text-xs text-emerald-900/70 font-semibold mt-1 truncate">No laboratório</p>
+              <p className="text-[11px] text-[#706E6A] mt-1 truncate">No laboratório</p>
             </div>
 
-            {/* Total de Horas - Apple Electric Blue Glow */}
-            <div className="rounded-3xl p-3.5 sm:p-5 bg-gradient-to-br from-blue-500/[0.09] via-white/85 to-indigo-500/[0.04] backdrop-blur-xl border border-blue-500/25 shadow-apple transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
+            {/* Total de Horas */}
+            <div className="rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] bg-white/85 shadow-[0_4px_20px_rgba(23,23,21,0.03)] hover:border-[#706E6A]/30 transition-all duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-blue-800">
+                <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#706E6A]">
                   Horas Totais
                 </span>
-                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm shadow-blue-500/30 text-xs">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-200/80 text-blue-800 text-xs shadow-2xs">
                   ⏱️
                 </span>
               </div>
               <div className="mt-2.5">
-                <span className="text-xl sm:text-3xl font-black text-blue-950 tabular-nums tracking-tight">
+                <span className="text-xl sm:text-3xl font-semibold text-[#171715] font-mono-data tracking-tight">
                   {formatDuration(totalLabSeconds)}
                 </span>
               </div>
-              <p className="text-2xs sm:text-xs text-blue-900/70 font-semibold mt-1 truncate">Acumuladas</p>
+              <p className="text-[11px] text-[#706E6A] mt-1 truncate">Acumuladas no período</p>
             </div>
 
-            {/* Integrantes Ativos - Apple Royal Violet Glow */}
-            <div className="rounded-3xl p-3.5 sm:p-5 bg-gradient-to-br from-purple-500/[0.09] via-white/85 to-violet-500/[0.04] backdrop-blur-xl border border-purple-500/25 shadow-apple transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
+            {/* Integrantes Ativos */}
+            <div className="rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] bg-white/85 shadow-[0_4px_20px_rgba(23,23,21,0.03)] hover:border-[#706E6A]/30 transition-all duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-purple-800">
+                <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#706E6A]">
                   Ativos
                 </span>
-                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-sm shadow-purple-500/30 text-xs">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-purple-50 border border-purple-200/80 text-purple-800 text-xs shadow-2xs">
                   👥
                 </span>
               </div>
               <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                <span className="text-2xl sm:text-3xl font-black text-ink tabular-nums">{activeMembersCount}</span>
-                <span className="text-2xs sm:text-xs font-bold text-purple-700">de {members.length}</span>
+                <span className="text-2xl sm:text-3xl font-semibold text-[#171715] font-mono-data tracking-tight">
+                  {activeMembersCount}
+                </span>
+                <span className="text-2xs font-mono-data text-[#706E6A]">de {members.length}</span>
               </div>
-              <p className="text-2xs sm:text-xs text-purple-900/70 font-semibold mt-1 truncate">Integrantes</p>
+              <p className="text-[11px] text-[#706E6A] mt-1 truncate">Integrantes com registro</p>
             </div>
 
-            {/* Total de Sessões - Apple Sunset Amber Glow */}
-            <div className="rounded-3xl p-3.5 sm:p-5 bg-gradient-to-br from-amber-500/[0.09] via-white/85 to-orange-500/[0.04] backdrop-blur-xl border border-amber-500/25 shadow-apple transition-all duration-300 hover:shadow-apple-hover hover:-translate-y-0.5">
+            {/* Total de Sessões */}
+            <div className="rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] bg-white/85 shadow-[0_4px_20px_rgba(23,23,21,0.03)] hover:border-[#706E6A]/30 transition-all duration-300">
               <div className="flex items-center justify-between">
-                <span className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-amber-800">
+                <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#706E6A]">
                   Sessões
                 </span>
-                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm shadow-amber-500/30 text-xs">
+                <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-xs shadow-2xs">
                   📌
                 </span>
               </div>
               <div className="mt-2.5">
-                <span className="text-2xl sm:text-3xl font-black text-ink tabular-nums">{totalSessionsCount}</span>
+                <span className="text-2xl sm:text-3xl font-semibold text-[#171715] font-mono-data tracking-tight">
+                  {totalSessionsCount}
+                </span>
               </div>
-              <p className="text-2xs sm:text-xs text-amber-900/70 font-semibold mt-1 truncate">Registros válidos</p>
+              <p className="text-[11px] text-[#706E6A] mt-1 truncate">Registros válidos</p>
             </div>
           </div>
         )}
 
-        {/* Seletor de Período estilo Apple (Hoje, Semana, Mês) */}
+        {/* Seletor de Período estilo Apple & Perplexity */}
         <PeriodSelector
           period={period}
           range={range}
           onPeriod={setPeriod}
         />
 
-        {/* Barra de Navegação e Busca Integrada com Liquid Glass */}
-        <div className="glass-panel flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 rounded-3xl p-2.5 sm:p-3 shadow-apple transition-all duration-300">
-          {/* Segmented control estilo Apple com deslizamento e arrasto */}
+        {/* Barra de Navegação e Busca Integrada com Estilo Perplexity */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-3xl p-2.5 sm:p-3 border border-[#E5E2DC] bg-white/85 backdrop-blur-xl shadow-[0_4px_20px_rgba(23,23,21,0.03)] transition-all duration-300">
+          {/* Segmented control de visualizações */}
           <ViewSelector view={view} onViewChange={setView} />
 
-          {/* Campo de Busca Reativa estilo Apple Spotlight com alto contraste */}
+          {/* Campo de Busca Reativa estilo Perplexity Command Bar */}
           <div className="relative w-full sm:w-80 group">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 group-focus-within:text-blue-600 transition-colors">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#706E6A] group-focus-within:text-[#C15F3D] transition-colors">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
               </svg>
@@ -367,18 +373,18 @@ export function Dashboard() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por nome ou matrícula..."
-              className="w-full rounded-2xl border border-black/15 bg-white/95 backdrop-blur-md py-2.5 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 font-medium focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/15 shadow-xs min-h-[40px] transition-all"
+              placeholder="Buscar integrante ou matrícula..."
+              className="w-full rounded-2xl border border-[#E5E2DC] bg-[#FAF9F5] py-2.5 pl-10 pr-9 text-xs sm:text-sm text-[#171715] placeholder:text-[#706E6A]/60 font-sans font-medium focus:border-[#C15F3D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#C15F3D]/10 min-h-[40px] transition-all"
               aria-label="Buscar integrantes por nome ou matrícula"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#706E6A] hover:text-[#171715] cursor-pointer"
                 aria-label="Limpar busca"
               >
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#E5E2DC] text-[10px] font-bold text-[#171715] hover:bg-[#D5D2CC]">
                   ✕
                 </span>
               </button>

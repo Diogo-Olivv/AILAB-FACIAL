@@ -33,20 +33,20 @@ export function PrivacyTermsModal({ isOpen, onClose }: Props) {
       aria-labelledby="terms-modal-title"
     >
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/80 shadow-2xl flex flex-col overflow-hidden animate-scale-up"
+        className="relative w-full max-w-2xl max-h-[90vh] bg-white/95 backdrop-blur-2xl rounded-3xl border border-[#E5E2DC] shadow-[0_8px_30px_rgba(23,23,21,0.06)] flex flex-col overflow-hidden animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Responsivo estilo Apple Glass */}
-        <div className="flex items-center justify-between border-b border-black/[0.05] bg-gradient-to-b from-slate-50/90 to-white/95 px-5 py-4 sm:px-6 gap-3">
+        {/* Header Responsivo estilo Apple Glass com tipografia Claude */}
+        <div className="flex items-center justify-between border-b border-[#E5E2DC] bg-[#FAF9F5]/90 px-5 py-4 sm:px-6 gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-lg shadow-sm shadow-blue-500/25">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#FAF5F0] border border-[#F0DCD3] text-[#C15F3D] font-bold text-lg shadow-2xs">
               ⚖️
             </div>
             <div className="min-w-0">
-              <h2 id="terms-modal-title" className="text-sm sm:text-base md:text-lg font-black text-slate-900 truncate">
+              <h2 id="terms-modal-title" className="font-editorial text-base sm:text-lg md:text-xl font-normal text-[#171715] truncate">
                 Termos & Privacidade Biométrica
               </h2>
-              <p className="text-2xs sm:text-xs font-bold uppercase tracking-wider text-emerald-700 truncate">
+              <p className="text-[10.5px] font-mono-data font-medium text-emerald-800 truncate">
                 LGPD (Lei nº 13.709/2018 - Art. 11)
               </p>
             </div>
@@ -54,43 +54,43 @@ export function PrivacyTermsModal({ isOpen, onClose }: Props) {
           <button
             onClick={onClose}
             aria-label="Fechar termos de privacidade"
-            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.04] hover:bg-black/[0.08] text-[#706E6A] hover:text-[#171715] transition-colors cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        {/* Corpo com Rolagem Estritamente Vertical e quebra de linha sem overflow */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-6 space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed break-words">
+        {/* Corpo com Rolagem Estritamente Vertical */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-6 space-y-4 text-xs sm:text-sm text-[#706E6A] leading-relaxed break-words">
           {/* Seção 1 */}
-          <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/[0.06] to-indigo-500/[0.02] p-4">
-            <h3 className="text-xs sm:text-sm font-bold text-blue-900 uppercase tracking-wider mb-1">
+          <div className="rounded-2xl border border-[#F0DCD3] bg-[#FAF5F0]/80 p-4 text-[#171715]">
+            <h3 className="font-editorial text-sm sm:text-base font-normal text-[#C15F3D] mb-1">
               1. Identificação e Finalidade
             </h3>
-            <p className="text-slate-800">
+            <p className="text-xs sm:text-sm text-[#171715]/90 leading-relaxed">
               O tratamento biométrico facial é operado pelo <strong>AILAB Makers (Maker Foundation)</strong> exclusivamente para controle acadêmico de frequência e registro de permanência em laboratório. Os dados jamais serão comercializados ou cedidos a terceiros.
             </p>
           </div>
 
           {/* Seção 2 */}
           <div className="space-y-1">
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+            <h3 className="font-editorial text-sm sm:text-base font-normal text-[#171715]">
               2. Base Legal (Art. 11, II, "g" da LGPD)
             </h3>
-            <p>
+            <p className="text-xs sm:text-sm">
               O tratamento ocorre com respaldo legal para prevenção à fraude e segurança na autenticação presencial dos integrantes no laboratório.
             </p>
           </div>
 
           {/* Seção 3 */}
           <div className="space-y-1">
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+            <h3 className="font-editorial text-sm sm:text-base font-normal text-[#171715]">
               3. Descarte Imediato de Fotos e Embeddings 512-D
             </h3>
-            <p>
+            <p className="text-xs sm:text-sm">
               O sistema <strong>não armazena fotos da câmera</strong>:
             </p>
-            <ul className="list-disc pl-4 sm:pl-5 space-y-1 text-slate-800">
+            <ul className="list-disc pl-4 sm:pl-5 space-y-1 text-[#171715]">
               <li>A foto é recebida temporariamente apenas na memória RAM da inferência neural.</li>
               <li>É gerado um vetor numérico matemático (embedding de 512 dimensões).</li>
               <li>A foto original é <strong>destruída de imediato</strong>, tornando impossível reconstruir o rosto a partir do banco.</li>
@@ -99,37 +99,37 @@ export function PrivacyTermsModal({ isOpen, onClose }: Props) {
 
           {/* Seção 4 */}
           <div className="space-y-1">
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+            <h3 className="font-editorial text-sm sm:text-base font-normal text-[#171715]">
               4. Segurança Criptográfica & RLS
             </h3>
-            <p>
+            <p className="text-xs sm:text-sm">
               Acesso protegido por Row Level Security (RLS) no PostgreSQL, criptografia em trânsito TLS 1.3 e verificação anti-spoofing ativa no totem de entrada.
             </p>
           </div>
 
           {/* Seção 5 */}
           <div className="space-y-1">
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+            <h3 className="font-editorial text-sm sm:text-base font-normal text-[#171715]">
               5. Direitos do Titular (Art. 18)
             </h3>
-            <p>
+            <p className="text-xs sm:text-sm">
               O aluno pode revogar o consentimento a qualquer momento solicitando ao tutor, resultando na exclusão definitiva do vetor biométrico da base de dados.
             </p>
           </div>
 
           {/* Seção 6 */}
-          <div className="rounded-2xl border border-black/[0.05] bg-slate-50/80 p-3.5 text-2xs sm:text-xs text-slate-500">
+          <div className="rounded-2xl border border-[#E5E2DC] bg-[#FAF9F5] p-3.5 text-xs text-[#706E6A]">
             <p>
               <strong>Dúvidas ou solicitações:</strong> Fale com a coordenação ou com os tutores do AiLab Makers.
             </p>
           </div>
         </div>
 
-        {/* Footer estilo Apple */}
-        <div className="flex items-center justify-end border-t border-black/[0.05] bg-white/80 px-5 py-4 sm:px-6">
+        {/* Footer */}
+        <div className="flex items-center justify-end border-t border-[#E5E2DC] bg-[#FAF9F5]/70 px-5 py-4 sm:px-6">
           <button
             onClick={onClose}
-            className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-3 min-h-[44px] text-xs sm:text-sm font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer flex items-center justify-center"
+            className="w-full sm:w-auto rounded-2xl bg-[#171715] hover:bg-[#2A2925] px-8 py-3 min-h-[46px] text-xs sm:text-sm font-sans font-medium text-[#FAF9F5] shadow-xs active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center tracking-tight"
           >
             Entendido e Ciente
           </button>

@@ -62,13 +62,13 @@ export function ViewSelector({ view, onViewChange }: Props) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={() => setIsDragging(false)}
-      className="relative grid grid-cols-2 w-full sm:w-[350px] rounded-2xl bg-black/[0.05] p-1 select-none cursor-pointer touch-none"
+      className="relative grid grid-cols-2 w-full sm:w-[350px] rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] p-1 select-none cursor-pointer touch-none"
       role="tablist"
       aria-label="Alternar entre totais e histórico"
     >
-      {/* Pílula branca flutuante estilo Apple com física de mola suave */}
+      {/* Pílula branca flutuante */}
       <div
-        className="absolute top-1 bottom-1 rounded-xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+        className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
         style={{
           width: "calc(50% - 2px)",
           transform: `translateX(${activeIndex * 100}%)`,
@@ -88,8 +88,8 @@ export function ViewSelector({ view, onViewChange }: Props) {
               e.stopPropagation();
               onViewChange(v.key);
             }}
-            className={`relative z-10 flex items-center justify-center py-2 px-3 text-xs sm:text-sm font-semibold rounded-xl transition-colors duration-200 cursor-pointer min-h-[38px] ${
-              isActive ? "text-ink font-bold" : "text-muted hover:text-ink"
+            className={`relative z-10 flex items-center justify-center py-2 px-3 text-xs sm:text-sm font-sans font-medium rounded-xl transition-colors duration-200 cursor-pointer min-h-[38px] ${
+              isActive ? "text-[#171715] font-semibold" : "text-[#706E6A] hover:text-[#171715]"
             }`}
           >
             {v.label}
