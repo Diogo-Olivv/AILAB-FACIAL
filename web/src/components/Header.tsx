@@ -35,10 +35,6 @@ export function Header({
               <span className="font-editorial text-base sm:text-xl font-normal tracking-tight text-[#171715] leading-none">
                 AiLab Makers
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-2xs font-medium text-emerald-800 font-mono-data">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>ao vivo</span>
-              </span>
             </div>
             <p className="text-2xs sm:text-xs text-[#706E6A] font-sans leading-none mt-1">
               Controle Acadêmico de Permanência

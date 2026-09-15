@@ -135,16 +135,6 @@ export function SiteAccessGate({ children }: Props) {
           >
             Acessar Painel
           </button>
-
-          <div className="border-t border-[#E5E2DC] pt-4 text-center">
-            <Link
-              to="/login"
-              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#E5E2DC] bg-[#FAF9F5] hover:bg-[#F2EFE8] px-4 py-2 text-xs font-medium text-[#706E6A] hover:text-[#171715] transition-all shadow-2xs min-h-[40px]"
-            >
-              <span>🎓</span>
-              <span>Acesso do Tutor & Coordenação →</span>
-            </Link>
-          </div>
         </form>
       </main>
 
