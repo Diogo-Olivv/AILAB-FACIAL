@@ -17,6 +17,7 @@ import { SequentialCamera } from "@/components/SequentialCamera";
 import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
 import { TermsModal } from "@/components/TermsModal";
 import { ENROLL_PHOTO_COUNT, getAvatarColor } from "@/lib/config";
+import { playAudioFeedback } from "@/lib/sound";
 
 interface Props {
   tutorToken?: string;
@@ -89,6 +90,7 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
     );
 
     if (outcome.ok) {
+      playAudioFeedback("enroll");
       const { name: refreshedName, photos_used } = outcome.data;
       setBadgeData({
         type: "enroll_success",
@@ -104,6 +106,7 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
       setShots([]);
       if (onSuccess) onSuccess();
     } else {
+      playAudioFeedback("error");
       setBadgeData({
         type: "error",
         title: "Falha na Atualização",

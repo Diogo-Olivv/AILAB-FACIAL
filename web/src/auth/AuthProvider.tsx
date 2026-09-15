@@ -7,6 +7,7 @@ import { AuthContext, type AuthState } from "./auth-context";
 const TUTOR_STATIC_EMAIL = "tutor@ailab.com";
 const TUTOR_STATIC_PASSWORD = "apenasParaTutores@42";
 const TUTOR_STORAGE_KEY = "ailab_tutor_session";
+const TUTOR_CUSTOM_CREDENTIALS_KEY = "ailab_custom_tutor_credentials";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -60,15 +61,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email && email.trim().length > 0 ? email.trim() : VIEWER_EMAIL
         ).toLowerCase();
 
-        // Verificação estrita das credenciais de Tutor solicitadas pelo usuário
-        if (cleanEmail === TUTOR_STATIC_EMAIL && password === TUTOR_STATIC_PASSWORD) {
+        // 1. Verifica credenciais personalizadas salvas previamente pelo tutor
+        let isCustomMatch = false;
+        try {
+          const rawCustom = localStorage.getItem(TUTOR_CUSTOM_CREDENTIALS_KEY);
+          if (rawCustom) {
+            const custom = JSON.parse(rawCustom);
+            if (
+              custom.email &&
+              custom.password &&
+              custom.email.toLowerCase() === cleanEmail &&
+              custom.password === password
+            ) {
+              isCustomMatch = true;
+            }
+          }
+        } catch {
+          // Ignora erro de parse
+        }
+
+        // 2. Verificação do primeiro acesso padrão (tutor@ailab.com) ou credenciais personalizadas
+        const isStaticMatch =
+          cleanEmail === TUTOR_STATIC_EMAIL && password === TUTOR_STATIC_PASSWORD;
+
+        if (isStaticMatch || isCustomMatch) {
+          const tutorEmail = isCustomMatch ? cleanEmail : TUTOR_STATIC_EMAIL;
+          const tutorName = tutorEmail.split("@")[0] || "Tutor";
+
           const tutorUser: User = {
             id: "tutor-master-id",
             aud: "authenticated",
             role: "authenticated",
-            email: TUTOR_STATIC_EMAIL,
+            email: tutorEmail,
             app_metadata: { role: "tutor", provider: "email" },
-            user_metadata: { role: "tutor", name: "Tutor AiLab" },
+            user_metadata: { role: "tutor", name: tutorName },
             created_at: new Date().toISOString(),
           } as User;
 
@@ -103,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Caso contrário, tenta login no Supabase
+        // Caso contrário, tenta login padrão no Supabase
         const { data, error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password,
@@ -121,6 +147,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("ailab_site_access_granted");
         await supabase.auth.signOut().catch(() => {});
         setSession(null);
+      },
+      updateTutorCredentials: async (newEmail: string, newPassword: string) => {
+        const cleanEmail = newEmail.trim().toLowerCase();
+        if (!cleanEmail.endsWith("@ailab.com")) {
+          throw new Error("O e-mail institucional deve terminar obrigatoriamente com @ailab.com");
+        }
+        if (!newPassword || newPassword.length < 6) {
+          throw new Error("A nova senha deve possuir pelo menos 6 caracteres.");
+        }
+
+        // Armazena as novas credenciais personalizadas
+        localStorage.setItem(
+          TUTOR_CUSTOM_CREDENTIALS_KEY,
+          JSON.stringify({ email: cleanEmail, password: newPassword })
+        );
+
+        // Atualiza a sessão ativa imediatamente
+        const updatedUser: User = {
+          ...(session?.user ?? ({} as User)),
+          id: session?.user?.id || "tutor-master-id",
+          aud: "authenticated",
+          role: "authenticated",
+          email: cleanEmail,
+          app_metadata: { role: "tutor", provider: "email" },
+          user_metadata: { role: "tutor", name: cleanEmail.split("@")[0] },
+          created_at: session?.user?.created_at || new Date().toISOString(),
+        } as User;
+
+        const updatedSession: Session = {
+          access_token: session?.access_token || "tutor-static-session-token",
+          token_type: "bearer",
+          user: updatedUser,
+          expires_in: 3600 * 24 * 7,
+          expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 7,
+          refresh_token: session?.refresh_token || "tutor-refresh-token",
+        };
+
+        setSession(updatedSession);
+        localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(updatedSession));
       },
     }),
     [session, loading]

@@ -26,19 +26,42 @@ export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
   const TUTOR_STATIC_PASSWORD = "apenasParaTutores@42";
 
   async function handleLogin() {
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = (email.trim() || TUTOR_STATIC_EMAIL).toLowerCase();
     const cleanPassword = password.trim();
 
-    if (!cleanEmail || !cleanPassword) {
-      setErrorMsg("Preencha e-mail e senha.");
+    if (!cleanPassword) {
+      setErrorMsg("Informe a senha do tutor.");
       return;
     }
 
     setLoading(true);
     setErrorMsg(null);
 
-    // 1. Verificação direta das credenciais de tutor solicitadas pelo usuário
-    if (cleanEmail === TUTOR_STATIC_EMAIL && cleanPassword === TUTOR_STATIC_PASSWORD) {
+    // 1. Verificação de credenciais personalizadas salvas pelo tutor
+    let isCustomMatch = false;
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const raw = window.localStorage.getItem("ailab_custom_tutor_credentials");
+        if (raw) {
+          const custom = JSON.parse(raw);
+          if (
+            custom.email &&
+            custom.password &&
+            custom.email.toLowerCase() === cleanEmail &&
+            custom.password === cleanPassword
+          ) {
+            isCustomMatch = true;
+          }
+        }
+      }
+    } catch {
+      // Ignora erro de parse
+    }
+
+    const isStaticMatch =
+      cleanEmail === TUTOR_STATIC_EMAIL && cleanPassword === TUTOR_STATIC_PASSWORD;
+
+    if (isStaticMatch || isCustomMatch) {
       try {
         const { data } = await supabase.auth.signInWithPassword({
           email: cleanEmail,

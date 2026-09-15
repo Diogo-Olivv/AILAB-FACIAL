@@ -17,6 +17,7 @@ import { DailyHistory } from "../components/DailyHistory";
 import { PrivacyTermsModal } from "../components/PrivacyTermsModal";
 import { MemberDetailDrawer } from "../components/MemberDetailDrawer";
 import { TutorWarningModal } from "../components/TutorWarningModal";
+import { TutorProfileModal } from "../components/TutorProfileModal";
 import { Footer } from "../components/Footer";
 import { ViewSelector } from "../components/ViewSelector";
 import { KpiSkeleton, TableSkeleton } from "../components/TableSkeleton";
@@ -29,8 +30,6 @@ export function Dashboard() {
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [presentIds, setPresentIds] = useState<string[]>([]);
   const [period, setPeriod] = useState<PeriodKey>("week");
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<View>("totals");
   const [loading, setLoading] = useState(true);
@@ -50,6 +49,7 @@ export function Dashboard() {
   // Modais e Drawer
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isTutorWarningOpen, setIsTutorWarningOpen] = useState(false);
+  const [isTutorProfileOpen, setIsTutorProfileOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   const loadMembers = useCallback(async () => {
@@ -61,9 +61,15 @@ export function Dashboard() {
         await supabase.auth.signOut();
         const retryData = await fetchMembers();
         setMembers(retryData);
-      } else {
-        setError(e instanceof Error ? e.message : "Falha ao carregar integrantes.");
+        return;
       }
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Não foi possível carregar a lista de integrantes do laboratório."
+      );
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -72,8 +78,8 @@ export function Dashboard() {
   }, [loadMembers]);
 
   const range = useMemo(
-    () => rangeFor(period, customFrom, customTo),
-    [period, customFrom, customTo],
+    () => rangeFor(period),
+    [period],
   );
 
   const refreshData = useCallback(
@@ -238,13 +244,25 @@ export function Dashboard() {
               </div>
             </div>
 
-            <button
-              onClick={() => setIsTutorWarningOpen(true)}
-              className="liquid-glass-button inline-flex items-center gap-2 rounded-2xl bg-amber-500/10 border-amber-500/25 px-4 py-2.5 text-xs sm:text-sm font-bold text-amber-900 shadow-2xs hover:bg-amber-500/20 active:scale-95 cursor-pointer min-h-[44px]"
-            >
-              <span>⚠️</span>
-              <span>Auditoria Semanal & Advertências ({studentsUnderFourHoursCount})</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsTutorProfileOpen(true)}
+                className="liquid-glass-button inline-flex items-center gap-1.5 rounded-2xl bg-blue-500/10 border border-blue-500/25 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-blue-900 shadow-2xs hover:bg-blue-500/20 active:scale-95 cursor-pointer min-h-[44px]"
+              >
+                <span>⚙️</span>
+                <span>Configurar Acesso (@ailab.com)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsTutorWarningOpen(true)}
+                className="liquid-glass-button inline-flex items-center gap-2 rounded-2xl bg-amber-500/10 border-amber-500/25 px-4 py-2.5 text-xs sm:text-sm font-bold text-amber-900 shadow-2xs hover:bg-amber-500/20 active:scale-95 cursor-pointer min-h-[44px]"
+              >
+                <span>⚠️</span>
+                <span>Auditoria Semanal & Advertências ({studentsUnderFourHoursCount})</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -326,15 +344,11 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* Seletor de Período */}
+        {/* Seletor de Período estilo Apple (Hoje, Semana, Mês) */}
         <PeriodSelector
           period={period}
           range={range}
-          customFrom={customFrom}
-          customTo={customTo}
           onPeriod={setPeriod}
-          onCustomFrom={setCustomFrom}
-          onCustomTo={setCustomTo}
         />
 
         {/* Barra de Navegação e Busca Integrada com Liquid Glass */}
@@ -426,6 +440,14 @@ export function Dashboard() {
         />
       )}
 
+      {/* Modal de Configuração de Credenciais do Tutor (@ailab.com) */}
+      {user && (
+        <TutorProfileModal
+          isOpen={isTutorProfileOpen}
+          onClose={() => setIsTutorProfileOpen(false)}
+        />
+      )}
+
       {/* Gaveta de detalhes do integrante */}
       <MemberDetailDrawer
         isOpen={Boolean(selectedMemberTotal)}
@@ -434,6 +456,7 @@ export function Dashboard() {
         isPresent={Boolean(selectedMemberTotal?.present)}
         totalSeconds={selectedMemberTotal?.totalSeconds ?? 0}
         onClose={() => setSelectedMemberId(null)}
+        onSessionUpdated={() => refreshData(true)}
       />
     </div>
   );

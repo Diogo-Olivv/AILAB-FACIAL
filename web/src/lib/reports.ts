@@ -56,3 +56,34 @@ export async function fetchPresentIds(): Promise<string[]> {
   if (error) throw error;
   return (data ?? []).map((s) => s.profile_id);
 }
+
+/**
+ * Permite que o tutor autenticado encerre uma sessão em aberto:
+ * - action === "checkout": Encerra com horário atual, computando a permanência normal até o momento.
+ * - action === "void": Anula a sessão (voided_at preenchido), computando 0 horas (esquecimento/erro).
+ */
+export async function tutorCloseSession(
+  profileId: string,
+  action: "checkout" | "void"
+): Promise<void> {
+  const now = new Date().toISOString();
+  if (action === "checkout") {
+    const { error } = await supabase
+      .from("sessions")
+      .update({ check_out: now })
+      .eq("profile_id", profileId)
+      .is("check_out", null);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("sessions")
+      .update({
+        check_out: now,
+        voided_at: now,
+        auto_closed: true,
+      })
+      .eq("profile_id", profileId)
+      .is("check_out", null);
+    if (error) throw error;
+  }
+}

@@ -13,6 +13,7 @@ import { useCameraFocus } from "@/hooks/useCameraFocus";
 import { triggerPresenceRefresh } from "@/hooks/usePresence";
 import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
 import { GENERIC_ERROR_MESSAGE } from "@/lib/errors";
+import { playAudioFeedback } from "@/lib/sound";
 
 export function RecognitionPanel() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -70,12 +71,14 @@ export function RecognitionPanel() {
         const res = await recognize(captured, action);
 
         if (!res) {
+          playAudioFeedback("error");
           setBadgeData({
             type: "error",
             title: "Falha de Conexão",
             message: "Não foi possível comunicar com o servidor do laboratório.",
           });
         } else if (!res.recognized || !res.event) {
+          playAudioFeedback("warning");
           if (res.status === "spoof_detected") {
             setBadgeData({
               type: "spoof_detected",
@@ -114,6 +117,7 @@ export function RecognitionPanel() {
           const evtAction = res.event.action;
 
           if (evtAction === "check_in") {
+            playAudioFeedback("check_in");
             setBadgeData({
               type: "check_in",
               name: res.name || "Integrante",
@@ -121,6 +125,7 @@ export function RecognitionPanel() {
               message: "Presença confirmada no AILAB Makers. Bom trabalho!",
             });
           } else if (evtAction === "check_out") {
+            playAudioFeedback("check_out");
             const mins = res.event.duration_minutes;
             setBadgeData({
               type: "check_out",
@@ -133,6 +138,7 @@ export function RecognitionPanel() {
                   : "Saída registrada com sucesso no sistema.",
             });
           } else if (evtAction === "already_in") {
+            playAudioFeedback("warning");
             setBadgeData({
               type: "warning",
               name: res.name,
@@ -140,6 +146,7 @@ export function RecognitionPanel() {
               message: "Sua entrada já está ativa. Caso deseje sair, clique no botão 'Saída'.",
             });
           } else if (evtAction === "not_in") {
+            playAudioFeedback("warning");
             setBadgeData({
               type: "warning",
               name: res.name,
@@ -147,12 +154,14 @@ export function RecognitionPanel() {
               message: "Você ainda não deu entrada no laboratório hoje. Clique em 'Entrada'.",
             });
           } else if (evtAction === "debounced") {
+            playAudioFeedback("warning");
             setBadgeData({
               type: "warning",
               title: "Registro Recente",
               message: "Aguarde alguns segundos antes de registrar nova presença.",
             });
           } else {
+            playAudioFeedback(action === "check_in" ? "check_in" : "check_out");
             setBadgeData({
               type: action === "check_in" ? "check_in" : "check_out",
               name: res.name,
@@ -161,6 +170,7 @@ export function RecognitionPanel() {
           }
         }
       } catch {
+        playAudioFeedback("error");
         setBadgeData({
           type: "error",
           title: "Erro de Comunicação",
@@ -365,7 +375,7 @@ function BiometricScanHUD({ action }: { action: "check_in" | "check_out" | null 
     outputRange: [0, 170],
   });
 
-  const accentColor = action === "check_in" ? "#22C55E" : "#C9A961";
+  const accentColor = action === "check_in" ? "#10B981" : "#3B82F6";
 
   return (
     <View style={styles.hudOverlay} pointerEvents="none">
@@ -537,8 +547,8 @@ const styles = StyleSheet.create({
     shadowColor: "#059669",
   },
   saida: {
-    backgroundColor: "#0F172A",
-    shadowColor: "#0F172A",
+    backgroundColor: "#1E3A8A",
+    shadowColor: "#1E3A8A",
   },
   actionBusy: {
     backgroundColor: "#0F172A",

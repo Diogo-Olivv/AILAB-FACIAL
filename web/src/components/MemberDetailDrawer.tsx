@@ -1,6 +1,9 @@
+import { useState } from "react";
 import type { Member, SessionRecord } from "../lib/reports";
+import { tutorCloseSession } from "../lib/reports";
 import { formatDuration, formatTime } from "../lib/aggregate";
 import { getAvatarStyle } from "./TotalsTable";
+import { useAuth } from "../auth/useAuth";
 
 interface Props {
   member: Member | null;
@@ -9,6 +12,7 @@ interface Props {
   isPresent: boolean;
   totalSeconds: number;
   onClose: () => void;
+  onSessionUpdated?: () => Promise<void> | void;
 }
 
 export function MemberDetailDrawer({
@@ -18,8 +22,36 @@ export function MemberDetailDrawer({
   isPresent,
   totalSeconds,
   onClose,
+  onSessionUpdated,
 }: Props) {
+  const { user } = useAuth();
+  const [busyAction, setBusyAction] = useState<"checkout" | "void" | null>(null);
+  const [actionMessage, setActionMessage] = useState("");
+
   if (!isOpen || !member) return null;
+
+  const handleTutorAction = async (action: "checkout" | "void") => {
+    setBusyAction(action);
+    setActionMessage("");
+    try {
+      await tutorCloseSession(member.id, action);
+      setActionMessage(
+        action === "checkout"
+          ? "✅ Saída registrada computando as horas até agora!"
+          : "✅ Entrada cancelada com sucesso (0 horas computadas)!"
+      );
+      if (onSessionUpdated) {
+        await onSessionUpdated();
+      }
+      setTimeout(() => {
+        setActionMessage("");
+      }, 3000);
+    } catch (err: any) {
+      setActionMessage(`⚠️ Falha ao atualizar: ${err?.message || "Erro desconhecido"}`);
+    } finally {
+      setBusyAction(null);
+    }
+  };
 
   const memberSessions = sessions
     .filter((s) => s.profileId === member.id)
@@ -84,6 +116,56 @@ export function MemberDetailDrawer({
             ✕
           </button>
         </div>
+
+        {/* Painel de Gestão de Presença do Tutor */}
+        {user && isPresent && (
+          <div className="border-b border-black/[0.06] bg-gradient-to-br from-indigo-500/[0.06] via-blue-500/[0.03] to-slate-50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-2xs font-bold uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                <span>🛡️</span> Ações de Presença do Tutor
+              </span>
+              <span className="text-[10.5px] text-indigo-700/80 font-medium">
+                Mitigação de esquecimentos
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => handleTutorAction("checkout")}
+                disabled={busyAction !== null}
+                className="flex flex-col items-center justify-center p-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.08] hover:bg-emerald-500/[0.16] active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs"
+              >
+                <span className="text-xs font-black text-emerald-800">
+                  {busyAction === "checkout" ? "Registrando..." : "🚪 Registrar Saída"}
+                </span>
+                <span className="text-[10px] text-emerald-700/90 font-medium mt-0.5">
+                  Computa horas até agora
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTutorAction("void")}
+                disabled={busyAction !== null}
+                className="flex flex-col items-center justify-center p-3 rounded-2xl border border-rose-500/20 bg-rose-500/[0.08] hover:bg-rose-500/[0.16] active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs"
+              >
+                <span className="text-xs font-black text-rose-800">
+                  {busyAction === "void" ? "Cancelando..." : "🛑 Cancelar Entrada"}
+                </span>
+                <span className="text-[10px] text-rose-700/90 font-medium mt-0.5">
+                  Zera horas (esquecimento)
+                </span>
+              </button>
+            </div>
+
+            {actionMessage && (
+              <div className="rounded-xl border border-black/5 bg-white/90 p-2 text-2xs font-semibold text-center text-slate-800 shadow-2xs animate-fade-in">
+                {actionMessage}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Total stats card estilo Apple Glass */}
         <div className="p-5 border-b border-black/[0.05] bg-white/50 grid grid-cols-2 gap-3">
