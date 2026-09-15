@@ -47,7 +47,7 @@ export function Header({
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="liquid-glass-button inline-flex items-center justify-center rounded-xl p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-ink cursor-pointer min-h-[36px] sm:min-h-[40px] disabled:opacity-60"
+            className="liquid-glass-button inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold text-ink cursor-pointer min-h-[44px] min-w-[44px] disabled:opacity-60"
             title="Atualizar dados de permanência agora"
             aria-label="Atualizar dados de permanência agora"
           >
@@ -71,7 +71,7 @@ export function Header({
 
           <button
             onClick={onOpenTerms}
-            className="liquid-glass-button inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-xs font-semibold text-ink cursor-pointer min-h-[36px] sm:min-h-[40px]"
+            className="liquid-glass-button inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink cursor-pointer min-h-[44px]"
             title="Políticas de Privacidade Biométrica (LGPD Art. 11)"
           >
             <span className="text-xs">⚖️</span>
@@ -81,7 +81,7 @@ export function Header({
           {user ? (
             <button
               onClick={signOut}
-              className="liquid-glass-button rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-xs font-bold text-warn border-warn/20 hover:border-warn/40 hover:bg-warn/10 cursor-pointer min-h-[36px] sm:min-h-[40px]"
+              className="liquid-glass-button inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-xs font-bold text-warn border-warn/20 hover:border-warn/40 hover:bg-warn/10 cursor-pointer min-h-[44px]"
               title="Encerrar sessão de tutor"
             >
               Sair
@@ -89,7 +89,7 @@ export function Header({
           ) : (
             <Link
               to="/login"
-              className="liquid-glass-button rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-1.5 text-xs font-bold text-navy border-navy/20 hover:border-navy/40 hover:bg-navy/10 inline-flex items-center min-h-[36px] sm:min-h-[40px]"
+              className="liquid-glass-button inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-xs font-bold text-navy border-navy/20 hover:border-navy/40 hover:bg-navy/10 min-h-[44px]"
               title="Área administrativa de tutores e coordenadores"
             >
               Acesso Tutor

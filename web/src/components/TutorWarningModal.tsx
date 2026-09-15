@@ -209,7 +209,7 @@ Pedimos que regularize suas horas até o encerramento da semana para manter sua 
           <button
             onClick={onClose}
             aria-label="Fechar auditoria do tutor"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
           >
             ✕
           </button>
@@ -364,7 +364,7 @@ Pedimos que regularize suas horas até o encerramento da semana para manter sua 
                         <>
                           <button
                             onClick={() => handleCopyNotice(item)}
-                            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+                            className={`rounded-xl px-3 py-2 text-xs font-bold transition-all shadow-2xs cursor-pointer min-h-[38px] inline-flex items-center justify-center ${
                               isCopied
                                 ? "bg-green text-white"
                                 : "bg-warn text-white hover:bg-warn/90 active:scale-95"
@@ -435,7 +435,7 @@ Pedimos que regularize suas horas até o encerramento da semana para manter sua 
           </span>
           <button
             onClick={onClose}
-            className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer shrink-0"
+            className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 min-h-[44px] text-xs sm:text-sm font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer shrink-0 flex items-center justify-center"
           >
             Concluir Auditoria
           </button>

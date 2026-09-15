@@ -111,7 +111,7 @@ export function MemberDetailDrawer({
           <button
             onClick={onClose}
             aria-label="Fechar detalhes do integrante"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
           >
             ✕
           </button>
@@ -134,7 +134,7 @@ export function MemberDetailDrawer({
                 type="button"
                 onClick={() => handleTutorAction("checkout")}
                 disabled={busyAction !== null}
-                className="flex flex-col items-center justify-center p-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.08] hover:bg-emerald-500/[0.16] active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs"
+                className="flex flex-col items-center justify-center p-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.08] hover:bg-emerald-500/[0.16] active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs min-h-[54px]"
               >
                 <span className="text-xs font-black text-emerald-800">
                   {busyAction === "checkout" ? "Registrando..." : "🚪 Registrar Saída"}
@@ -148,7 +148,7 @@ export function MemberDetailDrawer({
                 type="button"
                 onClick={() => handleTutorAction("void")}
                 disabled={busyAction !== null}
-                className="flex flex-col items-center justify-center p-3 rounded-2xl border border-rose-500/20 bg-rose-500/[0.08] hover:bg-rose-500/[0.16] active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs"
+                className="flex flex-col items-center justify-center p-3 rounded-2xl border border-rose-500/20 bg-rose-500/[0.08] hover:bg-rose-500/[0.16] active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs min-h-[54px]"
               >
                 <span className="text-xs font-black text-rose-800">
                   {busyAction === "void" ? "Cancelando..." : "🛑 Cancelar Entrada"}
@@ -249,7 +249,7 @@ export function MemberDetailDrawer({
         <div className="border-t border-black/[0.05] bg-white/80 p-4">
           <button
             onClick={onClose}
-            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3 text-sm font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer"
+            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3 px-4 min-h-[46px] text-sm font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer flex items-center justify-center"
           >
             Fechar Detalhes
           </button>

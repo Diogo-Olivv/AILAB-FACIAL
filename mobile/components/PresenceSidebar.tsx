@@ -162,12 +162,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   closeBtn: {
-    padding: 6,
-    borderRadius: 8,
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
     backgroundColor: "#F1F5F9",
   },
   closeBtnText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: "#475569",
   },

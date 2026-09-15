@@ -54,7 +54,7 @@ export function PrivacyTermsModal({ isOpen, onClose }: Props) {
           <button
             onClick={onClose}
             aria-label="Fechar termos de privacidade"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
           >
             ✕
           </button>
@@ -129,7 +129,7 @@ export function PrivacyTermsModal({ isOpen, onClose }: Props) {
         <div className="flex items-center justify-end border-t border-black/[0.05] bg-white/80 px-5 py-4 sm:px-6">
           <button
             onClick={onClose}
-            className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-3 text-xs sm:text-sm font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer"
+            className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-3 min-h-[44px] text-xs sm:text-sm font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer flex items-center justify-center"
           >
             Entendido e Ciente
           </button>

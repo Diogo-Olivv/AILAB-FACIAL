@@ -138,17 +138,28 @@ export function EnrollCapture({ tutorToken }: Props) {
         </View>
       </View>
 
-      <TouchableOpacity
-        style={styles.captureBtn}
-        onPress={openCamera}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.captureBtnText}>
-          {shots.length === ENROLL_PHOTO_COUNT
-            ? "Refazer fotos"
-            : `Tirar ${ENROLL_PHOTO_COUNT} fotos`}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.captureRow}>
+        <TouchableOpacity
+          style={styles.captureBtn}
+          onPress={openCamera}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir câmera para capturar fotos"
+        >
+          <Text style={styles.captureBtnIcon}>📸</Text>
+          <Text style={styles.captureBtnText}>
+            {shots.length === ENROLL_PHOTO_COUNT
+              ? "Refazer Fotos"
+              : `Tirar ${ENROLL_PHOTO_COUNT} Fotos`}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.photoCountBadge}>
+          <Text style={styles.photoCountText}>
+            {shots.length}/{ENROLL_PHOTO_COUNT} fotos
+          </Text>
+        </View>
+      </View>
 
       {shots.length > 0 && (
         <View style={styles.thumbs}>
@@ -176,9 +187,10 @@ export function EnrollCapture({ tutorToken }: Props) {
         <TouchableOpacity
           onPress={() => setTermsOpen(true)}
           style={styles.termsBtn}
-          activeOpacity={0.8}
+          activeOpacity={0.75}
+          accessibilityRole="button"
         >
-          <Text style={styles.termsBtnText}>📖 Ler Termos de Privacidade e LGPD Completos</Text>
+          <Text style={styles.termsBtnText}>📖 Ler Termos de Privacidade e LGPD</Text>
         </TouchableOpacity>
         <View style={styles.consentSwitchRow}>
           <Switch
@@ -193,18 +205,24 @@ export function EnrollCapture({ tutorToken }: Props) {
         </View>
       </View>
 
-      <TouchableOpacity
-        style={[styles.submitBtn, (!canSubmit || loading) && styles.disabled]}
-        onPress={submit}
-        disabled={!canSubmit || loading}
-        activeOpacity={0.85}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.submitBtnText}>Cadastrar</Text>
-        )}
-      </TouchableOpacity>
+      <View style={styles.submitContainer}>
+        <TouchableOpacity
+          style={[styles.submitBtn, (!canSubmit || loading) && styles.disabled]}
+          onPress={submit}
+          disabled={!canSubmit || loading}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Text style={styles.submitBtnIcon}>✓</Text>
+              <Text style={styles.submitBtnText}>Cadastrar Integrante</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
 
       {feedback && (
         <Text style={[styles.feedback, feedback.ok ? styles.feedbackOk : styles.feedbackErr]}>
@@ -235,25 +253,53 @@ const styles = StyleSheet.create({
   col: { flex: 1, gap: 6 },
   label: { color: "#0F172A", fontSize: 13.5, fontWeight: "700" },
   hint: { color: "#DC2626", fontSize: 12, fontWeight: "500" },
-  captureBtn: {
-    backgroundColor: "#2563EB",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 16,
+  captureRow: {
+    flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#2563EB",
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    justifyContent: "space-between",
+    gap: 12,
   },
-  captureBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
+  captureBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#2563EB",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    minHeight: 44,
+    shadowColor: "#2563EB",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  captureBtnIcon: { fontSize: 16 },
+  captureBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13.5 },
+  photoCountBadge: {
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "rgba(37, 99, 235, 0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40,
+  },
+  photoCountText: {
+    color: "#2563EB",
+    fontSize: 12.5,
+    fontWeight: "700",
+  },
   disabled: { opacity: 0.45 },
   thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 4 },
   thumb: {
-    width: 64,
-    height: 64,
-    borderRadius: 14,
+    width: 60,
+    height: 60,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.08)",
   },
@@ -262,9 +308,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.08)",
     borderRadius: 14,
-    padding: 14,
+    padding: 12,
     color: "#0F172A",
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: "500",
     shadowColor: "#000",
     shadowOpacity: 0.02,
@@ -275,7 +321,7 @@ const styles = StyleSheet.create({
   consentCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
-    padding: 18,
+    padding: 16,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.06)",
     gap: 10,
@@ -287,13 +333,13 @@ const styles = StyleSheet.create({
   },
   consentTitle: {
     color: "#0F172A",
-    fontSize: 14.5,
+    fontSize: 14,
     fontWeight: "700",
   },
   consentBody: {
     color: "#475569",
-    fontSize: 12.5,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 18,
   },
   consentSwitchRow: {
     flexDirection: "row",
@@ -305,49 +351,63 @@ const styles = StyleSheet.create({
   },
   termsBtn: {
     alignSelf: "flex-start",
-    paddingVertical: 4,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.06)",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     marginBottom: 4,
   },
   termsBtnText: {
     color: "#2563EB",
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: "700",
-    textDecorationLine: "underline",
   },
   consentSwitchLabel: {
     flex: 1,
     color: "#0F172A",
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: "600",
   },
-  submitBtn: {
-    backgroundColor: "#059669",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 16,
+  submitContainer: {
     alignItems: "center",
-    marginTop: 6,
+    marginTop: 4,
+  },
+  submitBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#059669",
+    width: "100%",
+    maxWidth: 320,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    minHeight: 46,
     shadowColor: "#059669",
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.22,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-  submitBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 16 },
-  feedback: { fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 4 },
+  submitBtnIcon: { color: "#FFFFFF", fontSize: 15, fontWeight: "900" },
+  submitBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 15 },
+  feedback: { fontSize: 13.5, fontWeight: "600", textAlign: "center", marginTop: 4 },
   feedbackOk: { color: "#166534" },
   feedbackErr: { color: "#DC2626" },
   tipCard: {
     backgroundColor: "#FFFBEB",
     borderRadius: 16,
-    padding: 14,
+    padding: 13,
     borderWidth: 1,
     borderColor: "#FDE68A",
     gap: 4,
   },
   tipTitle: {
     color: "#92400E",
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: "700",
   },
   tipBody: {

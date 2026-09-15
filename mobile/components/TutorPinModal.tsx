@@ -17,13 +17,13 @@ interface Props {
 }
 
 export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
-  const [email, setEmail] = useState("");
+  const TUTOR_STATIC_EMAIL = "tutor@ailab.com";
+  const TUTOR_STATIC_PASSWORD = "apenasParaTutores@42";
+
+  const [email, setEmail] = useState(TUTOR_STATIC_EMAIL);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const TUTOR_STATIC_EMAIL = "tutor@ailab.com";
-  const TUTOR_STATIC_PASSWORD = "apenasParaTutores@42";
 
   async function handleLogin() {
     const cleanEmail = (email.trim() || TUTOR_STATIC_EMAIL).toLowerCase();
@@ -117,7 +117,7 @@ export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
   }
 
   function handleClose() {
-    setEmail("");
+    setEmail(TUTOR_STATIC_EMAIL);
     setPassword("");
     setErrorMsg(null);
     onCancel();
@@ -264,9 +264,11 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
+    minHeight: 44,
+    paddingVertical: 11,
+    borderRadius: 12,
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#F1F5F9",
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.05)",
@@ -274,23 +276,25 @@ const styles = StyleSheet.create({
   cancelText: {
     color: "#475569",
     fontWeight: "700",
-    fontSize: 14.5,
+    fontSize: 14,
   },
   confirmBtn: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
+    minHeight: 44,
+    paddingVertical: 11,
+    borderRadius: 12,
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#059669",
     shadowColor: "#059669",
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   confirmText: {
     color: "#FFFFFF",
     fontWeight: "700",
-    fontSize: 14.5,
+    fontSize: 14,
   },
   btnDisabled: {
     opacity: 0.5,

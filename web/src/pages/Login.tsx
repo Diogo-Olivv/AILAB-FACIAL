@@ -97,7 +97,7 @@ export function Login() {
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 font-bold text-white shadow-sm shadow-blue-500/25 transition-all hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 disabled:opacity-50 cursor-pointer min-h-[44px]"
+            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 font-bold text-white shadow-sm shadow-blue-500/25 transition-all hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 disabled:opacity-50 cursor-pointer min-h-[46px] flex items-center justify-center"
           >
             {busy ? "Validando credenciais..." : "Entrar como Tutor"}
           </button>
@@ -105,7 +105,7 @@ export function Login() {
           <div className="text-center pt-2">
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 font-medium transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 font-medium transition-colors min-h-[40px]"
             >
               <span>←</span>
               <span>Voltar para o painel de permanência</span>

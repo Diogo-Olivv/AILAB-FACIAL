@@ -70,7 +70,7 @@ export function SiteAccessGate({ children }: Props) {
 
           <Link
             to="/login"
-            className="liquid-glass-button inline-flex items-center gap-1.5 rounded-2xl border border-black/10 bg-white/80 px-4 py-2 text-xs sm:text-sm font-bold text-slate-900 shadow-2xs hover:bg-white transition-all min-h-[40px]"
+            className="liquid-glass-button inline-flex items-center justify-center gap-1.5 rounded-2xl border border-black/10 bg-white/80 px-4 py-2 text-xs sm:text-sm font-bold text-slate-900 shadow-2xs hover:bg-white transition-all min-h-[44px]"
           >
             <span>🎓</span>
             <span>Acesso Tutor</span>
@@ -119,7 +119,7 @@ export function SiteAccessGate({ children }: Props) {
 
           <button
             type="submit"
-            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer min-h-[44px]"
+            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 font-bold text-white shadow-sm shadow-blue-500/25 hover:shadow-md hover:from-blue-700 hover:to-indigo-700 active:scale-98 transition-all cursor-pointer min-h-[46px] flex items-center justify-center"
           >
             Acessar Painel
           </button>
@@ -127,7 +127,7 @@ export function SiteAccessGate({ children }: Props) {
           <div className="border-t border-black/[0.06] pt-4 text-center">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-black/[0.03] hover:bg-black/[0.06] px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-all shadow-2xs"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-black/10 bg-black/[0.03] hover:bg-black/[0.06] px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-all shadow-2xs min-h-[40px]"
             >
               <span>🎓</span>
               <span>Acesso do Tutor & Coordenação →</span>

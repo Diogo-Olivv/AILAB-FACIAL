@@ -249,20 +249,32 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
       {/* ── SEÇÃO 2: CAPTURA FACIAL ── */}
       <Text style={styles.sectionHeader}>2. Captura biométrica facial</Text>
 
-      <TouchableOpacity
-        style={[
-          styles.captureBtn,
-          (!selectedProfile || refreshing) && styles.disabled,
-        ]}
-        onPress={openCamera}
-        disabled={!selectedProfile || refreshing}
-      >
-        <Text style={styles.captureBtnText}>
-          {shots.length === ENROLL_PHOTO_COUNT
-            ? "Refazer 5 fotos"
-            : `Tirar ${ENROLL_PHOTO_COUNT} novas fotos`}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.captureRow}>
+        <TouchableOpacity
+          style={[
+            styles.captureBtn,
+            (!selectedProfile || refreshing) && styles.disabled,
+          ]}
+          onPress={openCamera}
+          disabled={!selectedProfile || refreshing}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir câmera para novas fotos"
+        >
+          <Text style={styles.captureBtnIcon}>📸</Text>
+          <Text style={styles.captureBtnText}>
+            {shots.length === ENROLL_PHOTO_COUNT
+              ? "Refazer Fotos"
+              : `Tirar ${ENROLL_PHOTO_COUNT} Novas Fotos`}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.photoCountBadge}>
+          <Text style={styles.photoCountText}>
+            {shots.length}/{ENROLL_PHOTO_COUNT} fotos
+          </Text>
+        </View>
+      </View>
 
       {!selectedProfile && (
         <Text style={styles.hintNotice}>
@@ -289,9 +301,10 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
         <TouchableOpacity
           onPress={() => setTermsOpen(true)}
           style={styles.termsBtn}
-          activeOpacity={0.8}
+          activeOpacity={0.75}
+          accessibilityRole="button"
         >
-          <Text style={styles.termsBtnText}>📖 Ler Termos de Privacidade e LGPD Completos</Text>
+          <Text style={styles.termsBtnText}>📖 Ler Termos de Privacidade e LGPD</Text>
         </TouchableOpacity>
       </View>
 
@@ -303,17 +316,24 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
       </View>
 
       {/* ── SEÇÃO 4: BOTÃO DE ENVIO ── */}
-      <TouchableOpacity
-        style={[styles.submitBtn, (!canSubmit || refreshing) && styles.disabled]}
-        onPress={submit}
-        disabled={!canSubmit || refreshing}
-      >
-        {refreshing ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.submitBtnText}>Atualizar Biometria</Text>
-        )}
-      </TouchableOpacity>
+      <View style={styles.submitContainer}>
+        <TouchableOpacity
+          style={[styles.submitBtn, (!canSubmit || refreshing) && styles.disabled]}
+          onPress={submit}
+          disabled={!canSubmit || refreshing}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+        >
+          {refreshing ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Text style={styles.submitBtnIcon}>✓</Text>
+              <Text style={styles.submitBtnText}>Atualizar Biometria</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
 
       {feedback && (
         <View
@@ -478,32 +498,63 @@ const styles = StyleSheet.create({
   selectedMatricula: { color: "#059669", fontWeight: "600", fontSize: 12.5, marginTop: 2 },
   changeBtn: {
     backgroundColor: "#FEE2E2",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 10,
-  },
-  changeBtnText: { color: "#DC2626", fontWeight: "700", fontSize: 13 },
-
-  captureBtn: {
-    backgroundColor: "#2563EB",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 16,
+    minHeight: 36,
     alignItems: "center",
-    shadowColor: "#2563EB",
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    justifyContent: "center",
   },
-  captureBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
+  changeBtnText: { color: "#DC2626", fontWeight: "700", fontSize: 12.5 },
+
+  captureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  captureBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#2563EB",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    minHeight: 44,
+    shadowColor: "#2563EB",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  captureBtnIcon: { fontSize: 16 },
+  captureBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13.5 },
+  photoCountBadge: {
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "rgba(37, 99, 235, 0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40,
+  },
+  photoCountText: {
+    color: "#2563EB",
+    fontSize: 12.5,
+    fontWeight: "700",
+  },
   hintNotice: { color: "#64748B", fontSize: 12.5, fontStyle: "italic", marginTop: 2 },
   disabled: { opacity: 0.45 },
   thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 4 },
   thumb: {
-    width: 64,
-    height: 64,
-    borderRadius: 14,
+    width: 60,
+    height: 60,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.08)",
   },
@@ -525,30 +576,44 @@ const styles = StyleSheet.create({
   infoBody: { color: "#475569", fontSize: 12.5, lineHeight: 19 },
   termsBtn: {
     alignSelf: "flex-start",
-    paddingVertical: 4,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.06)",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     marginTop: 2,
   },
   termsBtnText: {
     color: "#2563EB",
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: "700",
-    textDecorationLine: "underline",
   },
 
-  submitBtn: {
-    backgroundColor: "#059669",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 16,
+  submitContainer: {
     alignItems: "center",
-    marginTop: 6,
+    marginTop: 4,
+  },
+  submitBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#059669",
+    width: "100%",
+    maxWidth: 320,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    minHeight: 46,
     shadowColor: "#059669",
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.22,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-  submitBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 16 },
+  submitBtnIcon: { color: "#FFFFFF", fontSize: 15, fontWeight: "900" },
+  submitBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 15 },
 
   feedbackCard: {
     padding: 14,

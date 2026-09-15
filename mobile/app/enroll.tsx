@@ -36,51 +36,73 @@ export default function Enroll() {
         }}
       />
 
-      {/* Segmented control para alternar entre Novo Cadastro e Recadastro */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "enroll" && styles.tabActive]}
-          onPress={() => setActiveTab("enroll")}
-        >
-          <Text style={[styles.tabText, activeTab === "enroll" && styles.tabTextActive]}>
-            Novo Cadastro
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.responsiveWrapper}>
+        {/* Segmented control para alternar entre Novo Cadastro e Recadastro */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "enroll" && styles.tabActive]}
+            onPress={() => setActiveTab("enroll")}
+            activeOpacity={0.8}
+            accessibilityRole="tab"
+            aria-selected={activeTab === "enroll"}
+          >
+            <Text style={[styles.tabText, activeTab === "enroll" && styles.tabTextActive]}>
+              Novo Cadastro
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "refresh" && styles.tabActive]}
-          onPress={() => setActiveTab("refresh")}
-        >
-          <Text style={[styles.tabText, activeTab === "refresh" && styles.tabTextActive]}>
-            Recadastro
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "refresh" && styles.tabActive]}
+            onPress={() => setActiveTab("refresh")}
+            activeOpacity={0.8}
+            accessibilityRole="tab"
+            aria-selected={activeTab === "refresh"}
+          >
+            <Text style={[styles.tabText, activeTab === "refresh" && styles.tabTextActive]}>
+              Recadastro
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.contentContainer}>
+          {activeTab === "enroll" ? (
+            <EnrollCapture tutorToken={tutorToken} />
+          ) : (
+            <RefreshCapture tutorToken={tutorToken} />
+          )}
+        </View>
       </View>
-
-      {activeTab === "enroll" ? (
-        <EnrollCapture tutorToken={tutorToken} />
-      ) : (
-        <RefreshCapture tutorToken={tutorToken} />
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F6F8FD" },
+  container: { flex: 1, backgroundColor: "#F6F8FD", alignItems: "center" },
+  responsiveWrapper: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 640,
+  },
+  contentContainer: {
+    flex: 1,
+    width: "100%",
+  },
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: "rgba(0, 0, 0, 0.06)",
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
     marginHorizontal: 16,
     marginTop: 14,
     marginBottom: 8,
     borderRadius: 14,
     padding: 3,
     gap: 4,
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.04)",
   },
   tab: {
     flex: 1,
-    paddingVertical: 9,
+    paddingVertical: 8,
+    minHeight: 38,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 11,
@@ -89,13 +111,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
     elevation: 2,
   },
   tabText: {
     color: "#64748B",
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: "600",
   },
   tabTextActive: {
