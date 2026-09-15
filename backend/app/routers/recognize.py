@@ -11,9 +11,12 @@ import threading
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from starlette.datastructures import UploadFile
 
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field
+
 from app.config import settings
 from app.db.supabase_client import get_client
-from app.deps import validate_image, verify_api_key, verify_kiosk_key
+from app.deps import validate_image, verify_api_key, verify_kiosk_key, verify_tutor_token
 from app.services.challenge_service import (
     create_capture_challenge,
     verify_and_consume_challenge,
@@ -172,4 +175,42 @@ def session_stats(
         "total_hours": hours,
         "year": year,
         "month": month,
+    }
+
+
+class TutorCloseSessionRequest(BaseModel):
+    profile_id: str
+    action: str = Field(pattern="^(checkout|void)$")
+
+
+@router.post("/sessions/tutor-close", dependencies=[Depends(verify_tutor_token)])
+def tutor_close_session_endpoint(body: TutorCloseSessionRequest):
+    """Permite ao tutor autenticado registrar saída imediata ou anular sessão de presença."""
+    db = get_client()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    if body.action == "checkout":
+        res = (
+            db.table("sessions")
+            .update({"check_out": now_iso})
+            .eq("profile_id", body.profile_id)
+            .is_("check_out", "null")
+            .execute()
+        )
+    else:
+        res = (
+            db.table("sessions")
+            .update({
+                "check_out": now_iso,
+                "voided_at": now_iso,
+                "auto_closed": True,
+            })
+            .eq("profile_id", body.profile_id)
+            .is_("check_out", "null")
+            .execute()
+        )
+    return {
+        "success": True,
+        "action": body.action,
+        "profile_id": body.profile_id,
+        "updated_rows": len(res.data) if res.data else 0,
     }

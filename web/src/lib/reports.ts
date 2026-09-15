@@ -58,7 +58,7 @@ export async function fetchPresentIds(): Promise<string[]> {
 }
 
 /**
- * Permite que o tutor autenticado encerre uma sessão em aberto:
+ * Permite que o tutor encerre uma sessão em aberto:
  * - action === "checkout": Encerra com horário atual, computando a permanência normal até o momento.
  * - action === "void": Anula a sessão (voided_at preenchido), computando 0 horas (esquecimento/erro).
  */
@@ -66,6 +66,26 @@ export async function tutorCloseSession(
   profileId: string,
   action: "checkout" | "void"
 ): Promise<void> {
+  // 1. Invoca a RPC atômica tutor_close_session com SECURITY DEFINER
+  try {
+    const { data, error } = await supabase.rpc("tutor_close_session", {
+      p_profile_id: profileId,
+      p_action: action,
+    });
+
+    if (error) {
+      console.warn("RPC tutor_close_session falhou, tentando fallback direto:", error.message);
+    } else if (data && typeof data === "object") {
+      const res = data as { success?: boolean; updated_count?: number };
+      if (res.success) {
+        return;
+      }
+    }
+  } catch (rpcErr) {
+    console.warn("Exceção ao chamar RPC tutor_close_session:", rpcErr);
+  }
+
+  // 2. Fallback direto via Supabase REST (caso a sessão autenticada possua permissão RLS)
   const now = new Date().toISOString();
   if (action === "checkout") {
     const { error } = await supabase

@@ -153,3 +153,123 @@ def test_close_stale_sessions_sets_voided_at_and_zero_hours():
         assert "check_out" in update_payload
         # voided_at e check_out devem ser iguais (timestamp do momento do sweep)
         assert update_payload["voided_at"] == update_payload["check_out"]
+
+
+# ── Testes de Encerramento Manual de Sessão por Tutor (/sessions/tutor-close) ─
+
+
+def test_tutor_close_session_unauthorized():
+    """Endpoint /sessions/tutor-close exige autenticação de tutor (HTTP 401 sem token)."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    client = TestClient(app, raise_server_exceptions=False)
+    res = client.post(
+        "/api/v1/sessions/tutor-close",
+        json={"profile_id": "334e33f9-3bd0-478e-8e05-e68a4e11ee5a", "action": "checkout"},
+    )
+    assert res.status_code == 401
+
+
+def test_tutor_close_session_invalid_action():
+    """Ação inválida deve ser rejeitada com validação Pydantic 422."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    # Mock do tutor auth para passar da dependência verify_tutor_token
+    mock_user = MagicMock()
+    mock_user.id = "tutor-uuid"
+    mock_user.app_metadata = {"role": "tutor"}
+    mock_resp = MagicMock()
+    mock_resp.user = mock_user
+
+    mock_client = MagicMock()
+    mock_client.auth.get_user.return_value = mock_resp
+
+    with patch("app.db.supabase_client.get_client", return_value=mock_client):
+        client = TestClient(app, raise_server_exceptions=False)
+        res = client.post(
+            "/api/v1/sessions/tutor-close",
+            headers={"Authorization": "Bearer valid.tutor.jwt"},
+            json={"profile_id": "334e33f9-3bd0-478e-8e05-e68a4e11ee5a", "action": "invalid_action"},
+        )
+        assert res.status_code == 422
+
+
+def test_tutor_close_session_checkout_success():
+    """Tutor encerra sessão com 'checkout': atualiza check_out e retorna sucesso."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    mock_user = MagicMock()
+    mock_user.id = "tutor-uuid"
+    mock_user.app_metadata = {"role": "tutor"}
+    mock_resp = MagicMock()
+    mock_resp.user = mock_user
+
+    mock_db = MagicMock()
+    mock_db.auth.get_user.return_value = mock_resp
+    # Mock da tabela sessions update: .update().eq().is_().execute() -> data=[{"id": 495}]
+    mock_query = mock_db.table.return_value.update.return_value.eq.return_value.is_.return_value
+    mock_query.execute.return_value.data = [{"id": 495}]
+
+    with (
+        patch("app.db.supabase_client.get_client", return_value=mock_db),
+        patch("app.routers.recognize.get_client", return_value=mock_db),
+    ):
+        client = TestClient(app, raise_server_exceptions=False)
+        res = client.post(
+            "/api/v1/sessions/tutor-close",
+            headers={"Authorization": "Bearer valid.tutor.jwt"},
+            json={"profile_id": "334e33f9-3bd0-478e-8e05-e68a4e11ee5a", "action": "checkout"},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert data["action"] == "checkout"
+        assert data["updated_rows"] == 1
+
+        # Garante que o update foi chamado com check_out e sem voided_at
+        update_args = mock_db.table.return_value.update.call_args[0][0]
+        assert "check_out" in update_args
+        assert "voided_at" not in update_args
+
+
+def test_tutor_close_session_void_success():
+    """Tutor anula sessão com 'void': atualiza check_out, voided_at e auto_closed=True."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    mock_user = MagicMock()
+    mock_user.id = "tutor-uuid"
+    mock_user.app_metadata = {"role": "tutor"}
+    mock_resp = MagicMock()
+    mock_resp.user = mock_user
+
+    mock_db = MagicMock()
+    mock_db.auth.get_user.return_value = mock_resp
+    mock_query = mock_db.table.return_value.update.return_value.eq.return_value.is_.return_value
+    mock_query.execute.return_value.data = [{"id": 495}]
+
+    with (
+        patch("app.db.supabase_client.get_client", return_value=mock_db),
+        patch("app.routers.recognize.get_client", return_value=mock_db),
+    ):
+        client = TestClient(app, raise_server_exceptions=False)
+        res = client.post(
+            "/api/v1/sessions/tutor-close",
+            headers={"Authorization": "Bearer valid.tutor.jwt"},
+            json={"profile_id": "334e33f9-3bd0-478e-8e05-e68a4e11ee5a", "action": "void"},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert data["action"] == "void"
+        assert data["updated_rows"] == 1
+
+        # Garante que o update foi chamado com check_out, voided_at e auto_closed
+        update_args = mock_db.table.return_value.update.call_args[0][0]
+        assert "check_out" in update_args
+        assert "voided_at" in update_args
+        assert update_args["auto_closed"] is True
+
