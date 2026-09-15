@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { usePresence, type PresentMember } from "@/hooks/usePresence";
 import { useElapsed } from "@/hooks/useElapsed";
+import { getAvatarColor } from "@/lib/config";
 
 interface PresenceSidebarProps {
   onClose?: () => void;
@@ -115,6 +116,8 @@ function SidebarRow({ member }: { member: PresentMember }) {
     .slice(0, 2)
     .toUpperCase();
 
+  const avatar = getAvatarColor(member.profile.name);
+
   return (
     <Animated.View
       style={[
@@ -125,8 +128,8 @@ function SidebarRow({ member }: { member: PresentMember }) {
         },
       ]}
     >
-      <View style={styles.avatar}>
-        <Text style={styles.initials}>{initials}</Text>
+      <View style={[styles.avatar, { backgroundColor: avatar.bg }]}>
+        <Text style={[styles.initials, { color: avatar.text }]}>{initials}</Text>
       </View>
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>
@@ -141,9 +144,9 @@ function SidebarRow({ member }: { member: PresentMember }) {
 const styles = StyleSheet.create({
   container: {
     width: 290,
-    backgroundColor: "#FBF8F1",
+    backgroundColor: "#FFFFFF",
     borderLeftWidth: 1,
-    borderLeftColor: "rgba(30,45,95,.14)",
+    borderLeftColor: "rgba(0, 0, 0, 0.06)",
     paddingTop: 16,
   },
   header: {
@@ -151,7 +154,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 14,
   },
   headerLeft: {
     flexDirection: "row",
@@ -161,44 +164,45 @@ const styles = StyleSheet.create({
   closeBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: "rgba(30,45,95,.08)",
+    backgroundColor: "#F1F5F9",
   },
   closeBtnText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#1E2D5F",
+    color: "#475569",
   },
   title: {
-    color: "#141A33",
+    color: "#0F172A",
     fontWeight: "800",
-    fontSize: 17,
+    fontSize: 18,
+    letterSpacing: -0.3,
   },
   badge: {
-    backgroundColor: "rgba(30,45,95,.10)",
+    backgroundColor: "#EFF6FF",
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.20)",
+    borderColor: "rgba(37, 99, 235, 0.2)",
   },
   badgeText: {
-    color: "#1E2D5F",
+    color: "#2563EB",
     fontWeight: "700",
     fontSize: 13,
   },
   searchWrapper: {
     paddingHorizontal: 14,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
   searchInput: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.15)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    fontSize: 12.5,
-    color: "#141A33",
+    borderColor: "rgba(0, 0, 0, 0.05)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: "#0F172A",
   },
   center: {
     marginTop: 24,
@@ -215,21 +219,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.14)",
+    borderColor: "rgba(0, 0, 0, 0.06)",
+    shadowColor: "#000",
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(30,45,95,.10)",
     alignItems: "center",
     justifyContent: "center",
   },
   initials: {
-    color: "#1E2D5F",
     fontWeight: "800",
     fontSize: 14,
   },
@@ -238,17 +245,17 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   name: {
-    color: "#141A33",
-    fontWeight: "600",
-    fontSize: 14,
+    color: "#0F172A",
+    fontWeight: "700",
+    fontSize: 14.5,
   },
   elapsed: {
-    color: "#166534",
-    fontSize: 12,
+    color: "#059669",
+    fontSize: 12.5,
     fontWeight: "600",
   },
   empty: {
-    color: "#6B6F82",
+    color: "#64748B",
     fontSize: 13,
     textAlign: "center",
     marginTop: 24,

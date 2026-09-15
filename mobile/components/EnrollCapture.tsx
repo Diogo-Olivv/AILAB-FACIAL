@@ -113,29 +113,33 @@ export function EnrollCapture({ tutorToken }: Props) {
           <TextInput
             style={styles.input}
             placeholder="Nome completo"
-            placeholderTextColor="#6B6F82"
+            placeholderTextColor="#94A3B8"
             value={name}
             onChangeText={setName}
           />
         </View>
         <View style={styles.col}>
-          <Text style={styles.label}>Matricula</Text>
+          <Text style={styles.label}>Matrícula</Text>
           <TextInput
             style={styles.input}
-            placeholder="9 digitos"
-            placeholderTextColor="#6B6F82"
+            placeholder="9 dígitos"
+            placeholderTextColor="#94A3B8"
             value={matricula}
             onChangeText={(t) => setMatricula(t.replace(/\D/g, "").slice(0, MATRICULA_LENGTH))}
             keyboardType="number-pad"
             maxLength={MATRICULA_LENGTH}
           />
           {matricula.length > 0 && !matriculaValid && (
-            <Text style={styles.hint}>Informe {MATRICULA_LENGTH} numeros.</Text>
+            <Text style={styles.hint}>Informe {MATRICULA_LENGTH} números.</Text>
           )}
         </View>
       </View>
 
-      <TouchableOpacity style={styles.captureBtn} onPress={openCamera}>
+      <TouchableOpacity
+        style={styles.captureBtn}
+        onPress={openCamera}
+        activeOpacity={0.85}
+      >
         <Text style={styles.captureBtnText}>
           {shots.length === ENROLL_PHOTO_COUNT
             ? "Refazer fotos"
@@ -177,8 +181,8 @@ export function EnrollCapture({ tutorToken }: Props) {
           <Switch
             value={consent}
             onValueChange={setConsent}
-            trackColor={{ true: "#166534", false: "#C9C4B6" }}
-            thumbColor="#fff"
+            trackColor={{ true: "#059669", false: "#CBD5E1" }}
+            thumbColor="#FFFFFF"
           />
           <Text style={styles.consentSwitchLabel}>
             Li e concordo com os termos de uso de biometria facial
@@ -190,6 +194,7 @@ export function EnrollCapture({ tutorToken }: Props) {
         style={[styles.submitBtn, (!canSubmit || loading) && styles.disabled]}
         onPress={submit}
         disabled={!canSubmit || loading}
+        activeOpacity={0.85}
       >
         {loading ? (
           <ActivityIndicator color="#fff" />
@@ -220,57 +225,80 @@ export function EnrollCapture({ tutorToken }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F4EFE4", position: "relative" },
-  container: { flex: 1, backgroundColor: "#F4EFE4" },
-  content: { padding: 16, gap: 14, paddingBottom: 40 },
+  root: { flex: 1, backgroundColor: "#F6F8FD", position: "relative" },
+  container: { flex: 1, backgroundColor: "#F6F8FD" },
+  content: { padding: 16, gap: 16, paddingBottom: 48 },
   row: { flexDirection: "row", gap: 12 },
   col: { flex: 1, gap: 6 },
-  label: { color: "#141A33", fontSize: 13, fontWeight: "700" },
-  hint: { color: "#DC2626", fontSize: 12 },
+  label: { color: "#0F172A", fontSize: 13.5, fontWeight: "700" },
+  hint: { color: "#DC2626", fontSize: 12, fontWeight: "500" },
   captureBtn: {
-    backgroundColor: "#1E2D5F",
-    padding: 14,
-    borderRadius: 14,
+    backgroundColor: "#2563EB",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 16,
     alignItems: "center",
+    shadowColor: "#2563EB",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  captureBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  disabled: { opacity: 0.4 },
-  thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
-  thumb: { width: 60, height: 60, borderRadius: 10 },
+  captureBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
+  disabled: { opacity: 0.45 },
+  thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 4 },
+  thumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
+  },
   input: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.14)",
-    borderRadius: 12,
+    borderColor: "rgba(0,0,0,0.08)",
+    borderRadius: 14,
     padding: 14,
-    color: "#141A33",
+    color: "#0F172A",
     fontSize: 15,
+    fontWeight: "500",
+    shadowColor: "#000",
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   consentCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.14)",
+    borderColor: "rgba(0,0,0,0.06)",
     gap: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   consentTitle: {
-    color: "#141A33",
-    fontSize: 14,
+    color: "#0F172A",
+    fontSize: 14.5,
     fontWeight: "700",
   },
   consentBody: {
-    color: "#6B6F82",
-    fontSize: 12,
-    lineHeight: 18,
+    color: "#475569",
+    fontSize: 12.5,
+    lineHeight: 19,
   },
   consentSwitchRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingTop: 6,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "rgba(30,45,95,.08)",
+    borderTopColor: "rgba(0,0,0,0.06)",
   },
   termsBtn: {
     alignSelf: "flex-start",
@@ -278,44 +306,50 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   termsBtnText: {
-    color: "#1E2D5F",
-    fontSize: 12.5,
+    color: "#2563EB",
+    fontSize: 13,
     fontWeight: "700",
     textDecorationLine: "underline",
   },
   consentSwitchLabel: {
     flex: 1,
-    color: "#141A33",
-    fontSize: 13,
+    color: "#0F172A",
+    fontSize: 13.5,
     fontWeight: "600",
   },
   submitBtn: {
-    backgroundColor: "#166534",
-    padding: 16,
-    borderRadius: 14,
+    backgroundColor: "#059669",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 6,
+    shadowColor: "#059669",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  submitBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  submitBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 16 },
   feedback: { fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 4 },
   feedbackOk: { color: "#166534" },
   feedbackErr: { color: "#DC2626" },
   tipCard: {
-    backgroundColor: "rgba(30,45,95,.06)",
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: "#FFFBEB",
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.12)",
+    borderColor: "#FDE68A",
     gap: 4,
   },
   tipTitle: {
-    color: "#1E2D5F",
-    fontSize: 13,
+    color: "#92400E",
+    fontSize: 13.5,
     fontWeight: "700",
   },
   tipBody: {
-    color: "#6B6F82",
-    fontSize: 12,
-    lineHeight: 17,
+    color: "#78350F",
+    fontSize: 12.5,
+    lineHeight: 18,
   },
 });

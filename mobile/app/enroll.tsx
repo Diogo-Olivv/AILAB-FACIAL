@@ -67,39 +67,39 @@ export default function Enroll() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4EFE4" },
+  container: { flex: 1, backgroundColor: "#F6F8FD" },
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: "rgba(30,45,95,.08)",
+    backgroundColor: "rgba(0, 0, 0, 0.06)",
     marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    borderRadius: 12,
-    padding: 4,
+    marginTop: 14,
+    marginBottom: 8,
+    borderRadius: 14,
+    padding: 3,
     gap: 4,
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 9,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 9,
+    borderRadius: 11,
   },
   tabActive: {
-    backgroundColor: "#1E2D5F",
+    backgroundColor: "#FFFFFF",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
     elevation: 2,
   },
   tabText: {
-    color: "#6B6F82",
+    color: "#64748B",
     fontSize: 14,
     fontWeight: "600",
   },
   tabTextActive: {
-    color: "#FFFFFF",
+    color: "#0F172A",
     fontWeight: "700",
   },
 });

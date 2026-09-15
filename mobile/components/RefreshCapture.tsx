@@ -16,7 +16,7 @@ import { useRefreshEmbedding } from "@/hooks/useRefreshEmbedding";
 import { SequentialCamera } from "@/components/SequentialCamera";
 import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
 import { TermsModal } from "@/components/TermsModal";
-import { ENROLL_PHOTO_COUNT } from "@/lib/config";
+import { ENROLL_PHOTO_COUNT, getAvatarColor } from "@/lib/config";
 
 interface Props {
   tutorToken?: string;
@@ -138,8 +138,18 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
       {selectedProfile ? (
         <View style={styles.selectedCard}>
           <View style={styles.selectedInfo}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarInitials}>
+            <View
+              style={[
+                styles.avatarCircle,
+                { backgroundColor: getAvatarColor(selectedProfile.name).bg },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.avatarInitials,
+                  { color: getAvatarColor(selectedProfile.name).text },
+                ]}
+              >
                 {selectedProfile.name
                   .split(" ")
                   .map((w) => w[0])
@@ -161,6 +171,7 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
             style={styles.changeBtn}
             onPress={handleResetSelection}
             disabled={refreshing}
+            activeOpacity={0.8}
           >
             <Text style={styles.changeBtnText}>Trocar</Text>
           </TouchableOpacity>
@@ -170,7 +181,7 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
           <TextInput
             style={styles.searchInput}
             placeholder="Digite o nome ou matrícula..."
-            placeholderTextColor="#6B6F82"
+            placeholderTextColor="#94A3B8"
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCorrect={false}
@@ -178,7 +189,7 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
 
           {loadingProfiles ? (
             <View style={styles.centerLoading}>
-              <ActivityIndicator color="#1E2D5F" size="small" />
+              <ActivityIndicator color="#2563EB" size="small" />
               <Text style={styles.loadingText}>Carregando integrantes...</Text>
             </View>
           ) : profilesError ? (
@@ -193,35 +204,39 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
               {filteredProfiles.length === 0 ? (
                 <Text style={styles.emptyText}>Nenhum integrante encontrado.</Text>
               ) : (
-                filteredProfiles.map((p) => (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={styles.profileRow}
-                    onPress={() => handleSelect(p)}
-                  >
-                    <View style={styles.rowAvatar}>
-                      <Text style={styles.rowAvatarText}>
-                        {p.name
-                          .split(" ")
-                          .map((w) => w[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.rowInfo}>
-                      <Text style={styles.rowName} numberOfLines={1}>
-                        {p.name}
-                      </Text>
-                      <Text style={styles.rowMatricula}>
-                        {p.matricula ? `Matrícula: ${p.matricula}` : "Sem matrícula"}
-                      </Text>
-                    </View>
-                    <View style={styles.selectBadge}>
-                      <Text style={styles.selectBadgeText}>Selecionar</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))
+                filteredProfiles.map((p) => {
+                  const avatar = getAvatarColor(p.name);
+                  return (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={styles.profileRow}
+                      onPress={() => handleSelect(p)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.rowAvatar, { backgroundColor: avatar.bg }]}>
+                        <Text style={[styles.rowAvatarText, { color: avatar.text }]}>
+                          {p.name
+                            .split(" ")
+                            .map((w) => w[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.rowInfo}>
+                        <Text style={styles.rowName} numberOfLines={1}>
+                          {p.name}
+                        </Text>
+                        <Text style={styles.rowMatricula}>
+                          {p.matricula ? `Matrícula: ${p.matricula}` : "Sem matrícula"}
+                        </Text>
+                      </View>
+                      <View style={styles.selectBadge}>
+                        <Text style={styles.selectBadgeText}>Selecionar</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
               )}
             </View>
           )}
@@ -331,119 +346,135 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F4EFE4", position: "relative" },
-  container: { flex: 1, backgroundColor: "#F4EFE4" },
-  content: { padding: 16, gap: 14, paddingBottom: 40 },
+  root: { flex: 1, backgroundColor: "#F6F8FD", position: "relative" },
+  container: { flex: 1, backgroundColor: "#F6F8FD" },
+  content: { padding: 16, gap: 16, paddingBottom: 48 },
   sectionHeader: {
-    color: "#141A33",
-    fontSize: 14,
+    color: "#0F172A",
+    fontSize: 15,
     fontWeight: "700",
-    marginTop: 4,
+    letterSpacing: -0.2,
+    marginTop: 6,
   },
   searchSection: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.14)",
-    padding: 12,
-    gap: 10,
+    borderColor: "rgba(0,0,0,0.06)",
+    padding: 14,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   searchInput: {
-    backgroundColor: "#F9F8F5",
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.12)",
-    borderRadius: 10,
+    borderColor: "rgba(0,0,0,0.05)",
+    borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: "#141A33",
+    paddingVertical: 12,
+    color: "#0F172A",
     fontSize: 14,
+    fontWeight: "500",
   },
   centerLoading: {
-    padding: 16,
+    padding: 20,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
-  loadingText: { color: "#6B6F82", fontSize: 13 },
+  loadingText: { color: "#64748B", fontSize: 13, fontWeight: "500" },
   errorBox: {
-    padding: 12,
+    padding: 14,
     alignItems: "center",
     gap: 8,
   },
   errorBoxText: { color: "#DC2626", fontSize: 13, textAlign: "center" },
   retryBtn: {
-    backgroundColor: "rgba(30,45,95,.08)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    backgroundColor: "rgba(220,38,38,0.08)",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
   },
-  retryBtnText: { color: "#1E2D5F", fontWeight: "600", fontSize: 12 },
+  retryBtnText: { color: "#DC2626", fontWeight: "600", fontSize: 12.5 },
   resultsList: {
-    gap: 6,
-    maxHeight: 240,
+    gap: 8,
   },
   emptyText: {
-    color: "#6B6F82",
+    color: "#64748B",
     fontSize: 13,
     textAlign: "center",
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "#FDFCFA",
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.06)",
-    gap: 10,
+    borderColor: "rgba(0,0,0,0.06)",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   rowAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#1E2D5F",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
   },
-  rowAvatarText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  rowAvatarText: { fontWeight: "700", fontSize: 13.5 },
   rowInfo: { flex: 1 },
-  rowName: { color: "#141A33", fontWeight: "700", fontSize: 14 },
-  rowMatricula: { color: "#6B6F82", fontSize: 12 },
+  rowName: { color: "#0F172A", fontWeight: "700", fontSize: 14.5 },
+  rowMatricula: { color: "#64748B", fontSize: 12.5, marginTop: 1 },
   selectBadge: {
-    backgroundColor: "rgba(30,45,95,.08)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "rgba(37,99,235,0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
-  selectBadgeText: { color: "#1E2D5F", fontWeight: "700", fontSize: 12 },
+  selectBadgeText: { color: "#2563EB", fontWeight: "700", fontSize: 12 },
 
   selectedCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1.5,
-    borderColor: "#166534",
+    borderColor: "#10B981",
     gap: 12,
+    shadowColor: "#10B981",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   selectedInfo: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
   avatarCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#166534",
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarInitials: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  avatarInitials: { fontWeight: "800", fontSize: 16 },
   selectedMeta: { flex: 1 },
-  selectedName: { color: "#141A33", fontWeight: "800", fontSize: 15 },
-  selectedMatricula: { color: "#166534", fontWeight: "600", fontSize: 12, marginTop: 2 },
+  selectedName: { color: "#0F172A", fontWeight: "800", fontSize: 15.5 },
+  selectedMatricula: { color: "#059669", fontWeight: "600", fontSize: 12.5, marginTop: 2 },
   changeBtn: {
-    backgroundColor: "rgba(220,38,38,.10)",
+    backgroundColor: "#FEE2E2",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
@@ -451,81 +482,104 @@ const styles = StyleSheet.create({
   changeBtnText: { color: "#DC2626", fontWeight: "700", fontSize: 13 },
 
   captureBtn: {
-    backgroundColor: "#1E2D5F",
-    padding: 14,
-    borderRadius: 14,
+    backgroundColor: "#2563EB",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 16,
     alignItems: "center",
+    shadowColor: "#2563EB",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  captureBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  hintNotice: { color: "#6B6F82", fontSize: 12, fontStyle: "italic" },
+  captureBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
+  hintNotice: { color: "#64748B", fontSize: 12.5, fontStyle: "italic", marginTop: 2 },
   disabled: { opacity: 0.45 },
-  thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
-  thumb: { width: 60, height: 60, borderRadius: 10 },
+  thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 4 },
+  thumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
+  },
 
   infoCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.14)",
-    gap: 6,
+    borderColor: "rgba(0,0,0,0.06)",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
-  infoTitle: { color: "#141A33", fontSize: 13, fontWeight: "700" },
-  infoBody: { color: "#6B6F82", fontSize: 12, lineHeight: 18 },
+  infoTitle: { color: "#0F172A", fontSize: 14, fontWeight: "700" },
+  infoBody: { color: "#475569", fontSize: 12.5, lineHeight: 19 },
   termsBtn: {
     alignSelf: "flex-start",
     paddingVertical: 4,
     marginTop: 2,
   },
   termsBtnText: {
-    color: "#1E2D5F",
-    fontSize: 12.5,
+    color: "#2563EB",
+    fontSize: 13,
     fontWeight: "700",
     textDecorationLine: "underline",
   },
 
   submitBtn: {
-    backgroundColor: "#166534",
-    padding: 16,
-    borderRadius: 14,
+    backgroundColor: "#059669",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 6,
+    shadowColor: "#059669",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  submitBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  submitBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 16 },
 
   feedbackCard: {
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: "center",
   },
   feedbackCardOk: {
-    backgroundColor: "rgba(22,101,52,.08)",
-    borderColor: "#166534",
+    backgroundColor: "#F0FDF4",
+    borderColor: "#86EFAC",
   },
   feedbackCardErr: {
-    backgroundColor: "rgba(220,38,38,.08)",
-    borderColor: "#DC2626",
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
   },
   feedbackText: { fontSize: 14, fontWeight: "600", textAlign: "center" },
   feedbackTextOk: { color: "#166534" },
   feedbackTextErr: { color: "#DC2626" },
   tipCard: {
-    backgroundColor: "rgba(30,45,95,.06)",
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: "#FFFBEB",
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(30,45,95,.12)",
+    borderColor: "#FDE68A",
     gap: 4,
   },
   tipTitle: {
-    color: "#1E2D5F",
-    fontSize: 13,
+    color: "#92400E",
+    fontSize: 13.5,
     fontWeight: "700",
   },
   tipBody: {
-    color: "#6B6F82",
-    fontSize: 12,
-    lineHeight: 17,
+    color: "#78350F",
+    fontSize: 12.5,
+    lineHeight: 18,
   },
 });
