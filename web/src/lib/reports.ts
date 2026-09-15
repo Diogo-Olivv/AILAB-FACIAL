@@ -7,6 +7,7 @@ export interface Member {
 }
 
 export interface SessionRecord {
+  id?: number;
   profileId: string;
   checkIn: string;
   checkOut: string | null;
@@ -33,12 +34,13 @@ export async function fetchMembers(): Promise<Member[]> {
 export async function fetchSessions(range: DateRange): Promise<SessionRecord[]> {
   const { data, error } = await supabase
     .from("sessions")
-    .select("profile_id, check_in, check_out, duration_s, auto_closed, voided_at")
+    .select("id, profile_id, check_in, check_out, duration_s, auto_closed, voided_at")
     .gte("check_in", range.from.toISOString())
     .lte("check_in", range.to.toISOString())
     .order("check_in", { ascending: false });
   if (error) throw error;
   return (data ?? []).map((s) => ({
+    id: s.id,
     profileId: s.profile_id,
     checkIn: s.check_in,
     checkOut: s.check_out,
@@ -199,3 +201,86 @@ export async function tutorRemoveMember(
     .eq("id", profileId);
   if (error) throw error;
 }
+
+/**
+ * Permite que o tutor anule/invalide uma sessão específica (ex: sessão anômala ou > 10h).
+ * Zera a contagem de horas e grava voided_at com rastreabilidade.
+ */
+export async function tutorVoidSession(sessionId: number, reason = "anomalous_or_over_10h"): Promise<void> {
+  try {
+    const { data, error } = await supabase.rpc("tutor_void_session", {
+      p_session_id: sessionId,
+      p_reason: reason,
+    });
+    if (error) {
+      console.warn("RPC tutor_void_session falhou, tentando fallback direto:", error.message);
+    } else if (data && typeof data === "object") {
+      const res = data as { success?: boolean; message?: string };
+      if (res.success) return;
+      if (res.message) throw new Error(res.message);
+    }
+  } catch (rpcErr: any) {
+    if (rpcErr?.message && !rpcErr.message.includes("RPC")) throw rpcErr;
+    console.warn("Exceção ao chamar RPC tutor_void_session:", rpcErr);
+  }
+
+  // Fallback direto via Supabase REST
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("sessions")
+    .update({ voided_at: now, auto_closed: true })
+    .eq("id", sessionId);
+  if (error) throw error;
+}
+
+/**
+ * Permite que o tutor reative uma sessão que havia sido anulada por equívoco.
+ */
+export async function tutorUnvoidSession(sessionId: number): Promise<void> {
+  try {
+    const { data, error } = await supabase.rpc("tutor_unvoid_session", {
+      p_session_id: sessionId,
+    });
+    if (error) {
+      console.warn("RPC tutor_unvoid_session falhou, tentando fallback direto:", error.message);
+    } else if (data && typeof data === "object") {
+      const res = data as { success?: boolean; message?: string };
+      if (res.success) return;
+      if (res.message) throw new Error(res.message);
+    }
+  } catch (rpcErr: any) {
+    if (rpcErr?.message && !rpcErr.message.includes("RPC")) throw rpcErr;
+    console.warn("Exceção ao chamar RPC tutor_unvoid_session:", rpcErr);
+  }
+
+  const { error } = await supabase
+    .from("sessions")
+    .update({ voided_at: null })
+    .eq("id", sessionId);
+  if (error) throw error;
+}
+
+/**
+ * Permite que o tutor exclua definitivamente uma sessão do histórico do banco de dados.
+ */
+export async function tutorDeleteSession(sessionId: number): Promise<void> {
+  try {
+    const { data, error } = await supabase.rpc("tutor_delete_session", {
+      p_session_id: sessionId,
+    });
+    if (error) {
+      console.warn("RPC tutor_delete_session falhou, tentando fallback direto:", error.message);
+    } else if (data && typeof data === "object") {
+      const res = data as { success?: boolean; message?: string };
+      if (res.success) return;
+      if (res.message) throw new Error(res.message);
+    }
+  } catch (rpcErr: any) {
+    if (rpcErr?.message && !rpcErr.message.includes("RPC")) throw rpcErr;
+    console.warn("Exceção ao chamar RPC tutor_delete_session:", rpcErr);
+  }
+
+  const { error } = await supabase.from("sessions").delete().eq("id", sessionId);
+  if (error) throw error;
+}
+

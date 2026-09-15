@@ -208,6 +208,59 @@ test("E2E FLUXO 2: Acesso do Tutor - Auditoria de 4 Horas, Entrada Manual e Expu
   assert.strictEqual(removeRes.purgedEmbeddings, true);
   assert.strictEqual(faceEmbeddings.has("m-3"), false, "Biometria facial DEVE ser expurgada do banco");
   assert.strictEqual(activeProfiles.length, 2, "Lista de integrantes ativos do dashboard não deve mais conter o desistente");
+
+  // 4. Gestão de Sessões Anômalas (> 10h) pelo Tutor (Invalidar & Excluir)
+  let studentSessions: SessionRecord[] = [
+    {
+      id: 101,
+      profileId: "m-2",
+      checkIn: "2026-09-14T08:00:00Z",
+      checkOut: "2026-09-14T20:30:00Z", // 12h30m (Anômala, ultrapassou 10h)
+      durationS: 45000,
+      voidedAt: null,
+    },
+    {
+      id: 102,
+      profileId: "m-2",
+      checkIn: "2026-09-15T09:00:00Z",
+      checkOut: "2026-09-15T12:00:00Z", // 3h (Normal)
+      durationS: 10800,
+      voidedAt: null,
+    },
+  ];
+
+  // 4a. Detecção da anomalia (> 10h = 36.000 segundos)
+  const anomalousSessions = studentSessions.filter(
+    (s) => s.durationS != null && s.durationS > 36000
+  );
+  assert.strictEqual(anomalousSessions.length, 1);
+  assert.strictEqual(anomalousSessions[0].id, 101);
+
+  // Total antes da anulação: 45000 + 10800 = 55800s
+  const now = new Date();
+  const initialTotal = studentSessions.reduce((acc, s) => acc + sessionSeconds(s, now), 0);
+  assert.strictEqual(initialTotal, 55800);
+
+  // 4b. Tutor Invalida / Anula a sessão anômala #101
+  const sessionToVoid = studentSessions.find((s) => s.id === 101)!;
+  sessionToVoid.voidedAt = new Date().toISOString();
+  sessionToVoid.autoClosed = true;
+
+  // Garantir que a sessão anulada computa rigorosamente 0 segundos
+  assert.strictEqual(sessionSeconds(sessionToVoid, now), 0, "Sessão anulada pelo tutor deve computar 0 segundos");
+  const afterVoidTotal = studentSessions.reduce((acc, s) => acc + sessionSeconds(s, now), 0);
+  assert.strictEqual(afterVoidTotal, 10800, "Total deve computar apenas a sessão normal remanescente");
+
+  // 4c. Tutor Reativa a sessão
+  sessionToVoid.voidedAt = null;
+  assert.strictEqual(sessionSeconds(sessionToVoid, now), 45000, "Reativação restaura o cômputo original");
+
+  // 4d. Tutor Exclui definitivamente a sessão anômala
+  studentSessions = studentSessions.filter((s) => s.id !== 101);
+  assert.strictEqual(studentSessions.length, 1);
+  assert.strictEqual(studentSessions[0].id, 102);
+  const finalTotal = studentSessions.reduce((acc, s) => acc + sessionSeconds(s, now), 0);
+  assert.strictEqual(finalTotal, 10800, "Exclusão remove a sessão permanentemente do cômputo");
 });
 
 // ============================================================================

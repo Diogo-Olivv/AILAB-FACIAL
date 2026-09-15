@@ -1,6 +1,13 @@
 import { useState } from "react";
 import type { Member, SessionRecord } from "../lib/reports";
-import { tutorCloseSession, tutorRegisterEntry, tutorRemoveMember } from "../lib/reports";
+import {
+  tutorCloseSession,
+  tutorRegisterEntry,
+  tutorRemoveMember,
+  tutorVoidSession,
+  tutorUnvoidSession,
+  tutorDeleteSession,
+} from "../lib/reports";
 import { formatDuration, formatTime } from "../lib/aggregate";
 import { getAvatarStyle } from "./TotalsTable";
 import { useAuth } from "../auth/useAuth";
@@ -28,10 +35,52 @@ export function MemberDetailDrawer({
 }: Props) {
   const { user } = useAuth();
   const [busyAction, setBusyAction] = useState<"checkout" | "void" | "checkin" | "remove" | null>(null);
+  const [busySessionId, setBusySessionId] = useState<number | null>(null);
+  const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<number | null>(null);
   const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
 
   if (!isOpen || !member) return null;
+
+  const handleVoidSpecificSession = async (sessionId: number, isCurrentlyVoided: boolean) => {
+    setBusySessionId(sessionId);
+    setActionMessage("");
+    try {
+      if (isCurrentlyVoided) {
+        await tutorUnvoidSession(sessionId);
+        setActionMessage("✅ Sessão reativada! Horas restauradas.");
+      } else {
+        await tutorVoidSession(sessionId, "anomalous_or_over_10h");
+        setActionMessage("✅ Sessão anulada com sucesso! Horas zeradas (0h 00m).");
+      }
+      if (onSessionUpdated) {
+        await onSessionUpdated();
+      }
+      setTimeout(() => setActionMessage(""), 3500);
+    } catch (err: any) {
+      setActionMessage(`⚠️ Falha: ${err?.message || "Erro desconhecido"}`);
+    } finally {
+      setBusySessionId(null);
+    }
+  };
+
+  const handleDeleteSpecificSession = async (sessionId: number) => {
+    setBusySessionId(sessionId);
+    setActionMessage("");
+    try {
+      await tutorDeleteSession(sessionId);
+      setActionMessage("✅ Sessão excluída permanentemente do histórico.");
+      setConfirmDeleteSessionId(null);
+      if (onSessionUpdated) {
+        await onSessionUpdated();
+      }
+      setTimeout(() => setActionMessage(""), 3500);
+    } catch (err: any) {
+      setActionMessage(`⚠️ Falha ao excluir sessão: ${err?.message || "Erro desconhecido"}`);
+    } finally {
+      setBusySessionId(null);
+    }
+  };
 
   const handleTutorAction = async (action: "checkout" | "void" | "checkin" | "remove") => {
     setBusyAction(action);
@@ -295,17 +344,34 @@ export function MemberDetailDrawer({
                 });
                 const isOpenSession = s.checkOut === null;
                 const isVoided = Boolean(s.voidedAt);
+                const isOver10h =
+                  (s.durationS != null && s.durationS > 36000) ||
+                  (isOpenSession && (Date.now() - new Date(s.checkIn).getTime()) / 1000 > 36000);
 
                 return (
                   <div
-                    key={idx}
-                    className="rounded-2xl border border-[#E5E2DC] bg-white p-3.5 shadow-2xs space-y-2 transition-all hover:border-[#706E6A]/30"
+                    key={s.id || idx}
+                    className={`rounded-2xl border p-3.5 shadow-2xs space-y-2.5 transition-all ${
+                      isOver10h
+                        ? "border-amber-300 bg-amber-50/20 hover:border-amber-400"
+                        : "border-[#E5E2DC] bg-white hover:border-[#706E6A]/30"
+                    }`}
                   >
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-editorial font-medium text-sm text-[#171715] capitalize">{dateLabel}</span>
+                    <div className="flex items-center justify-between text-xs flex-wrap gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-editorial font-medium text-sm text-[#171715] capitalize">
+                          {dateLabel}
+                        </span>
+                        {isOver10h && (
+                          <span className="rounded-full bg-amber-100/90 border border-amber-300 px-2 py-0.5 font-bold text-amber-900 text-[10px] font-mono-data">
+                            ⚠️ Anômala (&gt; 10h)
+                          </span>
+                        )}
+                      </div>
+
                       {isVoided ? (
                         <span className="rounded-full bg-[#FAF5F0] border border-[#F0DCD3] px-2 py-0.5 font-medium text-[#C15F3D] text-[10px]">
-                          ⚠️ Saída esquecida
+                          🚫 Anulada (0h)
                         </span>
                       ) : isOpenSession ? (
                         <span className="rounded-full bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 font-medium text-emerald-800 text-[10px] animate-pulse">
@@ -329,6 +395,76 @@ export function MemberDetailDrawer({
                         </strong>
                       </span>
                     </div>
+
+                    {/* Controles Administrativos do Tutor */}
+                    {Boolean(user) && s.id != null && (
+                      <div className="border-t border-[#E5E2DC]/80 pt-2 flex items-center justify-between gap-2">
+                        {confirmDeleteSessionId === s.id ? (
+                          <div className="w-full flex items-center justify-between gap-2 bg-rose-50 border border-rose-200 rounded-xl p-2 animate-fade-in">
+                            <span className="text-[11px] font-medium text-rose-800 font-sans">
+                              Excluir permanentemente?
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteSessionId(null)}
+                                disabled={busySessionId !== null}
+                                className="px-2 py-1 rounded-lg border border-stone-200 bg-white text-[10px] font-medium text-[#706E6A] cursor-pointer"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSpecificSession(s.id!)}
+                                disabled={busySessionId !== null}
+                                className="px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-800 text-white text-[10px] font-bold shadow-2xs cursor-pointer"
+                              >
+                                {busySessionId === s.id ? "..." : "Sim, excluir"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleVoidSpecificSession(s.id!, isVoided)}
+                              disabled={busySessionId !== null}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-sans font-medium transition-all cursor-pointer ${
+                                isVoided
+                                  ? "border-emerald-200 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100"
+                                  : "border-amber-200 bg-amber-50/80 text-amber-800 hover:bg-amber-100"
+                              }`}
+                              title={isVoided ? "Restaurar horas computadas da sessão" : "Anular sessão e zerar horas"}
+                            >
+                              {busySessionId === s.id ? (
+                                <span>Processando...</span>
+                              ) : isVoided ? (
+                                <>
+                                  <span>↺</span>
+                                  <span>Reativar sessão</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>🚫</span>
+                                  <span>Anular (zerar horas)</span>
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteSessionId(s.id!)}
+                              disabled={busySessionId !== null}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-rose-200/80 bg-rose-50/60 hover:bg-rose-100/80 text-rose-700 text-[11px] font-sans font-medium transition-all cursor-pointer"
+                              title="Excluir permanentemente do histórico"
+                            >
+                              <span>🗑️</span>
+                              <span>Excluir</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
