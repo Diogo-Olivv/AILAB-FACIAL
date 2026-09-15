@@ -1,0 +1,103 @@
+﻿name: Continuous Integration & Shift-Left Security (CI)
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Camada Web: Testes Unitários, E2E, Mutação e Propriedades ───────────
+  web-tests:
+    name: Web Quality & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Execute Full Test Suite (Unit, E2E, Mutation & Property-Based)
+        run: npm run test
+
+      - name: Build Web Application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+  # ── 2. Camada Mobile / Tablet: Expo Doctor & Tipagem Estrita ───────────────
+  mobile-tests:
+    name: Mobile / Tablet Doctor & Typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Expo Doctor (21 Quality & Compatibility Checks)
+        run: npx expo-doctor
+
+      - name: Static Typecheck (TypeScript)
+        run: npx tsc --noEmit
+
+  # ── 3. Camada Backend: SAST, Contratos de API & Testes de Biometria ────────
+  backend-tests:
+    name: Backend SAST & Biometrics Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install Dependencies & Security Scanners
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff bandit
+
+      - name: SAST - Static Code & Security Analysis (Ruff)
+        run: ruff check app/ --select E,F,W,B,S --ignore E501
+
+      - name: SAST - Vulnerability & Injection Scanner (Bandit)
+        run: bandit -r app/ -ll -x tests/
+
+      - name: Run Pytest Suite (Contracts, Biometrics, LGPD, Concurrency)
+        run: python -m pytest

@@ -1,0 +1,45 @@
+﻿# Configuração de Governança de Dependências e Segurança (ASPM / SCA - Fase 4)
+# Monitora e atualiza vulnerabilidades em todas as camadas da aplicação (LGPD Art. 11 Compliance)
+version: 2
+updates:
+  # 1. Dependências do Web (React + Vite + Tailwind)
+  - package-ecosystem: "npm"
+    directory: "/web"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "security"
+      - "dependencies"
+      - "web"
+
+  # 2. Dependências do Mobile / Tablet (React Native + Expo SDK)
+  - package-ecosystem: "npm"
+    directory: "/mobile"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "security"
+      - "dependencies"
+      - "mobile"
+
+  # 3. Dependências do Backend (Python FastAPI + Supabase + InsightFace)
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "security"
+      - "dependencies"
+      - "backend"
+
+  # 4. Actions e Workflows de CI/CD
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "ci"
+      - "security"

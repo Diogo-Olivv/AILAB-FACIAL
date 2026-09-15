@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run Test Suite (Unit, E2E, Mutation, Property-Based)
+        run: npm run test
+
       - name: Build
         run: npm run build -- --base=/AILAB-FACIAL/
         env:
