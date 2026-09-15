@@ -77,7 +77,7 @@ export default function Enroll() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F6F8FD", alignItems: "center" },
+  container: { flex: 1, backgroundColor: "#FAF9F5", alignItems: "center" },
   responsiveWrapper: {
     flex: 1,
     width: "100%",
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    backgroundColor: "rgba(0, 0, 0, 0.04)",
     marginHorizontal: 16,
     marginTop: 14,
     marginBottom: 8,
@@ -109,19 +109,21 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.05)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
   },
   tabText: {
-    color: "#64748B",
+    color: "#78716C",
     fontSize: 13.5,
     fontWeight: "600",
   },
   tabTextActive: {
-    color: "#0F172A",
+    color: "#171715",
     fontWeight: "700",
   },
 });

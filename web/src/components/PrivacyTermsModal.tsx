@@ -26,14 +26,14 @@ export function PrivacyTermsModal({ isOpen, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-ink/70 backdrop-blur-xs overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/50 backdrop-blur-md animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="terms-modal-title"
     >
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] bg-white/95 backdrop-blur-2xl rounded-3xl border border-[#E5E2DC] shadow-[0_8px_30px_rgba(23,23,21,0.06)] flex flex-col overflow-hidden animate-scale-up"
+        className="relative w-full max-w-2xl max-h-[86vh] sm:max-h-[88vh] bg-white/95 backdrop-blur-2xl rounded-3xl border border-[#E5E2DC] shadow-[0_12px_40px_rgba(23,23,21,0.08)] flex flex-col overflow-hidden animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Responsivo estilo Apple Glass com tipografia Claude */}
@@ -60,8 +60,11 @@ export function PrivacyTermsModal({ isOpen, onClose }: Props) {
           </button>
         </div>
 
-        {/* Corpo com Rolagem Estritamente Vertical */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-6 space-y-4 text-xs sm:text-sm text-[#706E6A] leading-relaxed break-words">
+        {/* Corpo com Rolagem Fluída e Suporte Total a Touch no Tablet */}
+        <div
+          className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-6 space-y-4 text-xs sm:text-sm text-[#706E6A] leading-relaxed break-words overscroll-contain touch-pan-y"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
           {/* Seção 1 */}
           <div className="rounded-2xl border border-[#F0DCD3] bg-[#FAF5F0]/80 p-4 text-[#171715]">
             <h3 className="font-editorial text-sm sm:text-base font-normal text-[#C15F3D] mb-1">

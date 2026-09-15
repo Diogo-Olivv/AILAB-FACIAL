@@ -240,6 +240,7 @@ export function RecognitionPanel() {
       <View style={styles.actions}>
         <SmoothActionButton
           label="Entrada"
+          sublabel="Registrar chegada"
           type="entrada"
           busy={disabled && currentAction === "check_in"}
           disabled={disabled}
@@ -250,6 +251,7 @@ export function RecognitionPanel() {
 
         <SmoothActionButton
           label="Saída"
+          sublabel="Encerrar permanência"
           type="saida"
           busy={disabled && currentAction === "check_out"}
           disabled={disabled}
@@ -265,6 +267,7 @@ export function RecognitionPanel() {
 /** Botão Premium com feedback tátil suave e física de mola */
 function SmoothActionButton({
   label,
+  sublabel,
   type,
   busy,
   disabled,
@@ -273,6 +276,7 @@ function SmoothActionButton({
   accessibilityHint,
 }: {
   label: string;
+  sublabel?: string;
   type: "entrada" | "saida";
   busy: boolean;
   disabled: boolean;
@@ -285,9 +289,9 @@ function SmoothActionButton({
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
-      toValue: 0.94,
-      friction: 5,
-      tension: 120,
+      toValue: 0.96,
+      friction: 6,
+      tension: 140,
       useNativeDriver: true,
     }).start();
   };
@@ -295,8 +299,8 @@ function SmoothActionButton({
   const handlePressOut = () => {
     Animated.spring(scaleAnim, {
       toValue: 1,
-      friction: 4,
-      tension: 90,
+      friction: 5,
+      tension: 100,
       useNativeDriver: true,
     }).start();
   };
@@ -340,7 +344,13 @@ function SmoothActionButton({
             <Text style={styles.actionText}>Verificando...</Text>
           </View>
         ) : (
-          <Text style={styles.actionText}>{label}</Text>
+          <View style={styles.buttonContent}>
+            <View style={styles.buttonLabelRow}>
+              <Text style={styles.buttonIcon}>{type === "entrada" ? "✓" : "⏱"}</Text>
+              <Text style={styles.actionText}>{label}</Text>
+            </View>
+            {sublabel && <Text style={styles.sublabelText}>{sublabel}</Text>}
+          </View>
         )}
       </TouchableOpacity>
     </Animated.View>
@@ -522,52 +532,68 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     borderColor: "rgba(255, 255, 255, 0.45)",
   },
-  actions: { flexDirection: "row", gap: 12 },
+  actions: { flexDirection: "row", gap: 14 },
   actionWrapper: { flex: 1 },
   action: {
     width: "100%",
-    minHeight: 48,
-    paddingVertical: 13,
+    minHeight: 56,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.18,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 3,
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.22)",
+    borderWidth: 1,
   },
   buttonBusy: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
+  buttonContent: {
+    alignItems: "center",
+    gap: 2,
+  },
+  buttonLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  buttonIcon: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
   entrada: {
-    backgroundColor: "#059669",
+    backgroundColor: "#0F5132",
+    borderColor: "rgba(16, 185, 129, 0.40)",
     shadowColor: "#059669",
   },
   saida: {
-    backgroundColor: "#1E3A8A",
-    shadowColor: "#1E3A8A",
+    backgroundColor: "#171715",
+    borderColor: "rgba(255, 255, 255, 0.16)",
+    shadowColor: "#000000",
   },
   actionBusy: {
-    backgroundColor: "#0F172A",
-    borderColor: "rgba(255, 255, 255, 0.35)",
+    backgroundColor: "#2A2925",
+    borderColor: "rgba(255, 255, 255, 0.30)",
   },
   disabled: { opacity: 0.65 },
-  actionText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16, letterSpacing: 0.2 },
-  permText: { color: "#0F172A", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
+  actionText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16, letterSpacing: -0.2 },
+  sublabelText: { color: "rgba(255, 255, 255, 0.72)", fontSize: 11, fontWeight: "500" },
+  permText: { color: "#171715", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
   permBtn: {
-    backgroundColor: "#2563EB",
+    backgroundColor: "#171715",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 14,
-    shadowColor: "#2563EB",
-    shadowOpacity: 0.25,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
   },
-  permBtnText: { color: "#FFFFFF", fontWeight: "700" },
+  permBtnText: { color: "#FAF9F5", fontWeight: "600" },
 });

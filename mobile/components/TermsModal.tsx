@@ -21,53 +21,60 @@ export function TermsModal({ visible, onClose }: Props) {
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
+      statusBarTranslucent
     >
-      <View style={styles.backdrop}>
-        <View
-          style={[
-            styles.card,
-            {
-              paddingTop: Math.max(insets.top, 20),
-              paddingBottom: Math.max(insets.bottom, 20),
-            },
-          ]}
-        >
-          {/* Header */}
+      <View
+        style={[
+          styles.backdrop,
+          {
+            paddingTop: Math.max(insets.top, 16),
+            paddingBottom: Math.max(insets.bottom, 16),
+            paddingLeft: Math.max(insets.left, 16),
+            paddingRight: Math.max(insets.right, 16),
+          },
+        ]}
+      >
+        <View style={styles.card}>
+          {/* Header estilo Apple Glass & Claude Editorial */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.iconCircle}>
                 <Text style={styles.iconText}>⚖️</Text>
               </View>
-              <View>
-                <Text style={styles.title}>Termos de Uso e Privacidade</Text>
+              <View style={styles.headerTitleGroup}>
+                <Text style={styles.title}>Termos & Privacidade</Text>
                 <Text style={styles.subtitle}>
-                  Tratamento Biométrico · LGPD (Lei 13.709/18 - Art. 11)
+                  Tratamento Biométrico · LGPD (Lei nº 13.709/18 - Art. 11)
                 </Text>
               </View>
             </View>
             <TouchableOpacity
               onPress={onClose}
               style={styles.closeBtn}
+              activeOpacity={0.7}
+              accessibilityRole="button"
               accessibilityLabel="Fechar termos de privacidade"
             >
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Scrollable Terms Body */}
+          {/* Scrollable Terms Body perfeitamente adaptado para tablets e landscape */}
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={true}
+            bounces={true}
+            nestedScrollEnabled={true}
           >
-            {/* Box 1 */}
+            {/* Seção 1 - Identificação com Destaque Editorial Terracota */}
             <View style={styles.sectionBox}>
               <Text style={styles.sectionTitle}>
                 1. IDENTIFICAÇÃO DO CONTROLADOR E FINALIDADE
               </Text>
-              <Text style={styles.paragraph}>
+              <Text style={styles.paragraphHighlight}>
                 O tratamento de biometria facial é gerido exclusivamente pelo{" "}
                 <Text style={styles.bold}>AILAB Makers (Maker Foundation)</Text>{" "}
                 com o propósito estrito de controle acadêmico de presença e apuração
@@ -77,7 +84,7 @@ export function TermsModal({ visible, onClose }: Props) {
               </Text>
             </View>
 
-            {/* Box 2 */}
+            {/* Seção 2 */}
             <View style={styles.section}>
               <Text style={styles.sectionHeading}>
                 2. BASE LEGAL PARA DADOS BIOMÉTRICOS SENSÍVEIS
@@ -91,10 +98,10 @@ export function TermsModal({ visible, onClose }: Props) {
               </Text>
             </View>
 
-            {/* Box 3 */}
+            {/* Seção 3 */}
             <View style={styles.section}>
               <Text style={styles.sectionHeading}>
-                3. DESCARTE IMEDIATO DE FOTOS E USO EXCLUSIVO DE VETORES
+                3. DESCARTE IMEDIATO DE FOTOS E EMBEDDINGS 512-D
               </Text>
               <Text style={styles.paragraph}>
                 O sistema adota o princípio de privacidade desde a concepção{" "}
@@ -103,21 +110,21 @@ export function TermsModal({ visible, onClose }: Props) {
               <View style={styles.bulletList}>
                 <Text style={styles.bulletItem}>
                   • As fotos capturadas na câmera permanecem apenas em memória volátil
-                  temporária (RAM) durante o processamento da rede neural.
+                  temporária (RAM) durante a inferência neural.
                 </Text>
                 <Text style={styles.bulletItem}>
-                  • A rede extrai uma representação matemática unidirecional
-                  (vetor numérico de embeddings normalizado).
+                  • A rede neural extrai uma representação matemática unidirecional
+                  (vetor numérico de embeddings normalizado de 512 dimensões).
                 </Text>
                 <Text style={styles.bulletItem}>
                   • <Text style={styles.bold}>As imagens brutas são imediatamente destruídas e descartadas.</Text>{" "}
-                  Nenhuma foto fica salva no tablet ou no banco de dados. É matematicamente
+                  Nenhuma foto é salva no tablet ou no banco de dados. É matematicamente
                   impossível reconstruir a face original a partir do vetor numérico.
                 </Text>
               </View>
             </View>
 
-            {/* Box 4 */}
+            {/* Seção 4 */}
             <View style={styles.section}>
               <Text style={styles.sectionHeading}>
                 4. SEGURANÇA TÉCNICA E ISOLAMENTO (RLS)
@@ -127,15 +134,14 @@ export function TermsModal({ visible, onClose }: Props) {
                 <Text style={styles.bold}>Row Level Security (RLS)</Text> no PostgreSQL,
                 garantindo que os vetores biométricos sejam acessíveis apenas pelo
                 mecanismo de inferência do servidor. A comunicação é criptografada via
-                TLS 1.3 com tokens de desafio temporal anti-injeção e redes neurais de
-                detecção de vivacidade presencial (anti-spoofing).
+                TLS 1.3 com verificação anti-spoofing ativa no totem.
               </Text>
             </View>
 
-            {/* Box 5 */}
+            {/* Seção 5 */}
             <View style={styles.section}>
               <Text style={styles.sectionHeading}>
-                5. DIREITOS DO TITULAR (ART. 18 E ART. 8º § 5º DA LGPD)
+                5. DIREITOS DO TITULAR (ART. 18 DA LGPD)
               </Text>
               <Text style={styles.paragraph}>
                 O integrante tem o direito garantido por lei a qualquer momento de:
@@ -143,35 +149,37 @@ export function TermsModal({ visible, onClose }: Props) {
               <View style={styles.bulletList}>
                 <Text style={styles.bulletItem}>
                   • <Text style={styles.bold}>Revogação do Consentimento:</Text> Solicitar a
-                  revogação do uso da biometria facial.
+                  revogação do uso da biometria facial junto ao tutor.
                 </Text>
                 <Text style={styles.bulletItem}>
-                  • <Text style={styles.bold}>Expurgo Definitivo:</Text> Ao revogar, todos
-                  os vetores biométricos são permanentemente excluídos do banco de dados e
-                  o perfil inativado.
+                  • <Text style={styles.bold}>Expurgo Definitivo:</Text> Ao revogar ou ser
+                  descadastrado, todos os vetores biométricos são permanentemente excluídos
+                  do banco de dados.
                 </Text>
                 <Text style={styles.bulletItem}>
-                  • <Text style={styles.bold}>Transparência:</Text> Acompanhar seu histórico de
+                  • <Text style={styles.bold}>Transparência:</Text> Acompanhar o histórico de
                   sessões diretamente no painel do laboratório.
                 </Text>
               </View>
             </View>
 
-            {/* Box 6 */}
+            {/* Nota de rodapé explicativa */}
             <View style={styles.footerNote}>
               <Text style={styles.footerNoteText}>
-                Para exercer seus direitos de exclusão ou esclarecer dúvidas sobre seus
-                dados, procure um dos tutores ou coordenadores do AILAB Makers.
+                Dúvidas ou solicitações de revogação: procure um dos tutores ou a
+                coordenação do AILAB Makers no laboratório.
               </Text>
             </View>
           </ScrollView>
 
-          {/* Action Footer */}
+          {/* Action Footer estilo Apple Tactile Pill */}
           <View style={styles.footer}>
             <TouchableOpacity
               style={styles.confirmBtn}
               onPress={onClose}
               activeOpacity={0.88}
+              accessibilityRole="button"
+              accessibilityLabel="Confirmar ciência dos termos de uso"
             >
               <Text style={styles.confirmBtnText}>Entendido e Ciente</Text>
             </TouchableOpacity>
@@ -185,36 +193,35 @@ export function TermsModal({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(20, 26, 51, 0.65)",
+    backgroundColor: "rgba(23, 23, 21, 0.65)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 16,
   },
   card: {
     width: "100%",
-    maxWidth: 620,
-    maxHeight: "90%",
+    maxWidth: 640,
+    maxHeight: "92%",
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)",
+    borderColor: "#E5E2DC",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 24,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.16,
+    shadowRadius: 28,
+    elevation: 12,
     overflow: "hidden",
+    flexDirection: "column",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0, 0, 0, 0.06)",
-    backgroundColor: "#FFFFFF",
-    paddingTop: 12,
+    borderBottomColor: "#E5E2DC",
+    backgroundColor: "#FAF9F5",
   },
   headerLeft: {
     flexDirection: "row",
@@ -222,83 +229,92 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
+  headerTitleGroup: {
+    flex: 1,
+  },
   iconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: "#EFF6FF",
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: "#FAF5F0",
     borderWidth: 1,
-    borderColor: "rgba(37, 99, 235, 0.15)",
+    borderColor: "#F0DCD3",
     alignItems: "center",
     justifyContent: "center",
   },
   iconText: {
-    fontSize: 20,
+    fontSize: 18,
   },
   title: {
-    color: "#0F172A",
+    color: "#171715",
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "700",
     letterSpacing: -0.3,
   },
   subtitle: {
     color: "#059669",
-    fontSize: 11.5,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.2,
     marginTop: 2,
   },
   closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "#F1F5F9",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
     alignItems: "center",
     justifyContent: "center",
   },
   closeBtnText: {
-    color: "#475569",
-    fontSize: 15,
-    fontWeight: "700",
+    color: "#706E6A",
+    fontSize: 14,
+    fontWeight: "600",
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 24,
     gap: 16,
   },
   sectionBox: {
-    backgroundColor: "#EFF6FF",
+    backgroundColor: "#FAF5F0",
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(37, 99, 235, 0.15)",
+    borderColor: "#F0DCD3",
   },
   sectionTitle: {
-    color: "#2563EB",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    color: "#C15F3D",
+    fontSize: 11.5,
+    fontWeight: "700",
+    letterSpacing: 0.4,
     marginBottom: 6,
   },
-  section: {
-    gap: 6,
-  },
-  sectionHeading: {
-    color: "#0F172A",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  paragraph: {
-    color: "#475569",
+  paragraphHighlight: {
+    color: "#171715",
     fontSize: 13,
     lineHeight: 19,
   },
+  section: {
+    gap: 5,
+  },
+  sectionHeading: {
+    color: "#171715",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
+  paragraph: {
+    color: "#706E6A",
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
   bold: {
     fontWeight: "700",
-    color: "#0F172A",
+    color: "#171715",
   },
   bulletList: {
     gap: 6,
@@ -306,49 +322,50 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   bulletItem: {
-    color: "#475569",
-    fontSize: 12.5,
-    lineHeight: 18,
-  },
-  footerNote: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.06)",
-  },
-  footerNoteText: {
-    color: "#64748B",
+    color: "#706E6A",
     fontSize: 12,
     lineHeight: 17,
   },
+  footerNote: {
+    backgroundColor: "#FAF9F5",
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E5E2DC",
+  },
+  footerNoteText: {
+    color: "#706E6A",
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
   footer: {
     paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 16,
+    paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: "rgba(0, 0, 0, 0.06)",
-    backgroundColor: "#FFFFFF",
+    borderTopColor: "#E5E2DC",
+    backgroundColor: "#FAF9F5",
     alignItems: "center",
   },
   confirmBtn: {
     width: "100%",
-    maxWidth: 280,
+    maxWidth: 300,
     minHeight: 44,
     paddingVertical: 11,
     paddingHorizontal: 24,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#059669",
-    shadowColor: "#059669",
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
+    backgroundColor: "#171715",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   confirmBtnText: {
-    color: "#FFFFFF",
-    fontSize: 14.5,
-    fontWeight: "700",
+    color: "#FAF9F5",
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: -0.2,
   },
 });

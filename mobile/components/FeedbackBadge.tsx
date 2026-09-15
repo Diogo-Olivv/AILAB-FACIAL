@@ -37,6 +37,7 @@ interface BadgeConfig {
   pillColor: string;
   accentColor: string;
   iconBg: string;
+  iconSymbolColor: string;
   iconSymbol: string;
   defaultTitle: string;
   defaultMessage: string;
@@ -45,70 +46,77 @@ interface BadgeConfig {
 const BADGE_CONFIGS: Record<FeedbackBadgeType, BadgeConfig> = {
   check_in: {
     pillText: "ENTRADA REGISTRADA",
-    pillBg: "rgba(22, 101, 52, 0.12)",
-    pillColor: "#166534",
-    accentColor: "#166534",
-    iconBg: "#166534",
+    pillBg: "#ECFDF5",
+    pillColor: "#065F46",
+    accentColor: "#10B981",
+    iconBg: "#ECFDF5",
+    iconSymbolColor: "#059669",
     iconSymbol: "✓",
-    defaultTitle: "Presença Confirmada!",
+    defaultTitle: "Presença Confirmada",
     defaultMessage: "Tenha um excelente período de atividades no AILAB Makers.",
   },
   check_out: {
     pillText: "SAÍDA REGISTRADA",
-    pillBg: "rgba(30, 45, 95, 0.12)",
-    pillColor: "#1E2D5F",
-    accentColor: "#1E2D5F",
-    iconBg: "#1E2D5F",
+    pillBg: "#FAF5F0",
+    pillColor: "#C15F3D",
+    accentColor: "#C15F3D",
+    iconBg: "#FAF5F0",
+    iconSymbolColor: "#C15F3D",
     iconSymbol: "⏱",
-    defaultTitle: "Sessão Finalizada!",
-    defaultMessage: "Até a próxima! Suas horas de hoje foram contabilizadas.",
+    defaultTitle: "Sessão Finalizada",
+    defaultMessage: "Até a próxima! Suas horas foram computadas.",
   },
   enroll_success: {
     pillText: "CADASTRO CONCLUÍDO",
-    pillBg: "rgba(201, 169, 97, 0.18)",
-    pillColor: "#9A7B38",
-    accentColor: "#C9A961",
-    iconBg: "#166534",
+    pillBg: "#FEFCE8",
+    pillColor: "#854D0E",
+    accentColor: "#EAB308",
+    iconBg: "#FEFCE8",
+    iconSymbolColor: "#CA8A04",
     iconSymbol: "★",
-    defaultTitle: "Biometria Registrada!",
-    defaultMessage: "Novo integrante apto para reconhecimento no totem do laboratório.",
+    defaultTitle: "Biometria Registrada",
+    defaultMessage: "Novo integrante apto para reconhecimento no totem.",
   },
   not_recognized: {
-    pillText: "ROSTO NÃO RECONHECIDO",
-    pillBg: "rgba(217, 119, 6, 0.14)",
-    pillColor: "#B45309",
-    accentColor: "#D97706",
-    iconBg: "#B45309",
+    pillText: "NÃO RECONHECIDO",
+    pillBg: "#FFFBEB",
+    pillColor: "#92400E",
+    accentColor: "#F59E0B",
+    iconBg: "#FFFBEB",
+    iconSymbolColor: "#D97706",
     iconSymbol: "?",
-    defaultTitle: "Não Encontrado na Base",
-    defaultMessage: "Aproxime-se e olhe diretamente para a lente ou contate um tutor.",
+    defaultTitle: "Rosto Não Identificado",
+    defaultMessage: "Aproxime-se do centro da lente ou contate um tutor.",
   },
   spoof_detected: {
-    pillText: "VERIFICAÇÃO DE VIVACIDADE",
-    pillBg: "rgba(220, 38, 38, 0.14)",
-    pillColor: "#DC2626",
-    accentColor: "#DC2626",
-    iconBg: "#DC2626",
+    pillText: "VIVACIDADE PRESENCIAL",
+    pillBg: "#FEF2F2",
+    pillColor: "#991B1B",
+    accentColor: "#EF4444",
+    iconBg: "#FEF2F2",
+    iconSymbolColor: "#DC2626",
     iconSymbol: "!",
-    defaultTitle: "Falha de Vivacidade Presencial",
+    defaultTitle: "Falha de Vivacidade",
     defaultMessage: "Fique de frente para a câmera. Não são permitidas fotos ou telas.",
   },
   warning: {
-    pillText: "ATENÇÃO",
-    pillBg: "rgba(217, 119, 6, 0.14)",
-    pillColor: "#B45309",
-    accentColor: "#D97706",
-    iconBg: "#B45309",
-    iconSymbol: "i",
+    pillText: "AVISO",
+    pillBg: "#FAF9F5",
+    pillColor: "#706E6A",
+    accentColor: "#706E6A",
+    iconBg: "#FAF9F5",
+    iconSymbolColor: "#706E6A",
+    iconSymbol: "ℹ",
     defaultTitle: "Aviso de Presença",
     defaultMessage: "Verifique seu status no laboratório.",
   },
   error: {
     pillText: "ERRO DE COMUNICAÇÃO",
-    pillBg: "rgba(220, 38, 38, 0.14)",
-    pillColor: "#DC2626",
+    pillBg: "#FEF2F2",
+    pillColor: "#991B1B",
     accentColor: "#DC2626",
-    iconBg: "#DC2626",
+    iconBg: "#FEF2F2",
+    iconSymbolColor: "#DC2626",
     iconSymbol: "✕",
     defaultTitle: "Não foi possível concluir",
     defaultMessage: "Verifique a conexão de rede do totem e tente novamente.",
@@ -116,39 +124,39 @@ const BADGE_CONFIGS: Record<FeedbackBadgeType, BadgeConfig> = {
 };
 
 export function FeedbackBadge({ data, onDismiss, autoCloseMs = 4500 }: Props) {
-  const slideAnim = useRef(new Animated.Value(-60)).current;
+  const slideAnim = useRef(new Animated.Value(-40)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.94)).current;
+  const scaleAnim = useRef(new Animated.Value(0.96)).current;
   const progressAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!data) return;
 
-    slideAnim.setValue(-40);
+    slideAnim.setValue(-30);
     opacityAnim.setValue(0);
-    scaleAnim.setValue(0.95);
+    scaleAnim.setValue(0.96);
     progressAnim.setValue(1);
 
-    // Entrada suave com amortecimento elástico
+    // Entrada fluída estilo Apple Spring
     Animated.parallel([
       Animated.spring(slideAnim, {
         toValue: 0,
         friction: 8,
-        tension: 40,
+        tension: 50,
         useNativeDriver: true,
       }),
       Animated.timing(opacityAnim, {
         toValue: 1,
-        duration: 250,
+        duration: 220,
         useNativeDriver: true,
       }),
       Animated.spring(scaleAnim, {
         toValue: 1,
         friction: 7,
-        tension: 45,
+        tension: 55,
         useNativeDriver: true,
       }),
-      // Barra de progresso do auto-dismiss
+      // Barra de progresso suave
       Animated.timing(progressAnim, {
         toValue: 0,
         duration: autoCloseMs,
@@ -167,18 +175,18 @@ export function FeedbackBadge({ data, onDismiss, autoCloseMs = 4500 }: Props) {
   const dismiss = () => {
     Animated.parallel([
       Animated.timing(slideAnim, {
-        toValue: -30,
-        duration: 220,
+        toValue: -20,
+        duration: 200,
         useNativeDriver: true,
       }),
       Animated.timing(opacityAnim, {
         toValue: 0,
-        duration: 200,
+        duration: 180,
         useNativeDriver: true,
       }),
       Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 200,
+        toValue: 0.96,
+        duration: 180,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -205,26 +213,26 @@ export function FeedbackBadge({ data, onDismiss, autoCloseMs = 4500 }: Props) {
       <TouchableOpacity
         activeOpacity={0.92}
         onPress={dismiss}
-        style={[styles.card, { borderColor: cfg.accentColor }]}
+        style={[styles.card, { borderColor: cfg.accentColor + "40" }]}
       >
-        {/* Top Accent Strip */}
+        {/* Linha sutil de acento superior */}
         <View style={[styles.topStrip, { backgroundColor: cfg.accentColor }]} />
 
         <View style={styles.cardContent}>
-          {/* Circular Visual Icon Badge */}
-          <View style={[styles.iconContainer, { backgroundColor: cfg.iconBg }]}>
-            <Text style={styles.iconGlyph}>{cfg.iconSymbol}</Text>
+          {/* Badge de Ícone Circular Minimalista */}
+          <View style={[styles.iconContainer, { backgroundColor: cfg.iconBg, borderColor: cfg.accentColor + "30" }]}>
+            <Text style={[styles.iconGlyph, { color: cfg.iconSymbolColor }]}>{cfg.iconSymbol}</Text>
           </View>
 
-          {/* Texts Column */}
+          {/* Coluna de Textos */}
           <View style={styles.textColumn}>
-            {/* Pill Category Tag */}
+            {/* Tag Categoria estilo Perplexity Mono Pill */}
             <View style={[styles.pillBadge, { backgroundColor: cfg.pillBg }]}>
               <View style={[styles.pillDot, { backgroundColor: cfg.pillColor }]} />
               <Text style={[styles.pillText, { color: cfg.pillColor }]}>{cfg.pillText}</Text>
             </View>
 
-            {/* Member Name or Main Title */}
+            {/* Nome do Integrante ou Título */}
             {data.name ? (
               <Text style={styles.nameTitle} numberOfLines={1}>
                 {data.name}
@@ -235,7 +243,7 @@ export function FeedbackBadge({ data, onDismiss, autoCloseMs = 4500 }: Props) {
               </Text>
             )}
 
-            {/* Subtitle / Details */}
+            {/* Subtítulo / Detalhes */}
             {data.name && title !== data.name && (
               <Text style={styles.subTitle} numberOfLines={1}>
                 {title}
@@ -246,25 +254,27 @@ export function FeedbackBadge({ data, onDismiss, autoCloseMs = 4500 }: Props) {
               {message}
             </Text>
 
-            {/* Session Duration Pill if present */}
+            {/* Pílula de Duração em Monospace */}
             {data.durationMinutes != null && data.durationMinutes > 0 && (
               <View style={styles.metaRow}>
-                <Text style={styles.durationTag}>
-                  Duração: <Text style={styles.durationValue}>{data.durationMinutes} min</Text>
-                </Text>
+                <View style={styles.durationTag}>
+                  <Text style={styles.durationLabel}>
+                    Duração: <Text style={styles.durationValue}>{data.durationMinutes} min</Text>
+                  </Text>
+                </View>
               </View>
             )}
 
             {data.detail && <Text style={styles.detailText}>{data.detail}</Text>}
           </View>
 
-          {/* Dismiss hint button */}
+          {/* Botão de Fechar Sutil */}
           <View style={styles.closeHint}>
             <Text style={styles.closeHintText}>✕</Text>
           </View>
         </View>
 
-        {/* Bottom smooth progress bar */}
+        {/* Barra de Progresso Fina */}
         <View style={styles.progressBarContainer}>
           <Animated.View
             style={[
@@ -288,138 +298,140 @@ const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
     top: 14,
-    left: 14,
-    right: 14,
+    left: 0,
+    right: 0,
+    alignItems: "center",
     zIndex: 999,
-    shadowColor: "#141A33",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 12,
+    paddingHorizontal: 16,
   },
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    borderWidth: 1.5,
+    width: "100%",
+    maxWidth: 480,
+    backgroundColor: "rgba(255, 255, 255, 0.96)",
+    borderRadius: 22,
+    borderWidth: 1,
     overflow: "hidden",
+    shadowColor: "#171715",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 8,
   },
   topStrip: {
-    height: 4,
+    height: 3,
     width: "100%",
   },
   cardContent: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 14,
+    paddingVertical: 13,
+    gap: 13,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-    elevation: 4,
   },
   iconGlyph: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "800",
+    fontSize: 20,
+    fontWeight: "700",
   },
   textColumn: {
     flex: 1,
-    gap: 3,
+    gap: 2.5,
   },
   pillBadge: {
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 2.5,
     borderRadius: 999,
     marginBottom: 2,
   },
   pillDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
   },
   pillText: {
-    fontSize: 10.5,
-    fontWeight: "800",
-    letterSpacing: 0.8,
+    fontSize: 9.5,
+    fontWeight: "700",
+    letterSpacing: 0.6,
   },
   nameTitle: {
-    color: "#141A33",
-    fontSize: 17,
-    fontWeight: "800",
-    letterSpacing: -0.2,
-  },
-  headerTitle: {
-    color: "#141A33",
+    color: "#171715",
     fontSize: 16,
     fontWeight: "700",
+    letterSpacing: -0.3,
+  },
+  headerTitle: {
+    color: "#171715",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: -0.2,
   },
   subTitle: {
-    color: "#1E2D5F",
-    fontSize: 13,
-    fontWeight: "600",
+    color: "#706E6A",
+    fontSize: 12,
+    fontWeight: "500",
   },
   messageText: {
-    color: "#6B6F82",
-    fontSize: 12.5,
+    color: "#706E6A",
+    fontSize: 12,
     lineHeight: 16,
-    marginTop: 1,
   },
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 3,
+    marginTop: 2,
   },
   durationTag: {
-    fontSize: 12,
-    color: "#1E2D5F",
-    fontWeight: "600",
-    backgroundColor: "rgba(30, 45, 95, 0.08)",
+    backgroundColor: "#FAF5F0",
+    borderWidth: 1,
+    borderColor: "#F0DCD3",
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 8,
+  },
+  durationLabel: {
+    fontSize: 11,
+    color: "#706E6A",
   },
   durationValue: {
-    fontWeight: "800",
-    color: "#166534",
+    fontWeight: "700",
+    color: "#C15F3D",
   },
   detailText: {
-    color: "#9A3412",
+    color: "#C15F3D",
     fontSize: 11,
-    marginTop: 2,
+    marginTop: 1,
     fontWeight: "500",
   },
   closeHint: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "rgba(30, 45, 95, 0.06)",
+    backgroundColor: "rgba(0, 0, 0, 0.04)",
     alignItems: "center",
     justifyContent: "center",
   },
   closeHintText: {
-    color: "#6B6F82",
-    fontSize: 12,
-    fontWeight: "700",
+    color: "#706E6A",
+    fontSize: 11,
+    fontWeight: "600",
   },
   progressBarContainer: {
-    height: 3,
+    height: 2,
     width: "100%",
-    backgroundColor: "rgba(30, 45, 95, 0.08)",
+    backgroundColor: "rgba(0, 0, 0, 0.04)",
   },
   progressBar: {
-    height: 3,
+    height: 2,
   },
 });
