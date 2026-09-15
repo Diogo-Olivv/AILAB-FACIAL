@@ -26,7 +26,7 @@ from app.services.liveness_service import check_image_quality, verify_liveness
 
 log = logging.getLogger(__name__)
 
-_MIN_DET_SCORE = 0.50
+_MIN_DET_SCORE = 0.38
 _analyzer = None
 _analyzer_lock = threading.Lock()
 
@@ -405,16 +405,17 @@ def identify(image_bytes: bytes) -> dict:
         }
 
     # 1. Tentativa via pgvector HNSW (se habilitado)
+    pg_res = None
     if settings.use_pgvector:
         pg_res = _match_face_pgvector(enc)
-        if pg_res is not None:
+        if pg_res is not None and pg_res.get("recognized"):
             return pg_res
-        log.info("Fallback para busca de embeddings em memória RAM.")
+        log.info("Pgvector não reconheceu com certeza conclusiva. Executando busca exata em memória RAM.")
 
     # 2. Busca em memória RAM (matriz NumPy com cache TTL)
     loaded = _load_embeddings()
     if loaded is None:
-        return {
+        return pg_res or {
             "recognized": False,
             "status": "empty_database",
             "message": "Nenhum perfil ativo cadastrado no sistema.",

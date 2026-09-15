@@ -32,28 +32,41 @@ export function RecognitionPanel() {
       setBadgeData(null);
 
       try {
-        // Disparo único, sem som e sem animação de obturador para fluidez máxima
-        let photoUri: string | null = null;
+        // Captura rápida em rajada (burst multi-frame) para tolerância a tremor e piscadas
+        const uris: string[] = [];
         try {
-          const photo = await cameraRef.current.takePictureAsync({
+          const photo1 = await cameraRef.current.takePictureAsync({
             quality: 0.82,
             shutterSound: false,
           });
-          photoUri = photo?.uri ?? null;
+          if (photo1?.uri) uris.push(photo1.uri);
         } catch {
-          // Fallback resiliente caso o sensor necessite de configuração alternativa
           try {
             const photoFallback = await cameraRef.current.takePictureAsync({
               quality: 0.75,
               shutterSound: false,
             });
-            photoUri = photoFallback?.uri ?? null;
+            if (photoFallback?.uri) uris.push(photoFallback.uri);
           } catch {
-            // Ignora se não conseguiu obter o frame
+            // ignora falha de frame
           }
         }
 
-        if (!photoUri) {
+        // Segundo frame após estabilização do toque na tela (~100ms)
+        if (uris.length > 0 && cameraRef.current) {
+          try {
+            await new Promise((r) => setTimeout(r, 100));
+            const photo2 = await cameraRef.current.takePictureAsync({
+              quality: 0.82,
+              shutterSound: false,
+            });
+            if (photo2?.uri) uris.push(photo2.uri);
+          } catch {
+            // Se o segundo frame falhar, segue com o primeiro com segurança
+          }
+        }
+
+        if (uris.length === 0) {
           setBadgeData({
             type: "warning",
             title: "Câmera Ocupada",
@@ -62,11 +75,11 @@ export function RecognitionPanel() {
           return;
         }
 
-        const captured = [{
-          uri: photoUri,
-          name: "frame_1.jpg",
+        const captured = uris.map((uri, idx) => ({
+          uri,
+          name: `frame_${idx + 1}.jpg`,
           type: "image/jpeg",
-        }];
+        }));
 
         const res = await recognize(captured, action);
 
@@ -90,16 +103,30 @@ export function RecognitionPanel() {
           } else if (res.status === "blur_detected") {
             setBadgeData({
               type: "warning",
-              title: "Imagem Borrada",
+              title: "Mantenha o Tablet Estável",
               message:
-                res.message || "Mantenha o tablet estável e olhe fixamente para a lente.",
+                res.message || "Evite movimentos bruscos e olhe fixamente para a lente.",
             });
           } else if (res.status === "face_too_small") {
             setBadgeData({
               type: "warning",
-              title: "Aproxime-se",
+              title: "Aproxime-se da Câmera",
               message:
-                res.message || "Posicione o rosto mais perto do centro da tela.",
+                res.message || "Posicione o rosto mais perto do centro da tela para melhor leitura.",
+            });
+          } else if (res.status === "no_face") {
+            setBadgeData({
+              type: "warning",
+              title: "Rosto Não Detectado",
+              message:
+                res.message || "Alinhe seu rosto dentro da guia central e olhe para a câmera.",
+            });
+          } else if (res.status === "uncertain") {
+            setBadgeData({
+              type: "warning",
+              title: "Aproxime-se e Olhe para a Lente",
+              message:
+                res.message || "Similaridade parcial. Olhe diretamente para a lente e mantenha boa iluminação.",
             });
           } else {
             // Rosto não encontrado na base

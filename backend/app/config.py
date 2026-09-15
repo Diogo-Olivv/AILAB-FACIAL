@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     face_min_cosine: float = 0.62               # Limiar de similaridade cosseno: aceite definitivo
     face_uncertain_cosine: float = 0.55         # Zona incerta: 0.55-0.62 → second-factor ou rejeição
     min_face_size: int = 40                     # Tamanho mínimo da face em pixels (adaptado para det_size 640)
-    min_laplacian_var: float = 30.0             # FIQA: adaptado para câmeras frontais de tablet com denoising
+    min_laplacian_var: float = 20.0             # FIQA: adaptado para câmeras frontais de tablet com denoising
     liveness_enabled: bool = True               # Ativação de checagem anti-spoofing (ONNX + heurísticas)
     liveness_min_score: float = 0.45            # Score mínimo de vivacidade (ONNX model calibrado)
     enroll_max_pairwise_distance: float = 0.82  # Distância máxima entre fotos (permite variação natural com/sem óculos)
