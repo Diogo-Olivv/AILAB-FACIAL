@@ -23,15 +23,15 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
           key={day.key}
           className="overflow-hidden rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl shadow-[0_4px_24px_rgba(23,23,21,0.03)] dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] transition-all duration-300"
         >
-          {/* Cabeçalho do Dia estilo Claude Paper */}
-          <div className="flex items-center justify-between gap-2 bg-[#FAF9F5]/90 dark:bg-slate-800/80 border-b border-[#E5E2DC] dark:border-slate-800 px-4 py-3 sm:px-5">
+          {/* Cabeçalho do Dia com Identidade AILAB */}
+          <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-orange-50/60 via-[#FAF9F5]/90 to-transparent dark:from-slate-800/80 dark:via-slate-800/60 dark:to-slate-900 border-b border-[#E5E2DC] dark:border-slate-800 px-4 py-3 sm:px-5">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-2 w-2 rounded-full bg-[#C15F3D]" />
-              <span className="font-editorial font-serif text-sm sm:text-base font-normal capitalize text-[#171715] dark:text-slate-100 tracking-tight">
+              <span className="flex h-2.5 w-2.5 rounded-full bg-[#C15F3D] shadow-xs" />
+              <span className="font-editorial font-serif text-sm sm:text-base font-medium capitalize text-[#171715] dark:text-slate-100 tracking-tight">
                 {day.label}
               </span>
             </div>
-            <span className="whitespace-nowrap rounded-full bg-white border border-[#E5E2DC] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 px-3 py-1 text-xs font-mono-data font-semibold text-[#171715] shadow-2xs">
+            <span className="whitespace-nowrap rounded-full bg-white dark:bg-slate-800 border border-orange-200/90 dark:border-slate-700 px-3 py-1 text-xs font-mono-data font-bold text-[#C15F3D] dark:text-amber-300 shadow-2xs">
               Total: {formatDuration(day.totalSeconds)}
             </span>
           </div>
@@ -54,10 +54,10 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
                           ⚠️ anulada
                         </span>
                       ) : entry.open ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 px-2 py-0.5 text-[10px] font-medium text-emerald-800 dark:text-emerald-300 shadow-2xs">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-700/80 px-2.5 py-0.5 text-[10px] font-bold shadow-2xs">
                           <span className="relative flex h-1.5 w-1.5 shrink-0">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white dark:bg-emerald-400" />
                           </span>
                           em andamento
                         </span>

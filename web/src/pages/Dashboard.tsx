@@ -222,19 +222,19 @@ export function Dashboard() {
 
       <main className="flex-1 px-3 py-5 sm:px-6 md:px-8 max-w-6xl mx-auto w-full relative">
         <div className={`space-y-6 transition-opacity duration-300 ${isRefreshing ? "opacity-75" : "opacity-100"}`}>
-        {/* Painel do Tutor estilo Claude Paper */}
+        {/* Painel do Tutor com Identidade AILAB */}
         {user && (
-          <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-gradient-to-br from-[#FAF9F5] via-white to-amber-50/40 dark:from-slate-900/95 dark:via-slate-900/90 dark:to-amber-950/20 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-[0_4px_24px_rgba(23,23,21,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] animate-fade-in">
+          <div className="rounded-3xl border border-orange-200/90 dark:border-slate-800 bg-gradient-to-br from-orange-50/70 via-white to-amber-50/60 dark:from-slate-900/95 dark:via-slate-900/90 dark:to-amber-950/20 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-[0_6px_24px_rgba(193,95,61,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] animate-fade-in">
             <div className="flex items-center gap-3.5">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/40 text-[#C15F3D] dark:text-amber-400 text-xl shadow-2xs">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#C15F3D] to-orange-600 text-white shadow-md shadow-orange-500/25 text-xl">
                 🎓
               </span>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-editorial text-lg sm:text-xl font-normal text-[#171715] dark:text-slate-100">
+                  <h3 className="font-editorial text-lg sm:text-xl font-medium text-[#171715] dark:text-slate-100">
                     Painel da Tutoria
                   </h3>
-                  <span className="font-mono-data rounded-md bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-2.5 py-0.5 text-2xs font-medium text-[#706E6A] dark:text-slate-300">
+                  <span className="font-mono-data rounded-md bg-white dark:bg-slate-800 border border-orange-200 dark:border-slate-700 px-2.5 py-0.5 text-2xs font-medium text-[#C15F3D] dark:text-amber-300 shadow-2xs">
                     {user.email}
                   </span>
                 </div>
@@ -248,7 +248,7 @@ export function Dashboard() {
               <button
                 type="button"
                 onClick={() => setIsTutorProfileOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs sm:text-sm font-medium text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-[#706E6A]/40 shadow-2xs active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs sm:text-sm font-medium text-[#171715] dark:text-slate-200 hover:bg-orange-50/50 dark:hover:bg-slate-700 hover:border-orange-300 shadow-2xs active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
               >
                 <span>⚙️</span>
                 <span>Configurar Acesso (@ailab.com)</span>
@@ -257,7 +257,7 @@ export function Dashboard() {
               <button
                 type="button"
                 onClick={() => setIsTutorWarningOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-[#171715] dark:bg-white hover:bg-[#2A2925] dark:hover:bg-slate-100 px-4 py-2 text-xs sm:text-sm font-sans font-medium text-[#FAF9F5] dark:text-slate-900 shadow-sm active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#C15F3D] to-orange-600 hover:from-orange-600 hover:to-orange-700 px-4 py-2 text-xs sm:text-sm font-sans font-semibold text-white shadow-md shadow-orange-500/20 active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
               >
                 <span>⚠️</span>
                 <span>Auditoria Semanal & Metas ({studentsUnderFourHoursCount})</span>
@@ -271,84 +271,98 @@ export function Dashboard() {
           <KpiSkeleton />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 animate-fade-in">
-            {/* Presentes Agora (Esmeralda) */}
-            <div className="group rounded-3xl p-4 sm:p-5 border border-emerald-200/80 dark:border-emerald-800/40 bg-gradient-to-br from-white/95 via-white/85 to-emerald-50/40 dark:from-slate-900/90 dark:via-slate-900/80 dark:to-emerald-950/25 border-t-4 border-t-emerald-500 shadow-[0_4px_20px_rgba(5,150,105,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-emerald-500/15 hover:-translate-y-0.5 transition-all duration-300">
+            {/* Presentes Agora (Esmeralda & Menta) */}
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-emerald-200 dark:border-emerald-800/40 bg-gradient-to-br from-emerald-500/[0.12] via-emerald-50/50 to-teal-500/[0.08] dark:from-slate-900/90 dark:via-slate-900/80 dark:to-emerald-950/30 shadow-[0_8px_30px_rgba(5,150,105,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-emerald-500/20 hover:-translate-y-0.5 transition-all duration-300">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
               <div className="flex items-center justify-between">
-                <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
+                <span className="text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-emerald-900/80 dark:text-emerald-300">
                   Presentes agora
                 </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100/70 dark:bg-emerald-950/60 border border-emerald-300/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-xs shadow-2xs group-hover:scale-110 transition-transform">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 text-xs group-hover:scale-110 transition-transform">
                   🟢
                 </span>
               </div>
-              <div className="mt-2.5 flex items-center gap-2">
-                <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight leading-none">
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-3xl sm:text-4xl font-extrabold text-emerald-950 dark:text-emerald-50 font-mono-data tracking-tight leading-none">
                   {presentCount}
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/80 dark:bg-emerald-950/80 border border-emerald-300/80 dark:border-emerald-700/60 px-2 py-0.5 text-2xs font-semibold text-emerald-800 dark:text-emerald-300 font-sans shadow-2xs leading-none">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 text-white dark:bg-emerald-950/90 dark:text-emerald-300 dark:border dark:border-emerald-700/60 px-2 py-0.5 text-2xs font-bold font-sans shadow-xs leading-none">
                   <span className="relative flex h-2 w-2 items-center justify-center">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white dark:bg-emerald-400" />
                   </span>
                   <span>ao vivo</span>
                 </span>
               </div>
-              <p className="text-[11px] text-[#706E6A] dark:text-slate-400 mt-1.5 truncate">No laboratório agora</p>
+              <p className="text-[11px] font-medium text-emerald-800/70 dark:text-emerald-400/80 mt-1.5 truncate">
+                No laboratório agora
+              </p>
             </div>
 
             {/* Total de Horas (Terracota AILAB) */}
-            <div className="group rounded-3xl p-4 sm:p-5 border border-orange-200/80 dark:border-orange-800/40 bg-gradient-to-br from-white/95 via-white/85 to-orange-50/40 dark:from-slate-900/90 dark:via-slate-900/80 dark:to-orange-950/25 border-t-4 border-t-[#C15F3D] shadow-[0_4px_20px_rgba(193,95,61,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-orange-500/15 hover:-translate-y-0.5 transition-all duration-300">
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-orange-200 dark:border-orange-800/40 bg-gradient-to-br from-orange-500/[0.12] via-orange-50/50 to-amber-500/[0.08] dark:from-slate-900/90 dark:via-slate-900/80 dark:to-orange-950/30 shadow-[0_8px_30px_rgba(193,95,61,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-orange-500/20 hover:-translate-y-0.5 transition-all duration-300">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#C15F3D] to-orange-500" />
               <div className="flex items-center justify-between">
-                <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
+                <span className="text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-[#913B1E] dark:text-orange-300">
                   Total de horas
                 </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-100/70 dark:bg-orange-950/60 border border-orange-300/80 dark:border-orange-800/60 text-[#C15F3D] dark:text-orange-400 text-xs shadow-2xs group-hover:scale-110 transition-transform">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#C15F3D] to-orange-600 text-white shadow-md shadow-orange-500/25 text-xs group-hover:scale-110 transition-transform">
                   ⏱️
                 </span>
               </div>
-              <div className="mt-2.5">
-                <span className="text-xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
+              <div className="mt-3">
+                <span className="text-2xl sm:text-3xl font-extrabold text-[#7A2E14] dark:text-orange-100 font-mono-data tracking-tight leading-none">
                   {formatDuration(totalLabSeconds)}
                 </span>
               </div>
-              <p className="text-[11px] text-[#706E6A] dark:text-slate-400 mt-1 truncate">Acumuladas no período</p>
+              <p className="text-[11px] font-medium text-orange-800/70 dark:text-orange-400/80 mt-1.5 truncate">
+                Acumuladas no período
+              </p>
             </div>
 
             {/* Integrantes Ativos (Índigo Criativo) */}
-            <div className="group rounded-3xl p-4 sm:p-5 border border-indigo-200/80 dark:border-indigo-800/40 bg-gradient-to-br from-white/95 via-white/85 to-indigo-50/40 dark:from-slate-900/90 dark:via-slate-900/80 dark:to-indigo-950/25 border-t-4 border-t-indigo-500 shadow-[0_4px_20px_rgba(99,102,241,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-indigo-500/15 hover:-translate-y-0.5 transition-all duration-300">
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-indigo-200 dark:border-indigo-800/40 bg-gradient-to-br from-indigo-500/[0.12] via-indigo-50/50 to-purple-500/[0.08] dark:from-slate-900/90 dark:via-slate-900/80 dark:to-indigo-950/30 shadow-[0_8px_30px_rgba(99,102,241,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-indigo-500/20 hover:-translate-y-0.5 transition-all duration-300">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
               <div className="flex items-center justify-between">
-                <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
+                <span className="text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-indigo-900/80 dark:text-indigo-300">
                   Integrantes ativos
                 </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-100/70 dark:bg-indigo-950/60 border border-indigo-300/80 dark:border-indigo-800/60 text-indigo-800 dark:text-indigo-400 text-xs shadow-2xs group-hover:scale-110 transition-transform">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/25 text-xs group-hover:scale-110 transition-transform">
                   👥
                 </span>
               </div>
-              <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
+              <div className="mt-3 flex items-baseline gap-1.5 sm:gap-2">
+                <span className="text-3xl sm:text-4xl font-extrabold text-indigo-950 dark:text-indigo-50 font-mono-data tracking-tight leading-none">
                   {activeMembersCount}
                 </span>
-                <span className="text-2xs font-mono-data text-[#706E6A] dark:text-slate-400">de {members.length}</span>
+                <span className="inline-flex items-center rounded-md bg-indigo-100/90 dark:bg-indigo-950/80 border border-indigo-200/80 dark:border-indigo-800/60 px-1.5 py-0.5 text-2xs font-mono-data font-bold text-indigo-800 dark:text-indigo-300">
+                  de {members.length}
+                </span>
               </div>
-              <p className="text-[11px] text-[#706E6A] dark:text-slate-400 mt-1 truncate">Com presença no filtro</p>
+              <p className="text-[11px] font-medium text-indigo-800/70 dark:text-indigo-400/80 mt-1.5 truncate">
+                Com presença no filtro
+              </p>
             </div>
 
             {/* Total de Sessões (Âmbar Solar) */}
-            <div className="group rounded-3xl p-4 sm:p-5 border border-amber-200/80 dark:border-amber-800/40 bg-gradient-to-br from-white/95 via-white/85 to-amber-50/40 dark:from-slate-900/90 dark:via-slate-900/80 dark:to-amber-950/25 border-t-4 border-t-amber-500 shadow-[0_4px_20px_rgba(217,119,6,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-amber-500/15 hover:-translate-y-0.5 transition-all duration-300">
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-amber-200 dark:border-amber-800/40 bg-gradient-to-br from-amber-500/[0.12] via-amber-50/50 to-yellow-500/[0.08] dark:from-slate-900/90 dark:via-slate-900/80 dark:to-amber-950/30 shadow-[0_8px_30px_rgba(217,119,6,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-amber-500/20 hover:-translate-y-0.5 transition-all duration-300">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-yellow-500" />
               <div className="flex items-center justify-between">
-                <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
+                <span className="text-[11px] sm:text-xs font-sans font-bold uppercase tracking-wider text-amber-900/80 dark:text-amber-300">
                   Total de sessões
                 </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100/70 dark:bg-amber-950/60 border border-amber-300/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-400 text-xs shadow-2xs group-hover:scale-110 transition-transform">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 text-white shadow-md shadow-amber-500/25 text-xs group-hover:scale-110 transition-transform">
                   📌
                 </span>
               </div>
-              <div className="mt-2.5">
-                <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
+              <div className="mt-3">
+                <span className="text-3xl sm:text-4xl font-extrabold text-amber-950 dark:text-amber-50 font-mono-data tracking-tight leading-none">
                   {totalSessionsCount}
                 </span>
               </div>
-              <p className="text-[11px] text-[#706E6A] dark:text-slate-400 mt-1 truncate">Registros computados</p>
+              <p className="text-[11px] font-medium text-amber-800/70 dark:text-amber-400/80 mt-1.5 truncate">
+                Registros computados
+              </p>
             </div>
           </div>
         )}

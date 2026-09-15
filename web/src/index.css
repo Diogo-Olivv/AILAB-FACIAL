@@ -107,12 +107,13 @@ html.dark .glass-table-header {
 
   body {
     margin: 0;
-    background-color: #FAF9F5;
+    min-height: 100vh;
+    background-color: #FAF8F5;
     background-image: 
-      radial-gradient(at 10% 0%, rgba(201, 100, 66, 0.045) 0px, transparent 40%),
-      radial-gradient(at 90% 0%, rgba(0, 158, 144, 0.04) 0px, transparent 40%),
-      radial-gradient(at 50% 30%, rgba(59, 130, 246, 0.035) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, rgba(217, 119, 6, 0.03) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, rgba(193, 95, 61, 0.08) 0px, transparent 45%),
+      radial-gradient(at 100% 0%, rgba(0, 158, 144, 0.07) 0px, transparent 45%),
+      radial-gradient(at 50% 25%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+      radial-gradient(at 80% 80%, rgba(217, 119, 6, 0.06) 0px, transparent 45%);
     background-attachment: fixed;
     color: #171715;
     font-family: "Plus Jakarta Sans", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
@@ -126,10 +127,10 @@ html.dark .glass-table-header {
   html.dark body {
     background-color: #0B0F19;
     background-image: 
-      radial-gradient(at 10% 0%, rgba(193, 95, 61, 0.16) 0px, transparent 45%),
-      radial-gradient(at 90% 0%, rgba(0, 158, 144, 0.14) 0px, transparent 45%),
-      radial-gradient(at 50% 30%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-      radial-gradient(at 50% 100%, rgba(217, 119, 6, 0.10) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, rgba(193, 95, 61, 0.18) 0px, transparent 45%),
+      radial-gradient(at 100% 0%, rgba(0, 158, 144, 0.15) 0px, transparent 45%),
+      radial-gradient(at 50% 25%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+      radial-gradient(at 80% 80%, rgba(217, 119, 6, 0.10) 0px, transparent 50%);
     color: #F8FAFC;
   }
 

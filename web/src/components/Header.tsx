@@ -22,60 +22,70 @@ export function Header({
 
   return (
     <header
-      className="sticky top-0 z-30 border-b border-stone-200/70 dark:border-slate-800/80 bg-white/85 dark:bg-slate-950/85 px-3.5 py-3 backdrop-blur-2xl transition-all sm:px-8 sm:py-3.5 shadow-[0_2px_16px_rgba(23,23,21,0.02)]"
+      className="sticky top-0 z-30 border-b border-stone-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-950/90 backdrop-blur-2xl transition-all shadow-[0_2px_16px_rgba(23,23,21,0.03)]"
       role="banner"
     >
-      <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-3">
+      {/* Faixa Superior de Identidade AILAB Makers (Terracota, Azul Petróleo e Verde Esmeralda) */}
+      <div className="h-1 w-full flex">
+        <div className="flex-1 bg-[#C15F3D]" />
+        <div className="flex-1 bg-[#009E90]" />
+        <div className="flex-1 bg-[#059669]" />
+      </div>
+
+      <div className="mx-auto max-w-6xl px-3.5 py-3 sm:px-8 sm:py-3.5 flex flex-wrap items-center justify-between gap-3">
         {/* Marca com Tipografia Editorial Claude e Acento Gradiente */}
         <div className="flex items-center gap-3">
           <div className="relative group">
-            <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-tr from-[#C15F3D] to-teal-500 opacity-30 group-hover:opacity-60 blur-xs transition duration-300" />
+            <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-tr from-[#C15F3D] via-[#009E90] to-emerald-500 opacity-40 group-hover:opacity-75 blur-xs transition duration-300" />
             <img
               src={logo}
               alt="AiLab Makers Logo"
-              className="relative h-10 w-10 sm:h-12 sm:w-12 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 object-cover shadow-2xs"
+              className="relative h-10 w-10 sm:h-12 sm:w-12 rounded-2xl border border-stone-200 dark:border-slate-700 object-cover shadow-2xs"
             />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-editorial text-lg sm:text-2xl font-bold tracking-tight text-[#171715] dark:text-slate-50 leading-tight">
+              <span className="font-editorial text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
                 AiLab Makers
               </span>
-              <span className="hidden md:inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60 px-2 py-0.5 text-[10px] font-mono-data font-semibold text-emerald-800 dark:text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-emerald-100/90 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-700/80 px-2.5 py-0.5 text-2xs font-mono-data font-bold text-emerald-800 dark:text-emerald-300 shadow-2xs">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600 dark:bg-emerald-400" />
+                </span>
                 Totem Ativo
               </span>
             </div>
-            <p className="text-[10px] sm:text-xs text-[#706E6A] dark:text-slate-400 font-sans font-medium tracking-normal mt-0.5">
+            <p className="text-[10.5px] sm:text-xs text-stone-500 dark:text-slate-400 font-sans font-medium tracking-normal mt-0.5">
               Controle Acadêmico de Permanência
             </p>
           </div>
         </div>
 
-        {/* Ações Rápidas com Toggle de Tema Escuro */}
+        {/* Ações Rápidas com Toggle de Tema */}
         <div className="flex items-center gap-2">
-          {/* Botão de Alternância de Tema Claro / Escuro */}
+          {/* Botão de Alternância de Tema com Rótulo Explícito */}
           <button
             onClick={toggleTheme}
-            className="inline-flex items-center justify-center rounded-2xl border border-stone-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-[#C15F3D] dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-500/50 shadow-claude transition-all cursor-pointer min-h-[40px]"
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-stone-300/80 dark:border-slate-700 bg-stone-100/80 dark:bg-slate-900 px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 hover:border-[#C15F3D] hover:text-[#C15F3D] dark:hover:border-amber-400 dark:hover:text-amber-300 shadow-xs transition-all cursor-pointer min-h-[40px]"
             title={isDark ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"}
             aria-label={isDark ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"}
           >
             <span className="text-sm leading-none">{isDark ? "☀️" : "🌙"}</span>
-            <span className="hidden lg:inline ml-1.5 text-2xs font-medium">
-              {isDark ? "Claro" : "Escuro"}
+            <span className="hidden sm:inline font-semibold">
+              {isDark ? "Modo Claro" : "Modo Escuro"}
             </span>
           </button>
 
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="inline-flex items-center justify-center rounded-2xl border border-stone-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:border-stone-300 dark:hover:border-slate-700 shadow-claude transition-all cursor-pointer min-h-[40px] disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-stone-300/80 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:border-stone-400 dark:hover:border-slate-600 shadow-xs transition-all cursor-pointer min-h-[40px] disabled:opacity-50"
             title="Atualizar dados de permanência agora"
             aria-label="Atualizar dados de permanência agora"
           >
             <svg
-              className={`h-3.5 w-3.5 transition-transform ${isRefreshing ? "animate-spin text-teal-600 dark:text-teal-400" : "text-stone-400 dark:text-slate-500"}`}
+              className={`h-3.5 w-3.5 transition-transform ${isRefreshing ? "animate-spin text-teal-600 dark:text-teal-400" : "text-stone-500 dark:text-slate-400"}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -87,14 +97,14 @@ export function Header({
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               />
             </svg>
-            <span className="hidden sm:inline ml-1.5 font-medium">
+            <span className="hidden sm:inline font-medium">
               {isRefreshing ? "Sincronizando..." : "Atualizar"}
             </span>
           </button>
 
           <button
             onClick={onOpenTerms}
-            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-stone-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:border-stone-300 dark:hover:border-slate-700 shadow-claude transition-all cursor-pointer min-h-[40px]"
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-stone-300/80 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:border-stone-400 dark:hover:border-slate-600 shadow-xs transition-all cursor-pointer min-h-[40px]"
             title="Políticas de Privacidade Biométrica (LGPD Art. 11)"
           >
             <span className="text-xs">⚖️</span>
@@ -104,7 +114,7 @@ export function Header({
           {user ? (
             <button
               onClick={signOut}
-              className="inline-flex items-center justify-center rounded-2xl border border-rose-200/80 dark:border-rose-900/60 bg-rose-50/70 dark:bg-rose-950/40 px-4 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all cursor-pointer min-h-[40px]"
+              className="inline-flex items-center justify-center rounded-2xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 px-4 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 shadow-xs transition-all cursor-pointer min-h-[40px]"
               title="Encerrar sessão de tutor"
             >
               Sair
@@ -112,7 +122,7 @@ export function Header({
           ) : (
             <Link
               to="/login"
-              className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 dark:from-stone-100 dark:to-white px-4 py-2 text-xs font-bold text-white dark:text-slate-900 shadow-sm hover:from-black hover:to-slate-900 dark:hover:from-white dark:hover:to-stone-200 active:scale-98 transition-all min-h-[40px]"
+              className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-[#C15F3D] to-orange-600 hover:from-[#A84828] hover:to-orange-700 text-white font-bold px-4 py-2 text-xs shadow-sm shadow-orange-500/25 active:scale-98 transition-all min-h-[40px]"
               title="Área administrativa de tutores e coordenadores"
             >
               <span>🎓</span>

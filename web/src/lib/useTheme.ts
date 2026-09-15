@@ -8,7 +8,7 @@ export function useTheme() {
     try {
       const saved = localStorage.getItem("ailab_theme") as Theme | null;
       if (saved === "dark" || saved === "light") return saved;
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      return "light";
     } catch {
       return "light";
     }
