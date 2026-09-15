@@ -188,29 +188,29 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
       aria-labelledby="tutor-modal-title"
     >
       <div
-        className="relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-4xl bg-[#FAF9F5] sm:bg-[#FAF9F5]/98 sm:backdrop-blur-2xl sm:rounded-3xl border-0 sm:border sm:border-stone-200/80 shadow-2xl flex flex-col overflow-hidden animate-scale-up"
+        className="relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-4xl bg-[#FAF9F5] sm:bg-[#FAF9F5]/98 sm:backdrop-blur-2xl sm:rounded-3xl border-0 sm:border sm:border-stone-200/80 dark:bg-slate-900 dark:sm:bg-slate-900/98 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-scale-up text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header estilo Editorial Claude com Safe-Area para Celular */}
-        <div className="shrink-0 flex items-center justify-between border-b border-stone-200/70 bg-white/90 pt-[max(env(safe-area-inset-top),16px)] pb-4 px-4 sm:px-6 gap-3">
+        <div className="shrink-0 flex items-center justify-between border-b border-stone-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 pt-[max(env(safe-area-inset-top),16px)] pb-4 px-4 sm:px-6 gap-3">
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-serif text-2xl shadow-md shadow-amber-500/20">
               §
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-editorial-italic text-xs sm:text-sm text-stone-500 hidden xs:inline">
+                <span className="font-editorial-italic text-xs sm:text-sm text-stone-500 dark:text-stone-400 hidden xs:inline">
                   Governança &bull;
                 </span>
                 <h2
                   id="tutor-modal-title"
-                  className="font-editorial text-lg sm:text-2xl font-bold text-slate-900 tracking-tight truncate"
+                  className="font-editorial text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate"
                 >
                   Auditoria Semanal de Permanência
                 </h2>
               </div>
-              <p className="text-xs sm:text-sm text-stone-500 font-medium truncate mt-0.5">
-                Tutor: <strong className="text-slate-800 font-mono-data">{tutorEmail}</strong> · Meta: <strong className="text-slate-800 font-mono-data">4h 00m / sem</strong>
+              <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 font-medium truncate mt-0.5">
+                Tutor: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">{tutorEmail}</strong> · Meta: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">4h 00m / sem</strong>
               </p>
             </div>
           </div>
@@ -218,20 +218,20 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
           <button
             onClick={onClose}
             aria-label="Fechar modal de auditoria"
-            className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 hover:text-slate-900 transition-colors cursor-pointer text-base font-bold"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-stone-100 dark:bg-slate-800 hover:bg-stone-200 dark:hover:bg-slate-700 text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer text-base font-bold"
           >
             ✕
           </button>
         </div>
 
         {/* Resumo de Indicadores Ampliado para Celular com Estilo Claude / Perplexity */}
-        <div className="shrink-0 p-3 sm:p-5 border-b border-stone-200/70 bg-stone-100/50 grid grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="shrink-0 p-3 sm:p-5 border-b border-stone-200/70 dark:border-slate-800 bg-stone-100/50 dark:bg-slate-850/50 grid grid-cols-3 gap-2.5 sm:gap-4">
           {/* Total */}
-          <div className="claude-card rounded-2xl p-3 sm:p-4 text-center sm:text-left">
-            <span className="text-2xs sm:text-xs font-bold uppercase tracking-widest text-stone-500 block truncate font-sans">
+          <div className="claude-card rounded-2xl p-3 sm:p-4 text-center sm:text-left dark:bg-slate-800 dark:border-slate-700">
+            <span className="text-2xs sm:text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-slate-400 block truncate font-sans">
               Total Alunos
             </span>
-            <span className="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-1 block font-mono-data tracking-apple-tightest">
+            <span className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-slate-100 mt-1 block font-mono-data tracking-apple-tightest">
               {totalStudents}
             </span>
             <span className="hidden sm:inline-block text-2xs text-stone-400 font-medium mt-0.5">

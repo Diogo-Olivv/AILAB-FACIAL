@@ -613,9 +613,9 @@ const styles = StyleSheet.create({
     shadowColor: "#059669",
   },
   saida: {
-    backgroundColor: "#1E293B",
-    borderColor: "rgba(255, 255, 255, 0.18)",
-    shadowColor: "#0F172A",
+    backgroundColor: "#C15F3D",
+    borderColor: "rgba(193, 95, 61, 0.45)",
+    shadowColor: "#C15F3D",
   },
   actionBusy: {
     backgroundColor: "#334155",

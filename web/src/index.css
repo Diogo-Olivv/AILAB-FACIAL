@@ -79,6 +79,23 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+html.dark .glass-panel {
+  background: rgba(19, 27, 46, 0.82);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+html.dark .glass-card {
+  background: rgba(19, 27, 46, 0.86);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .glass-table-header {
+  background: rgba(15, 23, 42, 0.92);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 @layer base {
   html {
     font-family: "Plus Jakarta Sans", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
@@ -103,6 +120,17 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  html.dark body {
+    background-color: #0B0F19;
+    background-image: 
+      radial-gradient(at 10% 0%, rgba(193, 95, 61, 0.16) 0px, transparent 45%),
+      radial-gradient(at 90% 0%, rgba(0, 158, 144, 0.14) 0px, transparent 45%),
+      radial-gradient(at 50% 30%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(217, 119, 6, 0.10) 0px, transparent 50%);
+    color: #F8FAFC;
   }
 
   h1, h2, h3, h4, h5, h6 {

@@ -76,7 +76,7 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
       aria-modal="true"
     >
       <div
-        className="w-full max-w-md rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 sm:p-7 shadow-apple animate-scale-up space-y-5"
+        className="w-full max-w-md rounded-3xl border border-white/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl p-6 sm:p-7 shadow-apple animate-scale-up space-y-5 text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -85,10 +85,10 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
               🎓
             </span>
             <div>
-              <h2 className="text-lg sm:text-xl font-black text-slate-900">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100">
                 Acesso do Tutor
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Personalize seu e-mail institucional e senha
               </p>
             </div>
@@ -96,30 +96,30 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
           <button
             onClick={onClose}
             aria-label="Fechar modal de acesso do tutor"
-            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] dark:bg-white/10 dark:hover:bg-white/20 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        <div className="rounded-2xl border border-blue-500/15 bg-blue-500/[0.04] p-3 text-2xs text-slate-600 flex items-start gap-2">
+        <div className="rounded-2xl border border-blue-500/15 dark:border-blue-500/30 bg-blue-500/[0.04] dark:bg-blue-500/10 p-3 text-2xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
           <span className="text-base leading-none">💡</span>
           <div>
-            <strong className="text-slate-800 font-semibold block">
+            <strong className="text-slate-800 dark:text-slate-200 font-semibold block">
               Regra de Credenciais AiLab
             </strong>
             <span>
-              O e-mail deve ter o formato <code className="rounded bg-black/[0.05] px-1 py-0.5 font-mono text-slate-900 font-bold">nome@ailab.com</code>. Suas novas credenciais terão validade imediata neste dispositivo.
+              O e-mail deve ter o formato <code className="rounded bg-black/[0.05] dark:bg-white/10 px-1 py-0.5 font-mono text-slate-900 dark:text-slate-200 font-bold">nome@ailab.com</code>. Suas novas credenciais terão validade imediata neste dispositivo.
             </span>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
               Novo E-mail do Tutor
             </label>
-            <div className="flex items-center rounded-2xl border border-black/15 bg-white px-3 py-2 text-sm shadow-xs focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/15 transition-all">
+            <div className="flex items-center rounded-2xl border border-black/15 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3 py-2 text-sm shadow-xs focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/15 transition-all">
               <input
                 type="text"
                 value={emailUsername}
@@ -130,16 +130,16 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
                 }
                 placeholder="seu.nome"
                 required
-                className="w-full bg-transparent text-slate-900 outline-none placeholder:text-slate-400 font-medium"
+                className="w-full bg-transparent text-slate-900 dark:text-slate-100 outline-none placeholder:text-slate-400 font-medium"
               />
-              <span className="text-slate-400 font-mono text-xs font-bold shrink-0 select-none">
+              <span className="text-slate-400 dark:text-slate-400 font-mono text-xs font-bold shrink-0 select-none">
                 @ailab.com
               </span>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
               Nova Senha de Acesso
             </label>
             <input
@@ -149,12 +149,12 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
               placeholder="Mínimo 6 caracteres"
               required
               minLength={6}
-              className="w-full rounded-2xl border border-black/15 bg-white px-3.5 py-2.5 text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 text-sm shadow-xs transition-all"
+              className="w-full rounded-2xl border border-black/15 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 text-sm shadow-xs transition-all"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
               Confirmar Nova Senha
             </label>
             <input
@@ -164,18 +164,18 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
               placeholder="Digite novamente a nova senha"
               required
               minLength={6}
-              className="w-full rounded-2xl border border-black/15 bg-white px-3.5 py-2.5 text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 text-sm shadow-xs transition-all"
+              className="w-full rounded-2xl border border-black/15 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 text-sm shadow-xs transition-all"
             />
           </div>
 
           {error && (
-            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 font-semibold text-center">
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300 font-semibold text-center">
               ⚠️ {error}
             </div>
           )}
 
           {success && (
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-800 font-semibold text-center animate-fade-in">
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-300 font-semibold text-center animate-fade-in">
               ✅ Credenciais atualizadas com sucesso!
             </div>
           )}
@@ -185,7 +185,7 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
               type="button"
               onClick={onClose}
               disabled={busy}
-              className="flex-1 rounded-2xl border border-black/10 bg-white/80 py-3 text-xs sm:text-sm font-bold text-slate-700 hover:bg-white hover:text-slate-900 transition-all cursor-pointer min-h-[44px]"
+              className="flex-1 rounded-2xl border border-black/10 dark:border-slate-700 bg-white/80 dark:bg-slate-800 py-3 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-white hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-white transition-all cursor-pointer min-h-[44px]"
             >
               Cancelar
             </button>

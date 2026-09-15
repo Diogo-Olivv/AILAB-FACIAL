@@ -62,13 +62,13 @@ export function ViewSelector({ view, onViewChange }: Props) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={() => setIsDragging(false)}
-      className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] p-1 select-none cursor-pointer touch-none"
+      className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-pointer touch-none"
       role="tablist"
       aria-label="Alternar entre totais e histórico"
     >
-      {/* Pílula branca flutuante com alinhamento milimétrico idêntico ao Seletor de Período */}
+      {/* Pílula flutuante com alinhamento milimétrico idêntico ao Seletor de Período */}
       <div
-        className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+        className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs dark:bg-slate-900 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
         style={{
           left: `calc(4px + ${activeIndex} * ((100% - 8px) / 2))`,
           width: "calc((100% - 8px) / 2)",
@@ -89,7 +89,9 @@ export function ViewSelector({ view, onViewChange }: Props) {
                 onViewChange(v.key);
               }}
               className={`flex items-center justify-center px-3 text-xs sm:text-sm font-sans rounded-xl transition-colors duration-200 cursor-pointer h-full select-none ${
-                isActive ? "text-[#171715] font-semibold" : "text-[#706E6A] font-medium hover:text-[#171715]"
+                isActive
+                  ? "text-[#171715] dark:text-slate-100 font-semibold"
+                  : "text-[#706E6A] dark:text-slate-400 font-medium hover:text-[#171715] dark:hover:text-slate-200"
               }`}
             >
               <span>{v.label}</span>

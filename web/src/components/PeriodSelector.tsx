@@ -60,7 +60,7 @@ export function PeriodSelector({
   };
 
   return (
-    <div className="rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl p-3 sm:p-3.5 shadow-[0_4px_20px_rgba(23,23,21,0.02)] transition-all duration-300">
+    <div className="rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl p-3 sm:p-3.5 shadow-[0_4px_20px_rgba(23,23,21,0.02)] dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-300">
       {/* Segmented Control refinado estilo Apple & Perplexity com alinhamento simétrico milimétrico */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div
@@ -69,13 +69,13 @@ export function PeriodSelector({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={() => setIsDragging(false)}
-          className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] p-1 select-none cursor-pointer touch-none"
+          className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-pointer touch-none"
           role="tablist"
           aria-label="Seletor de período"
         >
-          {/* Pílula branca flutuante perfeitamente centralizada e simétrica em todos os eixos */}
+          {/* Pílula flutuante perfeitamente centralizada e simétrica em todos os eixos */}
           <div
-            className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+            className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs dark:bg-slate-900 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
             style={{
               left: `calc(4px + ${activeIndex} * ((100% - 8px) / 3))`,
               width: "calc((100% - 8px) / 3)",
@@ -96,7 +96,9 @@ export function PeriodSelector({
                     onPeriod(key);
                   }}
                   className={`flex items-center justify-center px-2 text-xs sm:text-sm font-sans rounded-xl transition-colors duration-200 cursor-pointer h-full select-none ${
-                    isActive ? "text-[#171715] font-semibold" : "text-[#706E6A] font-medium hover:text-[#171715]"
+                    isActive
+                      ? "text-[#171715] dark:text-slate-100 font-semibold"
+                      : "text-[#706E6A] dark:text-slate-400 font-medium hover:text-[#171715] dark:hover:text-slate-200"
                   }`}
                 >
                   <span>{PERIOD_LABELS[key]}</span>
@@ -108,9 +110,9 @@ export function PeriodSelector({
 
         {/* Indicador de intervalo de datas com tipografia mono precisa e altura alinhada */}
         <div className="flex items-center justify-between sm:justify-end gap-2">
-          <div className="h-11 inline-flex items-center gap-2 rounded-2xl border border-[#E5E2DC] bg-[#FAF9F5] px-4 py-2 text-xs text-[#171715] shadow-2xs font-mono-data">
-            <span className="text-xs text-[#706E6A]">📅</span>
-            <span className="font-medium text-[#171715]">{formatRange(range)}</span>
+          <div className="h-11 inline-flex items-center gap-2 rounded-2xl border border-[#E5E2DC] bg-[#FAF9F5] dark:border-slate-700 dark:bg-slate-800/80 px-4 py-2 text-xs text-[#171715] dark:text-slate-200 shadow-2xs font-mono-data">
+            <span className="text-xs text-[#706E6A] dark:text-slate-400">📅</span>
+            <span className="font-medium text-[#171715] dark:text-slate-200">{formatRange(range)}</span>
           </div>
         </div>
       </div>

@@ -17,13 +17,14 @@ import { triggerHaptic } from "@/lib/sound";
 interface PresenceSidebarProps {
   onClose?: () => void;
   style?: any;
+  isDark?: boolean;
 }
 
 const ITEM_HEIGHT = 58;
 const SEPARATOR_HEIGHT = 6;
 const ROW_TOTAL_HEIGHT = ITEM_HEIGHT + SEPARATOR_HEIGHT;
 
-export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
+export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSidebarProps) {
   const { members, loading, error } = usePresence();
   const [search, setSearch] = useState("");
 
@@ -37,8 +38,8 @@ export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
   }, [members, search]);
 
   const renderItem = useCallback(
-    ({ item }: { item: PresentMember }) => <MemoizedSidebarRow member={item} />,
-    []
+    ({ item }: { item: PresentMember }) => <MemoizedSidebarRow member={item} isDark={isDark} />,
+    [isDark]
   );
 
   const getItemLayout = useCallback(
@@ -56,24 +57,24 @@ export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
   };
 
   return (
-    <View style={[styles.container, style]}>
-      <View style={styles.header}>
+    <View style={[styles.container, isDark && styles.containerDark, style]}>
+      <View style={[styles.header, isDark && styles.headerDark]}>
         <View style={styles.headerLeft}>
-          <Text style={styles.title}>Presentes</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{members.length}</Text>
+          <Text style={[styles.title, isDark && styles.titleDark]}>Presentes</Text>
+          <View style={[styles.badge, isDark && styles.badgeDark]}>
+            <Text style={[styles.badgeText, isDark && styles.badgeTextDark]}>{members.length}</Text>
           </View>
         </View>
 
         {onClose && (
           <TouchableOpacity
             onPress={handleClose}
-            style={styles.closeBtn}
+            style={[styles.closeBtn, isDark && styles.closeBtnDark]}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Fechar lista de presentes"
           >
-            <Text style={styles.closeBtnText}>✕</Text>
+            <Text style={[styles.closeBtnText, isDark && styles.closeBtnTextDark]}>✕</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -81,14 +82,14 @@ export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
       {/* Busca rápida com ícone e botão de limpar */}
       {members.length > 3 && (
         <View style={styles.searchWrapper}>
-          <View style={styles.searchContainer}>
+          <View style={[styles.searchContainer, isDark && styles.searchContainerDark]}>
             <Text style={styles.searchIcon}>🔍</Text>
             <TextInput
               placeholder="Filtrar por nome ou matrícula..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
               value={search}
               onChangeText={setSearch}
-              style={styles.searchInput}
+              style={[styles.searchInput, isDark && styles.searchInputDark]}
               accessibilityLabel="Filtrar integrantes presentes"
             />
             {search.length > 0 && (
@@ -97,7 +98,7 @@ export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
                 style={styles.clearSearchBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.clearSearchText}>✕</Text>
+                <Text style={[styles.clearSearchText, isDark && styles.clearSearchTextDark]}>✕</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -107,7 +108,7 @@ export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color="#C15F3D" size="small" />
-          <Text style={styles.loadingText}>Carregando presenças...</Text>
+          <Text style={[styles.loadingText, isDark && styles.loadingTextDark]}>Carregando presenças...</Text>
         </View>
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
@@ -129,8 +130,8 @@ export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>☕</Text>
-              <Text style={styles.emptyTitle}>Ninguém por aqui agora</Text>
-              <Text style={styles.emptySubtitle}>
+              <Text style={[styles.emptyTitle, isDark && styles.emptyTitleDark]}>Ninguém por aqui agora</Text>
+              <Text style={[styles.emptySubtitle, isDark && styles.emptySubtitleDark]}>
                 {search
                   ? "Nenhum integrante encontrado para essa busca."
                   : "Os integrantes aparecerão aqui assim que derem Entrada."}
@@ -143,7 +144,7 @@ export function PresenceSidebar({ onClose, style }: PresenceSidebarProps) {
   );
 }
 
-function SidebarRow({ member }: { member: PresentMember }) {
+function SidebarRow({ member, isDark }: { member: PresentMember; isDark?: boolean }) {
   const elapsed = useElapsed(member.check_in);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -171,6 +172,7 @@ function SidebarRow({ member }: { member: PresentMember }) {
     <Animated.View
       style={[
         styles.row,
+        isDark && styles.rowDark,
         {
           opacity: fadeAnim,
         },
@@ -180,12 +182,12 @@ function SidebarRow({ member }: { member: PresentMember }) {
         <Text style={[styles.initials, { color: avatar.text }]}>{initials}</Text>
       </View>
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>
+        <Text style={[styles.name, isDark && styles.nameDark]} numberOfLines={1}>
           {memberName}
         </Text>
         <View style={styles.statusRow}>
           <View style={styles.liveDot} />
-          <Text style={styles.elapsed}>{elapsed}</Text>
+          <Text style={[styles.elapsed, isDark && styles.elapsedDark]}>{elapsed}</Text>
         </View>
       </View>
     </Animated.View>
@@ -194,6 +196,7 @@ function SidebarRow({ member }: { member: PresentMember }) {
 
 const MemoizedSidebarRow = React.memo(SidebarRow, (prev, next) => {
   return (
+    prev.isDark === next.isDark &&
     prev.member.session_id === next.member.session_id &&
     prev.member.check_in === next.member.check_in &&
     prev.member.profile?.name === next.member.profile?.name
@@ -386,6 +389,57 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 24,
     paddingHorizontal: 12,
+  },
+  containerDark: {
+    backgroundColor: "#0B0F19",
+    borderLeftColor: "#1E293B",
+  },
+  headerDark: {
+    borderBottomColor: "#1E293B",
+  },
+  titleDark: {
+    color: "#F8FAFC",
+  },
+  badgeDark: {
+    backgroundColor: "#1E293B",
+  },
+  badgeTextDark: {
+    color: "#F8FAFC",
+  },
+  closeBtnDark: {
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+  },
+  closeBtnTextDark: {
+    color: "#F8FAFC",
+  },
+  searchContainerDark: {
+    backgroundColor: "#111827",
+    borderColor: "#1E293B",
+  },
+  searchInputDark: {
+    color: "#F8FAFC",
+  },
+  clearSearchTextDark: {
+    color: "#94A3B8",
+  },
+  loadingTextDark: {
+    color: "#94A3B8",
+  },
+  rowDark: {
+    backgroundColor: "#111827",
+    borderColor: "#1E293B",
+  },
+  nameDark: {
+    color: "#F8FAFC",
+  },
+  elapsedDark: {
+    color: "#34D399",
+  },
+  emptyTitleDark: {
+    color: "#F8FAFC",
+  },
+  emptySubtitleDark: {
+    color: "#94A3B8",
   },
 });
 

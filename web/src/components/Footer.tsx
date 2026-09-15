@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-
 interface FooterProps {
   lastRefreshed: Date;
   onOpenTerms: () => void;
@@ -8,44 +6,35 @@ interface FooterProps {
 export function Footer({ lastRefreshed, onOpenTerms }: FooterProps) {
   return (
     <footer
-      className="border-t border-[#E5E2DC] bg-[#FAF9F5]/80 backdrop-blur-xl px-4 py-5 text-xs text-[#706E6A] transition-colors sm:px-8 mt-14"
+      className="border-t border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5]/80 dark:bg-slate-900/80 backdrop-blur-xl px-4 py-5 text-xs text-[#706E6A] dark:text-slate-400 transition-colors sm:px-8 mt-14"
       role="contentinfo"
     >
       <div className="mx-auto max-w-6xl space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
           {/* Status de Sincronização Dinâmico Estilo Perplexity */}
           <div
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50 px-3 py-1 text-2xs font-mono-data font-medium text-emerald-800 shadow-2xs"
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 text-2xs font-mono-data font-medium text-emerald-800 dark:text-emerald-300 shadow-2xs"
             aria-live="polite"
             aria-atomic="true"
           >
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
             <span>
-              Sincronizado às <strong className="font-semibold text-emerald-900">{lastRefreshed.toLocaleTimeString("pt-BR")}</strong> · Tempo real ativo
+              Sincronizado às <strong className="font-semibold text-emerald-900 dark:text-emerald-200">{lastRefreshed.toLocaleTimeString("pt-BR")}</strong> · Tempo real ativo
             </span>
           </div>
 
-          {/* Links Rápidos em Pílulas */}
+          {/* Link Rápido de Privacidade */}
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={onOpenTerms}
-              className="text-xs font-medium text-[#706E6A] hover:text-[#C15F3D] transition-colors cursor-pointer"
+              className="text-xs font-medium text-[#706E6A] dark:text-slate-400 hover:text-[#C15F3D] dark:hover:text-[#E8590C] transition-colors cursor-pointer"
             >
               Privacidade & LGPD
             </button>
-
-            <span className="text-[#E5E2DC]">·</span>
-
-            <Link
-              to="/login"
-              className="inline-flex items-center rounded-full border border-[#E5E2DC] bg-white px-3.5 py-1 text-2xs font-sans font-medium text-[#171715] shadow-2xs hover:bg-[#FAF9F5] hover:border-[#C15F3D]/40 transition-all"
-            >
-              Portal do Tutor →
-            </Link>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E5E2DC]/60 pt-3 text-[11px] text-[#706E6A]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E5E2DC]/60 dark:border-slate-800/60 pt-3 text-[11px] text-[#706E6A] dark:text-slate-500">
           <p>
             © {new Date().getFullYear()} AILAB Makers · Controle de Frequência & Permanência Acadêmica
           </p>

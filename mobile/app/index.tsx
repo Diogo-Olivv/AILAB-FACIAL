@@ -24,10 +24,16 @@ export default function Home() {
   const { width } = useWindowDimensions();
   const isCompact = width < 768;
 
+  const [isDark, setIsDark] = useState(false);
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [termsVisible, setTermsVisible] = useState(false);
   const [presenceModalVisible, setPresenceModalVisible] = useState(false);
   const [pendingMode, setPendingMode] = useState<"enroll" | "refresh">("enroll");
+
+  const toggleTheme = () => {
+    triggerHaptic("tap");
+    setIsDark((prev) => !prev);
+  };
 
   const openTutorAuth = (mode: "enroll" | "refresh") => {
     triggerHaptic("tap");
@@ -36,12 +42,20 @@ export default function Home() {
   };
 
   return (
-    <View style={styles.safe}>
+    <View style={[styles.safe, isDark && styles.safeDark]}>
+      {/* Faixa Superior de Identidade AILAB Makers (Terracota, Azul Petróleo e Verde Esmeralda) */}
+      <View style={styles.brandStripeContainer}>
+        <View style={[styles.brandStripeSegment, { backgroundColor: "#C15F3D" }]} />
+        <View style={[styles.brandStripeSegment, { backgroundColor: "#009E90" }]} />
+        <View style={[styles.brandStripeSegment, { backgroundColor: "#059669" }]} />
+      </View>
+
       <View
         style={[
           styles.header,
+          isDark && styles.headerDark,
           {
-            paddingTop: insets.top + 12,
+            paddingTop: insets.top + 10,
             paddingLeft: insets.left + 16,
             paddingRight: insets.right + 16,
           },
@@ -50,7 +64,7 @@ export default function Home() {
         <View style={styles.brand}>
           <Image source={logo} style={styles.brandLogo} />
           <View style={styles.brandTextGroup}>
-            <Text style={styles.title}>AILAB Makers</Text>
+            <Text style={[styles.title, isDark && styles.titleDark]}>AILAB Makers</Text>
             <View style={styles.statusPill}>
               <View style={styles.statusDot} />
               <Text style={styles.statusText}>Totem Ativo</Text>
@@ -58,8 +72,19 @@ export default function Home() {
           </View>
         </View>
         <View style={styles.headerActions}>
+          {/* Botão de Alternância de Modo Escuro / Claro */}
           <TouchableOpacity
-            style={styles.termsBtn}
+            style={[styles.themeBtn, isDark && styles.themeBtnDark]}
+            onPress={toggleTheme}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={isDark ? "Alternar para modo claro" : "Alternar para modo escuro"}
+          >
+            <Text style={styles.themeBtnText}>{isDark ? "☀️" : "🌙"}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.termsBtn, isDark && styles.termsBtnDark]}
             onPress={() => {
               triggerHaptic("tap");
               setTermsVisible(true);
@@ -68,12 +93,14 @@ export default function Home() {
             accessibilityRole="button"
             accessibilityLabel="Abrir termos de privacidade e LGPD"
           >
-            <Text style={styles.termsBtnText}>Termos LGPD</Text>
+            <Text style={[styles.termsBtnText, isDark && styles.termsBtnTextDark]}>
+              {width < 450 ? "LGPD" : "Termos LGPD"}
+            </Text>
           </TouchableOpacity>
 
           {isCompact && (
             <TouchableOpacity
-              style={styles.presenceToggleBtn}
+              style={[styles.presenceToggleBtn, isDark && styles.presenceToggleBtnDark]}
               onPress={() => {
                 triggerHaptic("tap");
                 setPresenceModalVisible(true);
@@ -82,19 +109,19 @@ export default function Home() {
               accessibilityRole="button"
               accessibilityLabel="Ver integrantes presentes no laboratório"
             >
-              <Text style={styles.presenceToggleBtnText}>👥 Presentes</Text>
+              <Text style={[styles.presenceToggleBtnText, isDark && styles.presenceToggleBtnTextDark]}>👥 Presentes</Text>
             </TouchableOpacity>
           )}
 
           <TouchableOpacity
-            style={styles.refreshBtn}
+            style={[styles.refreshBtn, isDark && styles.refreshBtnDark]}
             onPress={() => openTutorAuth("refresh")}
             activeOpacity={0.75}
           >
-            <Text style={styles.refreshBtnText}>Recadastrar</Text>
+            <Text style={[styles.refreshBtnText, isDark && styles.refreshBtnTextDark]}>Recadastrar</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.registerBtn}
+            style={[styles.registerBtn, isDark && styles.registerBtnDark]}
             onPress={() => openTutorAuth("enroll")}
             activeOpacity={0.75}
           >
@@ -113,7 +140,7 @@ export default function Home() {
           <RecognitionPanel />
         </View>
 
-        {!isCompact && <PresenceSidebar />}
+        {!isCompact && <PresenceSidebar isDark={isDark} />}
       </View>
 
       {/* Modal de Presentes para Telas Compactas / Smartphones */}
@@ -123,10 +150,11 @@ export default function Home() {
           animationType="slide"
           onRequestClose={() => setPresenceModalVisible(false)}
         >
-          <View style={[styles.presenceModalContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }]}>
+          <View style={[styles.presenceModalContent, isDark && styles.presenceModalContentDark, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }]}>
             <PresenceSidebar
               onClose={() => setPresenceModalVisible(false)}
               style={styles.presenceModalSidebar}
+              isDark={isDark}
             />
           </View>
         </Modal>
@@ -258,9 +286,72 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FAF9F5",
   },
+  presenceModalContentDark: {
+    backgroundColor: "#0B0F19",
+  },
   presenceModalSidebar: {
     width: "100%",
     flex: 1,
     borderLeftWidth: 0,
+  },
+  brandStripeContainer: {
+    height: 4,
+    width: "100%",
+    flexDirection: "row",
+  },
+  brandStripeSegment: {
+    flex: 1,
+    height: "100%",
+  },
+  themeBtn: {
+    backgroundColor: "#FAF9F5",
+    borderWidth: 1,
+    borderColor: "#E5E2DC",
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  themeBtnDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#334155",
+  },
+  themeBtnText: {
+    fontSize: 15,
+  },
+  safeDark: {
+    backgroundColor: "#0B0F19",
+  },
+  headerDark: {
+    backgroundColor: "#0F172A",
+    borderBottomColor: "#1E293B",
+  },
+  titleDark: {
+    color: "#F8FAFC",
+  },
+  termsBtnDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#334155",
+  },
+  termsBtnTextDark: {
+    color: "#94A3B8",
+  },
+  presenceToggleBtnDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#334155",
+  },
+  presenceToggleBtnTextDark: {
+    color: "#F8FAFC",
+  },
+  refreshBtnDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#334155",
+  },
+  refreshBtnTextDark: {
+    color: "#F8FAFC",
+  },
+  registerBtnDark: {
+    backgroundColor: "#059669",
   },
 });
