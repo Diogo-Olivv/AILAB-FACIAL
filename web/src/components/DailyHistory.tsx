@@ -55,9 +55,9 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
                         </span>
                       ) : entry.open ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-700/80 px-2.5 py-0.5 text-[10px] font-bold shadow-2xs">
-                          <span className="relative flex h-1.5 w-1.5 shrink-0">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white dark:bg-emerald-400" />
+                          <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                            <span className="absolute h-1.5 w-1.5 rounded-full bg-white opacity-75 animate-live-ping" />
+                            <span className="relative h-1.5 w-1.5 rounded-full bg-white dark:bg-emerald-400" />
                           </span>
                           em andamento
                         </span>

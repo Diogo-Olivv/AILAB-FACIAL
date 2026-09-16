@@ -68,7 +68,10 @@ export function AnalysisProgress({ onCancel }: AnalysisProgressProps) {
               <span className="text-base">{isDone ? "✅" : step.icon}</span>
               <span className="flex-1">{step.label}</span>
               {isCurrent && (
-                <span className="h-2 w-2 rounded-full bg-green animate-ping" />
+                <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                  <span className="absolute h-1.5 w-1.5 rounded-full bg-green opacity-75 animate-live-ping" />
+                  <span className="relative h-1.5 w-1.5 rounded-full bg-green" />
+                </span>
               )}
             </div>
           );

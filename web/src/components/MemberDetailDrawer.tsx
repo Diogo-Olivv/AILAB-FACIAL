@@ -276,10 +276,10 @@ export function MemberDetailDrawer({
                   </span>
                 )}
                 {isPresent ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 px-2.5 py-0.5 text-[10.5px] font-medium text-emerald-800 dark:text-emerald-300 shadow-2xs">
-                    <span className="relative flex h-1.5 w-1.5 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 pl-2 pr-2.5 py-0.5 text-[10.5px] font-medium text-emerald-800 dark:text-emerald-300 shadow-2xs">
+                    <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                      <span className="absolute h-1.5 w-1.5 rounded-full bg-emerald-400 opacity-75 animate-live-ping" />
+                      <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     </span>
                     Presente
                   </span>

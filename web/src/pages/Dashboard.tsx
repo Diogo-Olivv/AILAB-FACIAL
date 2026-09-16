@@ -295,12 +295,12 @@ export function Dashboard() {
                 <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight leading-none">
                   {presentCount}
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/80 dark:bg-emerald-950/80 border border-emerald-300/80 dark:border-emerald-700/60 px-2 py-0.5 text-2xs font-semibold text-emerald-800 dark:text-emerald-300 font-sans shadow-2xs leading-none">
-                  <span className="relative flex h-2 w-2 items-center justify-center">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/80 dark:bg-emerald-950/80 border border-emerald-300/80 dark:border-emerald-700/60 pl-2 pr-2.5 py-0.5 text-2xs font-semibold text-emerald-800 dark:text-emerald-300 font-sans shadow-2xs leading-none select-none">
+                  <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                    <span className="absolute h-1.5 w-1.5 rounded-full bg-emerald-400 opacity-75 animate-live-ping" />
+                    <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
                   </span>
-                  <span>ao vivo</span>
+                  <span className="leading-none">ao vivo</span>
                 </span>
               </div>
               <p className="text-[11px] text-[#706E6A] dark:text-slate-400 mt-1.5 truncate">

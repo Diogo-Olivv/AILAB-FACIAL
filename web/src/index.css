@@ -312,12 +312,63 @@ html.dark .glass-table-header {
   }
 }
 
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes livePulseSymmetric {
+  0% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  60% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-down {
   animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center center;
+}
+
+.animate-slide-left {
+  animation: slideLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-live-ping {
+  animation: livePulseSymmetric 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  transform-origin: center center;
 }
 
 .animate-pulse-glow {
