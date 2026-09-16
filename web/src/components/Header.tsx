@@ -9,7 +9,6 @@ interface HeaderProps {
   onRefresh: () => void;
   isRefreshing: boolean;
   presentCount?: number;
-  onOpenTutorProfile?: () => void;
 }
 
 export function Header({
@@ -18,7 +17,6 @@ export function Header({
   onOpenTerms,
   onRefresh,
   isRefreshing,
-  onOpenTutorProfile,
 }: HeaderProps) {
   const { isDark, toggleTheme } = useTheme();
 
@@ -101,28 +99,6 @@ export function Header({
 
           {user ? (
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onOpenTutorProfile}
-                className="inline-flex items-center gap-2 rounded-2xl border border-stone-300/80 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:border-stone-400 dark:hover:border-slate-600 shadow-xs transition-all cursor-pointer min-h-[40px]"
-                title="Configurar Perfil e Foto do Tutor"
-              >
-                {user.user_metadata?.avatar_url ? (
-                  <img
-                    src={user.user_metadata.avatar_url}
-                    alt="Foto do Tutor"
-                    className="h-6 w-6 rounded-full object-cover ring-1.5 ring-[#C15F3D]/40 shadow-2xs"
-                  />
-                ) : (
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FAF5F0] dark:bg-amber-950/60 text-[#C15F3D] dark:text-amber-400 text-xs font-bold border border-[#F0DCD3] dark:border-amber-800/40 shadow-2xs">
-                    🎓
-                  </span>
-                )}
-                <span className="hidden sm:inline font-medium max-w-[110px] truncate">
-                  {user.user_metadata?.name || user.email?.split("@")[0] || "Tutor"}
-                </span>
-              </button>
-
               <button
                 onClick={signOut}
                 className="inline-flex items-center justify-center rounded-2xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 shadow-xs transition-all cursor-pointer min-h-[40px]"

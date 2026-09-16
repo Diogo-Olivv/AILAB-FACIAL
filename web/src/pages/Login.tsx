@@ -149,8 +149,8 @@ export function Login() {
               <input
                 id="tutor-email"
                 name="email"
-                type="email"
-                placeholder="seu.nome ou nome@ailab.com"
+                type="text"
+                placeholder="seu.nome"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 required

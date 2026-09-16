@@ -254,11 +254,12 @@ export function MemberDetailDrawer({
                 <img
                   src={avatarUrl}
                   alt={member.name}
-                  className="h-13 w-13 rounded-2xl object-cover ring-2 ring-white dark:ring-slate-800 shadow-md transition-transform duration-200 group-hover:scale-102"
+                  onError={() => setAvatarUrl(null)}
+                  className="h-14 w-14 rounded-2xl object-cover ring-2 ring-white dark:ring-slate-800 shadow-md transition-transform duration-200 group-hover:scale-102"
                 />
               ) : (
                 <div
-                  className={`flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br ${getAvatarStyle(member.name)} text-lg font-bold ring-2 ring-white dark:ring-slate-800 shadow-md`}
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${getAvatarStyle(member.name)} text-lg font-bold ring-2 ring-white dark:ring-slate-800 shadow-md`}
                 >
                   {member.name.charAt(0).toUpperCase()}
                 </div>
