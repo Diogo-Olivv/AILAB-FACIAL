@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Member, SessionRecord } from "../lib/reports";
 import {
   tutorCloseSession,
@@ -40,13 +40,67 @@ export function MemberDetailDrawer({
   const [busySessionId, setBusySessionId] = useState<number | null>(null);
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<number | null>(null);
   const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
+  const [typedMemberName, setTypedMemberName] = useState("");
+  const [sessionToVoid, setSessionToVoid] = useState<{ id: number; isCurrentlyVoided: boolean } | null>(null);
   const [actionMessage, setActionMessage] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(member?.avatarUrl ?? null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     setAvatarUrl(member?.avatarUrl ?? null);
+    setIsConfirmingRemove(false);
+    setTypedMemberName("");
   }, [member?.id, member?.avatarUrl]);
+
+  useEffect(() => {
+    if (!isOpen || !member) return;
+
+    previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
+    document.body.classList.add("modal-open");
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (e.key === "Tab" && drawerRef.current) {
+        const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.classList.remove("modal-open");
+      window.removeEventListener("keydown", handleKeyDown);
+      if (previouslyFocusedElementRef.current) {
+        previouslyFocusedElementRef.current.focus();
+      }
+    };
+  }, [isOpen, Boolean(member), onClose]);
 
   if (!isOpen || !member) return null;
 
@@ -187,6 +241,7 @@ export function MemberDetailDrawer({
       aria-labelledby="drawer-member-name"
     >
       <div
+        ref={drawerRef}
         className="h-full w-full max-w-full sm:max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-l border-white/80 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-slide-left text-[#171715] dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
@@ -372,52 +427,8 @@ export function MemberDetailDrawer({
               </div>
             )}
 
-            {/* Ação de Descadastrar Integrante (Desistente) */}
-            <div className="pt-1">
-              {!isConfirmingRemove ? (
-                <button
-                  type="button"
-                  onClick={() => setIsConfirmingRemove(true)}
-                  disabled={busyAction !== null}
-                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-rose-200/70 bg-white hover:bg-rose-50/50 text-[11px] font-sans font-medium text-rose-700 hover:text-rose-800 transition-all cursor-pointer min-h-[36px]"
-                >
-                  <span>🗑️</span>
-                  <span>Descadastrar integrante (desistente)</span>
-                </button>
-              ) : (
-                <div className="rounded-2xl border border-rose-300 bg-rose-50/90 p-3.5 space-y-2.5 animate-fade-in">
-                  <div className="space-y-1">
-                    <span className="text-xs font-bold text-rose-900 block font-sans">
-                      Confirmar Descadastramento?
-                    </span>
-                    <p className="text-[11px] text-rose-800/90 leading-relaxed font-sans">
-                      O integrante <strong>{member.name}</strong> será desativado e sua biometria facial excluída permanentemente (LGPD). Ele deixará de constar na lista de presença.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setIsConfirmingRemove(false)}
-                      disabled={busyAction !== null}
-                      className="rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-[#706E6A] hover:text-[#171715] transition-all cursor-pointer min-h-[34px]"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleTutorAction("remove")}
-                      disabled={busyAction !== null}
-                      className="rounded-xl bg-rose-700 hover:bg-rose-800 px-3.5 py-1.5 text-xs font-sans font-bold text-white shadow-2xs active:scale-95 transition-all cursor-pointer min-h-[34px]"
-                    >
-                      {busyAction === "remove" ? "Descadastrando..." : "Sim, Descadastrar"}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {actionMessage && (
-              <div className="rounded-xl border border-[#E5E2DC] bg-white p-2.5 text-xs font-medium text-center text-[#171715] shadow-2xs animate-fade-in">
+              <div className="rounded-xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-xs font-medium text-center text-[#171715] dark:text-slate-100 shadow-2xs animate-fade-in">
                 {actionMessage}
               </div>
             )}
@@ -441,7 +452,7 @@ export function MemberDetailDrawer({
         </div>
 
         {/* Sessions List */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-4">
           <h3 className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#706E6A] dark:text-slate-400">
             Histórico de Sessões no Período
           </h3>
@@ -544,7 +555,13 @@ export function MemberDetailDrawer({
                           <>
                             <button
                               type="button"
-                              onClick={() => handleVoidSpecificSession(s.id!, isVoided)}
+                              onClick={() => {
+                                if (isVoided) {
+                                  handleVoidSpecificSession(s.id!, true);
+                                } else {
+                                  setSessionToVoid({ id: s.id!, isCurrentlyVoided: false });
+                                }
+                              }}
                               disabled={busySessionId !== null}
                               className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-sans font-medium transition-all cursor-pointer ${
                                 isVoided
@@ -587,7 +604,139 @@ export function MemberDetailDrawer({
               })}
             </div>
           )}
+
+          {/* Zona de Perigo Isolada (Exclusão / Descadastramento de Integrante) */}
+          {user && (
+            <div className="mt-8 pt-4 border-t border-rose-200/60 dark:border-rose-950/60">
+              <div className="rounded-2xl border border-rose-200/80 dark:border-rose-900/40 bg-rose-50/30 dark:bg-rose-950/20 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-rose-800 dark:text-rose-300">
+                  <span className="text-base select-none">⚠️</span>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider font-sans">
+                      Zona de Perigo · Descadastramento
+                    </h4>
+                    <p className="text-2xs text-rose-700/80 dark:text-rose-400 font-sans">
+                      Ação irreversível de exclusão de cadastro e dados biométricos (LGPD).
+                    </p>
+                  </div>
+                </div>
+
+                {!isConfirmingRemove ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsConfirmingRemove(true);
+                      setTypedMemberName("");
+                    }}
+                    disabled={busyAction !== null}
+                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-sans font-semibold text-rose-700 dark:text-rose-400 transition-all cursor-pointer min-h-[40px] shadow-2xs"
+                  >
+                    <span>🗑️</span>
+                    <span>Descadastrar este integrante do laboratório</span>
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-slate-900 p-3.5 space-y-3 animate-scale-up">
+                    <div className="space-y-1">
+                      <span className="text-xs font-bold text-rose-900 dark:text-rose-200 block font-sans">
+                        Confirmar Descadastramento Permanente
+                      </span>
+                      <p className="text-[11.5px] text-rose-800 dark:text-rose-300 leading-relaxed font-sans">
+                        O integrante <strong>{member.name}</strong> será desativado e sua biometria facial excluída permanentemente.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5 pt-1">
+                      <label htmlFor="confirm-member-name" className="text-2xs font-bold text-slate-700 dark:text-slate-300 block font-sans">
+                        Para confirmar, digite exatamente <code className="bg-rose-100 dark:bg-rose-950/80 text-rose-900 dark:text-rose-200 px-1 py-0.5 rounded font-mono-data select-all">{member.name}</code>:
+                      </label>
+                      <input
+                        id="confirm-member-name"
+                        type="text"
+                        value={typedMemberName}
+                        onChange={(e) => setTypedMemberName(e.target.value)}
+                        placeholder={member.name}
+                        className="w-full rounded-xl border border-rose-300 dark:border-rose-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                        autoComplete="off"
+                        spellCheck={false}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsConfirmingRemove(false);
+                          setTypedMemberName("");
+                        }}
+                        disabled={busyAction !== null}
+                        className="rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-[#706E6A] dark:text-slate-300 hover:text-[#171715] dark:hover:text-white transition-all cursor-pointer min-h-[36px]"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTutorAction("remove")}
+                        disabled={busyAction !== null || typedMemberName.trim() !== member.name.trim()}
+                        className="rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 text-xs font-sans font-bold text-white shadow-2xs active:scale-95 transition-all cursor-pointer min-h-[36px]"
+                      >
+                        {busyAction === "remove" ? "Descadastrando..." : "Confirmar Exclusão"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Modal Explicativo de Anulação de Sessão */}
+        {sessionToVoid && (
+          <div
+            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="void-modal-title"
+          >
+            <div className="w-full max-w-sm rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xl space-y-4 animate-scale-up text-slate-900 dark:text-slate-100">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-lg">
+                  🚫
+                </span>
+                <div>
+                  <h4 id="void-modal-title" className="font-editorial text-lg font-bold">
+                    Anular Horas da Sessão
+                  </h4>
+                  <p className="text-2xs text-[#706E6A] dark:text-slate-400">Auditoria de Permanência</p>
+                </div>
+              </div>
+              <p className="text-xs text-[#706E6A] dark:text-slate-300 leading-relaxed">
+                Esta ação anulará a duração computada desta sessão (<strong>0h 00m</strong>) para fins de auditoria de metas (por exemplo, saída não registrada ou anomalia). Os horários originais de entrada e saída permanecem preservados no histórico do laboratório.
+              </p>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSessionToVoid(null)}
+                  disabled={busySessionId !== null}
+                  className="rounded-xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-[#706E6A] dark:text-slate-300 hover:text-[#171715] dark:hover:text-white cursor-pointer min-h-[38px]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const sid = sessionToVoid.id;
+                    setSessionToVoid(null);
+                    await handleVoidSpecificSession(sid, false);
+                  }}
+                  disabled={busySessionId !== null}
+                  className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 text-xs font-bold shadow-2xs active:scale-95 cursor-pointer min-h-[38px]"
+                >
+                  Confirmar Anulação
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Drawer Footer */}
         <div className="border-t border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5] dark:bg-slate-900 p-4">

@@ -3,6 +3,38 @@
 @tailwind utilities;
 
 :root {
+  /* Tokens Semânticos de Superfície e Fundo (Tema Claro) */
+  --bg-canvas: #FAF9F5;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #F4F3ED;
+
+  /* Bordas */
+  --border-subtle: #E5E2DC;
+  --border-strong: #D1CDC4;
+
+  /* Textos */
+  --text-primary: #171715;
+  --text-secondary: #57534E;
+  --text-muted: #78716C;
+  --text-disabled: #A8A29E;
+
+  /* Ações e Estados Funcionais */
+  --action-primary-bg: #171715;
+  --action-primary-text: #FFFFFF;
+  --action-primary-hover: #292524;
+
+  --status-success-bg: #ECFDF5;
+  --status-success-text: #065F46;
+  --status-warning-bg: #FFFBEB;
+  --status-warning-text: #92400E;
+  --status-danger-bg: #FFF1F2;
+  --status-danger-text: #9F1239;
+  --status-info-bg: #EFF6FF;
+  --status-info-text: #1D4ED8;
+
+  --focus-ring: #2563EB;
+
+  /* Legado */
   --color-navy: #1E2D5F;
   --color-navy-dark: #141E40;
   --color-green: #166534;
@@ -15,7 +47,50 @@
   --color-gold: #C9A961;
   --color-warn: #DC2626;
   --color-amber: #B45309;
-  --focus-ring: rgba(30, 45, 95, 0.45);
+}
+
+html.dark {
+  /* Tokens Semânticos de Superfície e Fundo (Tema Escuro) */
+  --bg-canvas: #0B0F19;
+  --bg-surface: #111827;
+  --bg-surface-elevated: #1F2937;
+
+  --border-subtle: #374151;
+  --border-strong: #4B5563;
+
+  --text-primary: #F9FAFB;
+  --text-secondary: #D1D5DB;
+  --text-muted: #9CA3AF;
+  --text-disabled: #6B7280;
+
+  --action-primary-bg: #F9FAFB;
+  --action-primary-text: #111827;
+  --action-primary-hover: #E5E7EB;
+
+  --status-success-bg: rgba(6, 95, 70, 0.25);
+  --status-success-text: #34D399;
+  --status-warning-bg: rgba(146, 64, 14, 0.25);
+  --status-warning-text: #FBBF24;
+  --status-danger-bg: rgba(159, 18, 57, 0.25);
+  --status-danger-text: #FB7185;
+  --status-info-bg: rgba(29, 78, 216, 0.25);
+  --status-info-text: #60A5FA;
+
+  --focus-ring: #93C5FD;
+}
+
+.numeric-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+.overscroll-contain {
+  overscroll-behavior: contain;
+}
+
+body.modal-open {
+  overflow: hidden !important;
+  touch-action: none;
 }
 
 .shadow-apple {
@@ -139,28 +214,24 @@ html.dark .glass-table-header {
     text-wrap: balance;
   }
 
-  /* Foco Visível Acessível (WCAG 2.2 AA) apenas para botões e links de navegação por teclado */
+  /* Foco Visível Acessível (WCAG 2.2 AA) para botões, links, tabs e elementos interativos */
   button:focus-visible,
   a:focus-visible,
   [role="button"]:focus-visible,
+  [role="tab"]:focus-visible,
   [tabindex]:focus-visible {
-    outline: 2px solid #C96442;
+    outline: 2.5px solid var(--focus-ring, #2563EB);
     outline-offset: 2px;
+    border-radius: 8px;
   }
 
-  /* Previne qualquer contorno ou quadrado indesejado ao selecionar inputs de texto */
-  input,
-  textarea,
-  select,
-  input:focus,
+  /* Foco suave, de alto contraste e ergonômico para campos de formulário (elimina outline retangular nativo sem perder acessibilidade) */
   input:focus-visible,
-  textarea:focus,
   textarea:focus-visible,
-  select:focus,
   select:focus-visible {
     outline: none !important;
-    outline-offset: 0 !important;
-    box-shadow: none !important;
+    border-color: var(--focus-ring, #2563EB) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22) !important;
   }
 }
 

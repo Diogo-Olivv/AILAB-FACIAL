@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent, type KeyboardEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import { useTheme } from "../lib/useTheme";
@@ -10,10 +10,16 @@ export function Login() {
   const navigate = useNavigate();
   const [emailInput, setEmailInput] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isCapsLockOn, setIsCapsLockOn] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function submit(e: React.FormEvent) {
+  const handlePasswordKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    setIsCapsLockOn(e.getModifierState("CapsLock"));
+  };
+
+  async function submit(e: FormEvent) {
     e.preventDefault();
     const raw = emailInput.trim();
     if (!raw || !password) {
@@ -31,7 +37,7 @@ export function Login() {
     } catch (err: any) {
       setError(
         err?.message ||
-          "E-mail ou senha de tutor incorretos. Caso seja o primeiro acesso geral, utilize tutor@ailab.com."
+          "E-mail ou senha de tutor incorretos. Verifique suas credenciais institucionais."
       );
     } finally {
       setBusy(false);
@@ -130,25 +136,33 @@ export function Login() {
                 Acesso Institucional com E-mail @ailab.com
               </strong>
               <span className="text-xs text-[#706E6A] dark:text-slate-400 leading-relaxed block">
-                Use seu e-mail cadastrado (<code className="rounded-md bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-1.5 py-0.5 font-mono-data text-[#171715] dark:text-slate-200 font-medium">nome@ailab.com</code>). Primeiro acesso geral: <code className="rounded-md bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-1.5 py-0.5 font-mono-data text-[#171715] dark:text-slate-200 font-medium">tutor@ailab.com</code>.
+                Utilize seu e-mail cadastrado (<code className="rounded-md bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-1.5 py-0.5 font-mono-data text-[#171715] dark:text-slate-200 font-medium">nome@ailab.com</code>). Para obter ou redefinir seu acesso de tutor, contate a coordenação do laboratório.
               </span>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#171715] dark:text-slate-200 font-sans">
+            <label htmlFor="tutor-email" className="text-xs font-semibold text-[#171715] dark:text-slate-200 font-sans">
               E-mail institucional
             </label>
             <div className="flex items-center rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800/80 px-4 py-3 text-[#171715] dark:text-slate-100 shadow-2xs focus-within:border-[#C15F3D] dark:focus-within:border-amber-400 focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:ring-4 focus-within:ring-[#C15F3D]/10 dark:focus-within:ring-amber-400/10 transition-all">
               <input
-                type="text"
+                id="tutor-email"
+                name="email"
+                type="email"
                 placeholder="seu.nome ou nome@ailab.com"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 required
                 autoFocus
+                autoComplete="username"
                 autoCapitalize="none"
                 autoCorrect="off"
+                spellCheck={false}
+                inputMode="email"
+                aria-required="true"
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? "login-error-alert" : undefined}
                 className="w-full bg-transparent border-none text-sm font-sans text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/50 dark:placeholder:text-slate-500 outline-none focus:outline-none focus:ring-0 font-medium"
               />
               {!emailInput.includes("@") && emailInput.trim().length > 0 && (
@@ -160,19 +174,56 @@ export function Login() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#171715] dark:text-slate-200 font-sans">Senha de acesso</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800/80 px-4 py-3 text-sm font-mono-data text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/50 dark:placeholder:text-slate-500 outline-none focus:outline-none focus:border-[#C15F3D] dark:focus:border-amber-400 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-[#C15F3D]/10 dark:focus:ring-amber-400/10 shadow-2xs transition-all font-medium"
-            />
+            <div className="flex items-center justify-between">
+              <label htmlFor="tutor-password" className="text-xs font-semibold text-[#171715] dark:text-slate-200 font-sans">
+                Senha de acesso
+              </label>
+              {isCapsLockOn && (
+                <span
+                  role="status"
+                  aria-live="polite"
+                  className="text-2xs font-mono-data font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded animate-fade-in"
+                >
+                  Caps Lock ativado
+                </span>
+              )}
+            </div>
+            <div className="relative flex items-center rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800/80 px-4 py-3 text-[#171715] dark:text-slate-100 shadow-2xs focus-within:border-[#C15F3D] dark:focus-within:border-amber-400 focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:ring-4 focus-within:ring-[#C15F3D]/10 dark:focus-within:ring-amber-400/10 transition-all">
+              <input
+                id="tutor-password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handlePasswordKey}
+                onKeyUp={handlePasswordKey}
+                required
+                autoComplete="current-password"
+                aria-required="true"
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? "login-error-alert" : undefined}
+                className="w-full bg-transparent border-none text-sm font-mono-data text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/50 dark:placeholder:text-slate-500 outline-none focus:outline-none focus:ring-0 font-medium pr-8"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 p-1 rounded-lg text-xs text-[#706E6A] dark:text-slate-400 hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+                aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
           </div>
 
           {error && (
-            <div className="rounded-2xl border border-[#C15F3D]/30 dark:border-rose-800/50 bg-[#FAF5F0] dark:bg-rose-950/40 p-3.5 text-xs text-[#C15F3D] dark:text-rose-300 font-medium text-center animate-fade-in leading-relaxed">
+            <div
+              id="login-error-alert"
+              role="alert"
+              aria-live="assertive"
+              className="rounded-2xl border border-[#C15F3D]/30 dark:border-rose-800/50 bg-[#FAF5F0] dark:bg-rose-950/40 p-3.5 text-xs text-[#C15F3D] dark:text-rose-300 font-medium text-center animate-fade-in leading-relaxed"
+            >
               ⚠️ {error}
             </div>
           )}

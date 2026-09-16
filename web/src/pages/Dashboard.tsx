@@ -281,7 +281,7 @@ export function Dashboard() {
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 animate-fade-in">
             {/* Presentes Agora */}
-            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(5,150,105,0.18)] hover:border-emerald-300 dark:hover:border-emerald-700 hover:-translate-y-1 transition-all duration-300 ease-out">
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(5,150,105,0.18)] hover:border-emerald-300 dark:hover:border-emerald-700 hover:-translate-y-1 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
               <div className="flex items-center justify-between">
                 <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
@@ -309,7 +309,7 @@ export function Dashboard() {
             </div>
 
             {/* Total de Horas */}
-            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(193,95,61,0.18)] hover:border-orange-300 dark:hover:border-orange-700 hover:-translate-y-1 transition-all duration-300 ease-out">
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(193,95,61,0.18)] hover:border-orange-300 dark:hover:border-orange-700 hover:-translate-y-1 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#C15F3D] to-orange-500" />
               <div className="flex items-center justify-between">
                 <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
@@ -330,7 +330,7 @@ export function Dashboard() {
             </div>
 
             {/* Integrantes Ativos */}
-            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(99,102,241,0.18)] hover:border-indigo-300 dark:hover:border-indigo-700 hover:-translate-y-1 transition-all duration-300 ease-out">
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(99,102,241,0.18)] hover:border-indigo-300 dark:hover:border-indigo-700 hover:-translate-y-1 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
               <div className="flex items-center justify-between">
                 <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
@@ -352,7 +352,7 @@ export function Dashboard() {
             </div>
 
             {/* Total de Sessões */}
-            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(217,119,6,0.18)] hover:border-amber-300 dark:hover:border-amber-700 hover:-translate-y-1 transition-all duration-300 ease-out">
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(217,119,6,0.18)] hover:border-amber-300 dark:hover:border-amber-700 hover:-translate-y-1 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-500" />
               <div className="flex items-center justify-between">
                 <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">

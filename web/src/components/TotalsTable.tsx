@@ -125,6 +125,11 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
 
   const isDurationDesc = sortField === "duration" && sortDirection === "desc";
 
+  const getSortAriaLabel = (field: SortField, label: string) => {
+    if (sortField !== field) return `Ordenar por ${label}`;
+    return `Ordenar por ${label}, atualmente em ordem ${sortDirection === "asc" ? "crescente" : "decrescente"}`;
+  };
+
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between px-1 text-xs text-[#706E6A] dark:text-slate-400 font-sans">
@@ -143,68 +148,88 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
               <th
                 scope="col"
                 aria-sort={sortField === "name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                onClick={() => handleSort("name")}
-                className="w-[45%] sm:w-auto px-3 py-3 sm:px-5 sm:py-3.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider cursor-pointer hover:text-[#171715] dark:hover:text-slate-200 transition-colors"
+                className="w-[45%] sm:w-auto px-3 py-2 sm:px-5 sm:py-2.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider"
               >
-                <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSort("name")}
+                  aria-label={getSortAriaLabel("name", "integrante")}
+                  className="group flex items-center gap-1.5 text-left hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1 -ml-1"
+                >
                   <span>Integrante</span>
-                  <span className="text-2xs opacity-60 font-mono-data">
+                  <span className="text-2xs opacity-60 font-mono-data group-hover:opacity-100">
                     {sortField === "name" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
-                </div>
+                </button>
               </th>
               <th
                 scope="col"
                 aria-sort={sortField === "matricula" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                onClick={() => handleSort("matricula")}
-                className="hidden sm:table-cell sm:w-36 px-4 py-3.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider sm:px-5 cursor-pointer hover:text-[#171715] dark:hover:text-slate-200 transition-colors"
+                className="hidden sm:table-cell sm:w-36 px-4 py-2 sm:px-5 sm:py-2.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider"
               >
-                <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSort("matricula")}
+                  aria-label={getSortAriaLabel("matricula", "matrícula")}
+                  className="group flex items-center gap-1.5 text-left hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1 -ml-1"
+                >
                   <span>Matrícula</span>
-                  <span className="text-2xs opacity-60 font-mono-data">
+                  <span className="text-2xs opacity-60 font-mono-data group-hover:opacity-100">
                     {sortField === "matricula" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
-                </div>
+                </button>
               </th>
               <th
                 scope="col"
                 aria-sort={sortField === "sessions" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                onClick={() => handleSort("sessions")}
-                className="hidden sm:table-cell sm:w-28 px-4 py-3.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider sm:px-5 text-center cursor-pointer hover:text-[#171715] dark:hover:text-slate-200 transition-colors"
+                className="hidden sm:table-cell sm:w-28 px-4 py-2 sm:px-5 sm:py-2.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider text-center"
               >
-                <div className="flex items-center justify-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSort("sessions")}
+                  aria-label={getSortAriaLabel("sessions", "sessões")}
+                  className="group flex items-center justify-center gap-1.5 w-full hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1"
+                >
                   <span>Sessões</span>
-                  <span className="text-2xs opacity-60 font-mono-data">
+                  <span className="text-2xs opacity-60 font-mono-data group-hover:opacity-100">
                     {sortField === "sessions" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
-                </div>
+                </button>
               </th>
               <th
                 scope="col"
                 aria-sort={sortField === "duration" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                onClick={() => handleSort("duration")}
-                className="w-[27%] sm:w-40 whitespace-nowrap px-2 py-3 sm:px-5 sm:py-3.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider cursor-pointer hover:text-[#171715] dark:hover:text-slate-200 transition-colors text-right sm:text-left"
+                className="w-[27%] sm:w-40 whitespace-nowrap px-2 py-2 sm:px-5 sm:py-2.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider text-right"
               >
-                <div className="flex items-center justify-end sm:justify-start gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSort("duration")}
+                  aria-label={getSortAriaLabel("duration", "total de permanência")}
+                  className="group flex items-center justify-end gap-1.5 w-full text-right hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1"
+                >
                   <span className="hidden sm:inline">Total Permanência</span>
                   <span className="sm:hidden">Tempo</span>
-                  <span className="text-2xs opacity-60 font-mono-data">
+                  <span className="text-2xs opacity-60 font-mono-data group-hover:opacity-100">
                     {sortField === "duration" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
-                </div>
+                </button>
               </th>
               <th
                 scope="col"
                 aria-sort={sortField === "status" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                onClick={() => handleSort("status")}
-                className="w-[28%] sm:w-32 whitespace-nowrap pl-1 pr-3 py-3 sm:px-5 sm:py-3.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider cursor-pointer hover:text-[#171715] dark:hover:text-slate-200 transition-colors text-right sm:text-left"
+                className="w-[28%] sm:w-32 whitespace-nowrap pl-1 pr-3 py-2 sm:px-5 sm:py-2.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider text-right sm:text-left"
               >
-                <div className="flex items-center justify-end sm:justify-start gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSort("status")}
+                  aria-label={getSortAriaLabel("status", "status de presença")}
+                  className="group flex items-center justify-end sm:justify-start gap-1.5 w-full hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1"
+                >
                   <span>Status</span>
-                  <span className="text-2xs opacity-60 font-mono-data">
+                  <span className="text-2xs opacity-60 font-mono-data group-hover:opacity-100">
                     {sortField === "status" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
                   </span>
-                </div>
+                </button>
               </th>
             </tr>
           </thead>
@@ -241,7 +266,10 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                     )}
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-sans font-medium text-[#171715] dark:text-slate-100 group-hover:text-[#C15F3D] dark:group-hover:text-amber-400 transition-colors text-xs sm:text-sm truncate">
+                        <span
+                          title={row.member.name}
+                          className="font-sans font-medium text-[#171715] dark:text-slate-100 group-hover:text-[#C15F3D] dark:group-hover:text-amber-400 transition-colors text-xs sm:text-sm truncate block"
+                        >
                           {row.member.name}
                         </span>
                         {isDurationDesc && idx < 3 && (
@@ -263,7 +291,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 <td className="hidden px-4 py-3.5 text-[#171715] dark:text-slate-200 sm:table-cell sm:px-5 text-center font-mono-data text-xs sm:text-sm font-medium">
                   {row.sessionCount}
                 </td>
-                <td className="whitespace-nowrap px-2 py-2.5 sm:px-5 sm:py-3.5 text-right sm:text-left text-xs sm:text-sm font-mono-data">
+                <td className="whitespace-nowrap px-2 py-2.5 sm:px-5 sm:py-3.5 text-right font-mono-data tabular-nums numeric-tabular text-xs sm:text-sm">
                   {row.present ? (
                     <span className="font-semibold text-emerald-700 dark:text-emerald-400">
                       {formatDuration(row.totalSeconds, true)}
@@ -278,9 +306,9 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                   <div className="flex items-center justify-end sm:justify-start">
                     {row.present ? (
                       <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 px-2.5 py-1 text-[11px] font-medium text-emerald-800 dark:text-emerald-300 shadow-2xs">
-                        <span className="relative flex h-1.5 w-1.5 shrink-0">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                        <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                          <span className="animate-live-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-600 dark:bg-emerald-400" />
                         </span>
                         <span>Presente</span>
                       </span>
