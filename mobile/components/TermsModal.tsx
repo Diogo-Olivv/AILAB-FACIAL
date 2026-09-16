@@ -200,6 +200,7 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 640,
+    height: "92%",
     maxHeight: "92%",
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
