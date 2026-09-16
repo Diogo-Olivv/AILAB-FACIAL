@@ -365,15 +365,23 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                   {/* Informações do Aluno com Tipografia Editorial */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3.5 min-w-0">
-                      <div
-                        className={`flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl text-base sm:text-xl font-editorial font-bold shadow-claude ${
-                          item.metTarget
-                            ? "bg-gradient-to-br from-emerald-600 to-teal-700 text-white"
-                            : "bg-gradient-to-br from-amber-500 to-orange-600 text-white"
-                        }`}
-                      >
-                        {item.member.name.charAt(0).toUpperCase()}
-                      </div>
+                      {item.member.avatarUrl ? (
+                        <img
+                          src={item.member.avatarUrl}
+                          alt={item.member.name}
+                          className="h-12 w-12 sm:h-14 sm:w-14 shrink-0 rounded-2xl object-cover shadow-claude ring-1 ring-stone-200 dark:ring-slate-700"
+                        />
+                      ) : (
+                        <div
+                          className={`flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl text-base sm:text-xl font-editorial font-bold shadow-claude ${
+                            item.metTarget
+                              ? "bg-gradient-to-br from-emerald-600 to-teal-700 text-white"
+                              : "bg-gradient-to-br from-amber-500 to-orange-600 text-white"
+                          }`}
+                        >
+                          {item.member.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-editorial text-lg sm:text-xl font-bold text-slate-900 tracking-tight truncate">

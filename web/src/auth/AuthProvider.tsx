@@ -251,6 +251,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(updatedSession);
         localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(updatedSession));
       },
+      updateTutorAvatar: async (avatarUrl: string | null) => {
+        try {
+          await supabase.auth.updateUser({
+            data: { avatar_url: avatarUrl },
+          });
+        } catch {
+          // Ignora caso esteja operando em modo offline / sessão local
+        }
+
+        if (session?.user) {
+          const updatedUser: User = {
+            ...session.user,
+            user_metadata: {
+              ...session.user.user_metadata,
+              avatar_url: avatarUrl,
+            },
+          };
+          const updatedSession: Session = {
+            ...session,
+            user: updatedUser,
+          };
+          setSession(updatedSession);
+          localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(updatedSession));
+        }
+      },
     }),
     [session, loading]
   );

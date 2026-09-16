@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../auth/useAuth";
+import { compressImageToBase64 } from "../lib/reports";
 
 interface Props {
   isOpen: boolean;
@@ -7,7 +8,7 @@ interface Props {
 }
 
 export function TutorProfileModal({ isOpen, onClose }: Props) {
-  const { user, updateTutorCredentials } = useAuth();
+  const { user, updateTutorCredentials, updateTutorAvatar } = useAuth();
   const currentEmail = user?.email || "tutor@ailab.com";
 
   const [emailUsername, setEmailUsername] = useState(() => {
@@ -16,6 +17,10 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
     }
     return "tutor";
   });
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    (user?.user_metadata as any)?.avatar_url ?? null
+  );
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -23,6 +28,40 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
   const [success, setSuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Por favor selecione um arquivo de imagem válido (JPG, PNG, WebP).");
+      return;
+    }
+    setIsUploadingPhoto(true);
+    setError("");
+    try {
+      const base64 = await compressImageToBase64(file, 256);
+      await updateTutorAvatar(base64);
+      setAvatarUrl(base64);
+    } catch (err: any) {
+      setError(`Falha ao salvar foto do tutor: ${err?.message || "Erro desconhecido"}`);
+    } finally {
+      setIsUploadingPhoto(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setIsUploadingPhoto(true);
+    setError("");
+    try {
+      await updateTutorAvatar(null);
+      setAvatarUrl(null);
+    } catch (err: any) {
+      setError(`Falha ao remover foto: ${err?.message || "Erro desconhecido"}`);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,6 +150,77 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
             <span>
               O e-mail deve ter o formato <code className="rounded bg-black/[0.05] dark:bg-white/10 px-1 py-0.5 font-mono text-slate-900 dark:text-slate-200 font-bold">nome@ailab.com</code>. Suas novas credenciais terão validade imediata neste dispositivo.
             </span>
+          </div>
+        </div>
+
+        {/* Seção de Foto de Perfil do Tutor */}
+        <div className="flex items-center gap-3.5 p-3.5 rounded-2xl border border-stone-200 dark:border-slate-800 bg-[#FAF9F5] dark:bg-slate-800/60 shadow-2xs">
+          <div className="relative group shrink-0">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Foto do Tutor"
+                className="h-14 w-14 rounded-2xl object-cover ring-2 ring-[#C15F3D]/25 dark:ring-amber-500/30 shadow-md"
+              />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-[#C15F3D] text-white text-2xl shadow-md shadow-orange-500/25">
+                🎓
+              </div>
+            )}
+
+            <label
+              className={`absolute inset-0 rounded-2xl bg-black/55 text-white flex flex-col items-center justify-center transition-opacity cursor-pointer ${
+                isUploadingPhoto ? "opacity-100 bg-black/75" : "opacity-0 group-hover:opacity-100"
+              }`}
+              title="Carregar foto de perfil"
+            >
+              {isUploadingPhoto ? (
+                <span className="text-xs animate-spin">⏳</span>
+              ) : (
+                <>
+                  <span className="text-sm">📷</span>
+                  <span className="text-[9px] font-semibold mt-0.5">Trocar</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                disabled={isUploadingPhoto}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block font-sans">
+              Foto de Perfil do Tutor
+            </span>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-sans">
+              Visível no cabeçalho e na barra de auditoria
+            </p>
+            <div className="flex items-center gap-2 mt-1.5">
+              <label className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#C15F3D] dark:text-amber-400 hover:underline cursor-pointer">
+                <span>📷 Alterar foto</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  disabled={isUploadingPhoto}
+                  className="hidden"
+                />
+              </label>
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  disabled={isUploadingPhoto}
+                  className="text-[11px] font-medium text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 underline cursor-pointer"
+                >
+                  Remover
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

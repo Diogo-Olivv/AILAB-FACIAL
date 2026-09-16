@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Member, SessionRecord } from "../lib/reports";
 import {
   tutorCloseSession,
@@ -7,6 +7,8 @@ import {
   tutorVoidSession,
   tutorUnvoidSession,
   tutorDeleteSession,
+  updateMemberAvatar,
+  compressImageToBase64,
 } from "../lib/reports";
 import { formatDuration, formatTime } from "../lib/aggregate";
 import { getAvatarStyle } from "./TotalsTable";
@@ -39,8 +41,59 @@ export function MemberDetailDrawer({
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<number | null>(null);
   const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(member?.avatarUrl ?? null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  useEffect(() => {
+    setAvatarUrl(member?.avatarUrl ?? null);
+  }, [member?.id, member?.avatarUrl]);
 
   if (!isOpen || !member) return null;
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setActionMessage("⚠️ Por favor selecione um arquivo de imagem válido (JPG, PNG, WebP).");
+      return;
+    }
+    setIsUploadingAvatar(true);
+    setActionMessage("");
+    try {
+      const base64 = await compressImageToBase64(file, 256);
+      await updateMemberAvatar(member.id, base64);
+      setAvatarUrl(base64);
+      setActionMessage("✅ Foto de perfil atualizada com sucesso!");
+      if (onSessionUpdated) {
+        await onSessionUpdated();
+      }
+      setTimeout(() => setActionMessage(""), 3500);
+    } catch (err: any) {
+      setActionMessage(`⚠️ Falha ao salvar foto: ${err?.message || "Erro desconhecido"}`);
+    } finally {
+      setIsUploadingAvatar(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!window.confirm("Deseja realmente remover a foto de perfil deste integrante?")) return;
+    setIsUploadingAvatar(true);
+    setActionMessage("");
+    try {
+      await updateMemberAvatar(member.id, null);
+      setAvatarUrl(null);
+      setActionMessage("✅ Foto de perfil removida com sucesso!");
+      if (onSessionUpdated) {
+        await onSessionUpdated();
+      }
+      setTimeout(() => setActionMessage(""), 3500);
+    } catch (err: any) {
+      setActionMessage(`⚠️ Falha ao remover foto: ${err?.message || "Erro desconhecido"}`);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   const handleVoidSpecificSession = async (sessionId: number, isCurrentlyVoided: boolean) => {
     setBusySessionId(sessionId);
@@ -140,15 +193,79 @@ export function MemberDetailDrawer({
         {/* Drawer Header estilo Apple Sheet com tipografia Claude */}
         <div className="flex items-start justify-between border-b border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5]/90 dark:bg-slate-800/90 p-5 gap-3">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${getAvatarStyle(member.name)} text-base font-bold ring-2 ring-white dark:ring-slate-800 shadow-md`}
-            >
-              {member.name.charAt(0).toUpperCase()}
+            {/* Avatar com upload e foto interativa */}
+            <div className="relative group shrink-0">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={member.name}
+                  className="h-13 w-13 rounded-2xl object-cover ring-2 ring-white dark:ring-slate-800 shadow-md transition-transform duration-200 group-hover:scale-102"
+                />
+              ) : (
+                <div
+                  className={`flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br ${getAvatarStyle(member.name)} text-lg font-bold ring-2 ring-white dark:ring-slate-800 shadow-md`}
+                >
+                  {member.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              {/* Botão de upload sobreposto em hover */}
+              <label
+                className={`absolute inset-0 rounded-2xl bg-black/50 text-white flex flex-col items-center justify-center transition-opacity cursor-pointer ${
+                  isUploadingAvatar ? "opacity-100 bg-black/70" : "opacity-0 group-hover:opacity-100"
+                }`}
+                title="Alterar foto de perfil"
+              >
+                {isUploadingAvatar ? (
+                  <span className="text-xs animate-spin">⏳</span>
+                ) : (
+                  <>
+                    <span className="text-sm leading-none">📷</span>
+                    <span className="text-[9px] font-semibold mt-0.5">Editar</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  disabled={isUploadingAvatar}
+                  className="hidden"
+                />
+              </label>
+
+              {/* Ícone de câmera de fácil toque no mobile */}
+              <label
+                className="sm:hidden absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 shadow-xs text-xs cursor-pointer text-slate-700 dark:text-slate-200"
+                title="Alterar foto"
+              >
+                📷
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  disabled={isUploadingAvatar}
+                  className="hidden"
+                />
+              </label>
             </div>
+
             <div className="min-w-0">
-              <span className="text-[10.5px] font-sans font-semibold uppercase tracking-wider text-[#706E6A] dark:text-slate-400 block">
-                Ficha do Integrante
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10.5px] font-sans font-semibold uppercase tracking-wider text-[#706E6A] dark:text-slate-400 block">
+                  Ficha do Integrante
+                </span>
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    disabled={isUploadingAvatar}
+                    className="text-[10px] text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 underline transition-colors cursor-pointer"
+                    title="Remover foto personalizada"
+                  >
+                    remover foto
+                  </button>
+                )}
+              </div>
               <h2 id="drawer-member-name" className="font-editorial text-xl sm:text-2xl font-normal text-[#171715] dark:text-slate-100 truncate">
                 {member.name}
               </h2>

@@ -4,6 +4,7 @@ export interface Member {
   id: string;
   name: string;
   matricula: string | null;
+  avatarUrl?: string | null;
 }
 
 export interface SessionRecord {
@@ -24,11 +25,61 @@ export interface DateRange {
 export async function fetchMembers(): Promise<Member[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, name, matricula")
+    .select("id, name, matricula, avatar_url")
     .eq("active", true)
     .order("name");
   if (error) throw error;
-  return (data ?? []).map((p) => ({ id: p.id, name: p.name, matricula: p.matricula }));
+  return (data ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    matricula: p.matricula,
+    avatarUrl: p.avatar_url ?? null,
+  }));
+}
+
+export async function updateMemberAvatar(memberId: string, avatarUrl: string | null): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: avatarUrl })
+    .eq("id", memberId);
+  if (error) throw error;
+}
+
+export function compressImageToBase64(file: File, maxSize = 256): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          return reject(new Error("Não foi possível processar a imagem."));
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error("Falha ao ler o arquivo de imagem."));
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error("Erro ao carregar o arquivo."));
+    reader.readAsDataURL(file);
+  });
 }
 
 export async function fetchSessions(range: DateRange): Promise<SessionRecord[]> {

@@ -8,6 +8,7 @@ export interface AuthState {
   signIn: (password: string, email?: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateTutorCredentials: (newEmail: string, newPassword: string) => Promise<void>;
+  updateTutorAvatar: (avatarUrl: string | null) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthState | null>(null);

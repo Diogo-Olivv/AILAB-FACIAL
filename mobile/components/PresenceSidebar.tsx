@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -178,9 +179,16 @@ function SidebarRow({ member, isDark }: { member: PresentMember; isDark?: boolea
         },
       ]}
     >
-      <View style={[styles.avatar, { backgroundColor: avatar.bg }]}>
-        <Text style={[styles.initials, { color: avatar.text }]}>{initials}</Text>
-      </View>
+      {member.profile?.avatar_url ? (
+        <Image
+          source={{ uri: member.profile.avatar_url }}
+          style={[styles.avatar, { backgroundColor: "#E2E8F0" }]}
+        />
+      ) : (
+        <View style={[styles.avatar, { backgroundColor: avatar.bg }]}>
+          <Text style={[styles.initials, { color: avatar.text }]}>{initials}</Text>
+        </View>
+      )}
       <View style={styles.info}>
         <Text style={[styles.name, isDark && styles.nameDark]} numberOfLines={1}>
           {memberName}
@@ -199,7 +207,8 @@ const MemoizedSidebarRow = React.memo(SidebarRow, (prev, next) => {
     prev.isDark === next.isDark &&
     prev.member.session_id === next.member.session_id &&
     prev.member.check_in === next.member.check_in &&
-    prev.member.profile?.name === next.member.profile?.name
+    prev.member.profile?.name === next.member.profile?.name &&
+    prev.member.profile?.avatar_url === next.member.profile?.avatar_url
   );
 });
 

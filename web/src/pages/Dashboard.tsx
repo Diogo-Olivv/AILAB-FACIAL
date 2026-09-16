@@ -218,6 +218,7 @@ export function Dashboard() {
         onRefresh={() => refreshData(false)}
         isRefreshing={isRefreshing}
         presentCount={presentCount}
+        onOpenTutorProfile={() => setIsTutorProfileOpen(true)}
       />
 
       <main className="flex-1 px-3 py-5 sm:px-6 md:px-8 max-w-6xl mx-auto w-full relative">
@@ -226,9 +227,17 @@ export function Dashboard() {
         {user && (
           <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-gradient-to-br from-[#FAF9F5] via-white to-amber-50/30 dark:from-slate-900/95 dark:via-slate-900/90 dark:to-amber-950/20 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-[0_4px_24px_rgba(23,23,21,0.03)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] animate-fade-in">
             <div className="flex items-center gap-3.5">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/40 text-[#C15F3D] dark:text-amber-400 text-xl shadow-2xs">
-                🎓
-              </span>
+              {user.user_metadata?.avatar_url ? (
+                <img
+                  src={user.user_metadata.avatar_url}
+                  alt="Foto do Tutor"
+                  className="h-12 w-12 shrink-0 rounded-2xl object-cover ring-2 ring-[#C15F3D]/25 dark:ring-amber-500/30 shadow-2xs"
+                />
+              ) : (
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/40 text-[#C15F3D] dark:text-amber-400 text-xl shadow-2xs">
+                  🎓
+                </span>
+              )}
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-editorial text-lg sm:text-xl font-normal text-[#171715] dark:text-slate-100">
@@ -271,8 +280,9 @@ export function Dashboard() {
           <KpiSkeleton />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 animate-fade-in">
-            {/* Presentes Agora (Esmeralda Sutil) */}
-            <div className="group rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_4px_24px_rgba(5,150,105,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgba(5,150,105,0.09)] hover:border-emerald-300/60 dark:hover:border-emerald-800/50 hover:-translate-y-0.5 transition-all duration-300">
+            {/* Presentes Agora */}
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(5,150,105,0.18)] hover:border-emerald-300 dark:hover:border-emerald-700 hover:-translate-y-1 transition-all duration-300 ease-out">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
               <div className="flex items-center justify-between">
                 <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
                   Presentes agora
@@ -298,8 +308,9 @@ export function Dashboard() {
               </p>
             </div>
 
-            {/* Total de Horas (Terracota Sutil) */}
-            <div className="group rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_4px_24px_rgba(193,95,61,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgba(193,95,61,0.09)] hover:border-orange-300/60 dark:hover:border-orange-800/50 hover:-translate-y-0.5 transition-all duration-300">
+            {/* Total de Horas */}
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(193,95,61,0.18)] hover:border-orange-300 dark:hover:border-orange-700 hover:-translate-y-1 transition-all duration-300 ease-out">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#C15F3D] to-orange-500" />
               <div className="flex items-center justify-between">
                 <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
                   Total de horas
@@ -318,8 +329,9 @@ export function Dashboard() {
               </p>
             </div>
 
-            {/* Integrantes Ativos (Índigo Sutil) */}
-            <div className="group rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_4px_24px_rgba(99,102,241,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.09)] hover:border-indigo-300/60 dark:hover:border-indigo-800/50 hover:-translate-y-0.5 transition-all duration-300">
+            {/* Integrantes Ativos */}
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(99,102,241,0.18)] hover:border-indigo-300 dark:hover:border-indigo-700 hover:-translate-y-1 transition-all duration-300 ease-out">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
               <div className="flex items-center justify-between">
                 <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
                   Integrantes ativos
@@ -339,8 +351,9 @@ export function Dashboard() {
               </p>
             </div>
 
-            {/* Total de Sessões (Âmbar Sutil) */}
-            <div className="group rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_4px_24px_rgba(217,119,6,0.05)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgba(217,119,6,0.09)] hover:border-amber-300/60 dark:hover:border-amber-800/50 hover:-translate-y-0.5 transition-all duration-300">
+            {/* Total de Sessões */}
+            <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_32px_rgba(217,119,6,0.18)] hover:border-amber-300 dark:hover:border-amber-700 hover:-translate-y-1 transition-all duration-300 ease-out">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-500" />
               <div className="flex items-center justify-between">
                 <span className="text-xs font-sans font-medium text-[#706E6A] dark:text-slate-400">
                   Total de sessões
@@ -474,7 +487,9 @@ export function Dashboard() {
         isPresent={Boolean(selectedMemberTotal?.present)}
         totalSeconds={selectedMemberTotal?.totalSeconds ?? 0}
         onClose={() => setSelectedMemberId(null)}
-        onSessionUpdated={() => refreshData(true)}
+        onSessionUpdated={async () => {
+          await Promise.all([loadMembers(), refreshData(true)]);
+        }}
         onMemberRemoved={async () => {
           setSelectedMemberId(null);
           await loadMembers();
