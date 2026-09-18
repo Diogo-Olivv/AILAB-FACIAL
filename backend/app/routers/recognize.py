@@ -39,6 +39,15 @@ _inference_semaphore = asyncio.Semaphore(settings.max_concurrent_inferences)
 _rate_limit_lock = threading.Lock()
 _request_history: dict[str, collections.deque] = collections.defaultdict(collections.deque)
 
+# Lock de concorrência por profile_id para serializar eventos simultâneos do mesmo integrante
+_profile_locks_guard = threading.Lock()
+_profile_locks: dict[str, asyncio.Lock] = collections.defaultdict(asyncio.Lock)
+
+
+def _get_profile_lock(profile_id: str) -> asyncio.Lock:
+    with _profile_locks_guard:
+        return _profile_locks[profile_id]
+
 
 def _check_rate_limit(client_id: str) -> None:
     now = time.time()
@@ -82,7 +91,8 @@ async def recognize(
     form = await request.form()
     frames = [f for f in form.getlist("frames") if isinstance(f, UploadFile)]
     single_frame = form.get("frame")
-    action = form.get("action")
+    raw_action = form.get("action")
+    action = str(raw_action).strip() if raw_action and str(raw_action).strip() else None
     challenge_id = form.get("challenge_id")
 
     # 1. Limitação de taxa (Rate Limiting)
@@ -130,15 +140,17 @@ async def recognize(
     profile_id = result.get("profile_id")
     event = None
     if profile_id:
-        try:
-            get_client().table("face_logs").insert({
-                "profile_id": profile_id,
-                "confidence": result.get("confidence", 0.0),
-            }).execute()
-        except Exception as exc:  # noqa: BLE001
-            log.warning("Falha ao gravar face_log: %s", exc)
+        lock = _get_profile_lock(profile_id)
+        async with lock:
+            try:
+                get_client().table("face_logs").insert({
+                    "profile_id": profile_id,
+                    "confidence": result.get("confidence", 0.0),
+                }).execute()
+            except Exception as exc:  # noqa: BLE001
+                log.warning("Falha ao gravar face_log: %s", exc)
 
-        event = register_event(profile_id, action)
+            event = register_event(profile_id, action)
 
     return {"recognized": True, **result, "event": event}
 

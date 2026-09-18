@@ -14,6 +14,7 @@ import { triggerPresenceRefresh } from "@/hooks/usePresence";
 import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
 import { extractErrorMessage, GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 import { notifyInteraction, triggerHaptic } from "@/lib/sound";
+import { enqueueOfflineAttendance, getOfflineQueueCount } from "@/lib/offlineQueue";
 
 export function RecognitionPanel() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -24,11 +25,58 @@ export function RecognitionPanel() {
   const [badgeData, setBadgeData] = useState<FeedbackBadgeData | null>(null);
   const { active, cameraKey } = useCameraFocus();
 
+  // Estados Hands-Free e Resiliência Offline
+  const [isHandsFree, setIsHandsFree] = useState(true);
+  const [pendingOfflineCount, setPendingOfflineCount] = useState(0);
+  const lastSuccessTimeRef = useRef<number>(0);
+  const busyRef = useRef(false);
+  busyRef.current = busy || loading;
+
+  // Pulso animado sutil da moldura oval durante modo ocioso / hands-free
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.035,
+          duration: 1100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1100,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
+
+  // Monitora contagem de presenças offline pendentes de sincronização
+  useEffect(() => {
+    let mounted = true;
+    const checkQueue = async () => {
+      try {
+        const count = await getOfflineQueueCount();
+        if (mounted) setPendingOfflineCount(count);
+      } catch {
+        // ignora
+      }
+    };
+    checkQueue();
+    const interval = setInterval(checkQueue, 8000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   const capture = useCallback(
-    async (action: "check_in" | "check_out") => {
+    async (action?: "check_in" | "check_out" | null) => {
       if (!cameraRef.current || busy || loading) return;
       setBusy(true);
-      setCurrentAction(action);
+      setCurrentAction(action ?? null);
       setBadgeData(null);
 
       try {
@@ -84,12 +132,28 @@ export function RecognitionPanel() {
         const res = await recognize(captured, action);
 
         if (!res) {
-          notifyInteraction("error");
-          setBadgeData({
-            type: "error",
-            title: "Falha de Conexão",
-            message: "Não foi possível comunicar com o servidor do laboratório.",
-          });
+          try {
+            await enqueueOfflineAttendance({
+              timestamp: new Date().toISOString(),
+              action: action || null,
+            });
+            const count = await getOfflineQueueCount();
+            setPendingOfflineCount(count);
+            notifyInteraction("warning");
+            setBadgeData({
+              type: "warning",
+              title: "Presença Salva Offline",
+              message:
+                "Sem conexão com o servidor. A presença foi armazenada no tablet e será sincronizada assim que a internet retornar.",
+            });
+          } catch {
+            notifyInteraction("error");
+            setBadgeData({
+              type: "error",
+              title: "Falha de Conexão",
+              message: "Não foi possível comunicar com o servidor do laboratório.",
+            });
+          }
         } else if (!res.recognized || !res.event) {
           if (res.status === "spoof_detected") {
             notifyInteraction("denied");
@@ -144,6 +208,7 @@ export function RecognitionPanel() {
           }
         } else {
           // Sucesso no reconhecimento
+          lastSuccessTimeRef.current = Date.now();
           triggerPresenceRefresh();
           const evtAction = res.event.action;
 
@@ -213,12 +278,29 @@ export function RecognitionPanel() {
         }
       } catch (err: any) {
         console.error("[RecognitionPanel] Erro ao registrar biometria:", err);
-        notifyInteraction("error");
-        setBadgeData({
-          type: "error",
-          title: "Erro de Comunicação",
-          message: extractErrorMessage(err) || GENERIC_ERROR_MESSAGE,
-        });
+        // Em caso de falha de conexão, salva no buffer offline
+        try {
+          await enqueueOfflineAttendance({
+            timestamp: new Date().toISOString(),
+            action: action || null,
+          });
+          const count = await getOfflineQueueCount();
+          setPendingOfflineCount(count);
+          notifyInteraction("warning");
+          setBadgeData({
+            type: "warning",
+            title: "Presença Salva Offline",
+            message:
+              "Rede instável. Presença registrada localmente no totem para sincronização posterior.",
+          });
+        } catch {
+          notifyInteraction("error");
+          setBadgeData({
+            type: "error",
+            title: "Erro de Comunicação",
+            message: extractErrorMessage(err) || GENERIC_ERROR_MESSAGE,
+          });
+        }
       } finally {
         setBusy(false);
         setCurrentAction(null);
@@ -226,6 +308,22 @@ export function RecognitionPanel() {
     },
     [busy, loading, recognize]
   );
+
+  // Loop inteligente de Auto-Trigger Hands-Free (sem toque)
+  useEffect(() => {
+    if (!isHandsFree || !active || !permission?.granted) return;
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      // Não dispara se a câmera estiver ocupada ou dentro do cooldown pós-reconhecimento (4.5s)
+      if (busyRef.current || now - lastSuccessTimeRef.current < 4500) {
+        return;
+      }
+      capture(null);
+    }, 2800);
+
+    return () => clearInterval(timer);
+  }, [isHandsFree, active, permission?.granted, capture]);
 
   if (!permission) return <View style={styles.container} />;
 
@@ -255,18 +353,53 @@ export function RecognitionPanel() {
           />
         )}
 
+        {/* Barra superior de status do Kiosk: Modo Mãos-Livres e Buffer Offline */}
+        <View style={styles.topStatusRow}>
+          <TouchableOpacity
+            style={[styles.handsFreeToggle, isHandsFree && styles.handsFreeToggleActive]}
+            onPress={() => {
+              triggerHaptic("tap");
+              setIsHandsFree((prev) => !prev);
+            }}
+            activeOpacity={0.7}
+            accessibilityRole="switch"
+            accessibilityLabel="Alternar modo mãos-livres"
+          >
+            <Text style={styles.handsFreeIcon}>{isHandsFree ? "✨" : "✋"}</Text>
+            <Text style={[styles.handsFreeText, isHandsFree && styles.handsFreeTextActive]}>
+              {isHandsFree ? "Mãos-Livres: Ativo" : "Manual"}
+            </Text>
+          </TouchableOpacity>
+
+          {pendingOfflineCount > 0 && (
+            <View style={styles.offlineBadge}>
+              <Text style={styles.offlineBadgeText}>
+                ⚡ {pendingOfflineCount} offline
+              </Text>
+            </View>
+          )}
+        </View>
+
         {/* Banner com Instruções Claras para o Usuário */}
         <View style={styles.guideBanner} pointerEvents="none">
           <Text style={styles.guideText}>
-            👤 Alinhe seu rosto no centro e selecione Entrada ou Saída
+            {isHandsFree
+              ? "✨ Mãos-livres: Centralize o rosto para registro automático"
+              : "👤 Alinhe seu rosto no centro e selecione Entrada ou Saída"}
           </Text>
         </View>
 
-        {/* Guia Oval de Posicionamento Facial Quando Ocioso */}
+        {/* Guia Oval de Posicionamento Facial com Feedback Inteligente */}
         {!disabled && (
-          <View style={styles.idleOvalContainer} pointerEvents="none">
-            <View style={styles.idleOval} />
-          </View>
+          <Animated.View
+            style={[
+              styles.idleOvalContainer,
+              { transform: [{ scale: isHandsFree ? pulseAnim : 1 }] },
+            ]}
+            pointerEvents="none"
+          >
+            <View style={[styles.idleOval, isHandsFree && styles.idleOvalHandsFree]} />
+          </Animated.View>
         )}
 
         {/* HUD Fluido de Escaneamento Biométrico */}
@@ -538,9 +671,59 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.2,
   },
-  guideBanner: {
+  topStatusRow: {
     position: "absolute",
     top: 14,
+    left: 16,
+    right: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    zIndex: 20,
+  },
+  handsFreeToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  handsFreeToggleActive: {
+    backgroundColor: "rgba(5, 150, 105, 0.85)",
+    borderColor: "rgba(16, 185, 129, 0.5)",
+  },
+  handsFreeIcon: {
+    fontSize: 13,
+  },
+  handsFreeText: {
+    color: "#E2E8F0",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  handsFreeTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  offlineBadge: {
+    backgroundColor: "rgba(217, 119, 6, 0.85)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(245, 158, 11, 0.5)",
+  },
+  offlineBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  guideBanner: {
+    position: "absolute",
+    top: 50,
     left: 16,
     right: 16,
     alignItems: "center",
@@ -575,6 +758,15 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderStyle: "dashed",
     borderColor: "rgba(255, 255, 255, 0.45)",
+  },
+  idleOvalHandsFree: {
+    borderColor: "rgba(16, 185, 129, 0.8)",
+    borderWidth: 2.5,
+    borderStyle: "solid",
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
   },
   actions: { flexDirection: "row", gap: 14 },
   actionWrapper: { flex: 1 },

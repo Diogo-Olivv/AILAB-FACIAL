@@ -189,14 +189,17 @@ export function TutorWarningModal({
       .sort((a, b) => a.totalSeconds - b.totalSeconds);
   }, [weeklyTotals, filterMode, search]);
 
-  const handleCopyNotice = (item: (typeof weeklyTotals)[0]) => {
-    const text = `[AiLab Makers · Comunicado Acadêmico de Frequência]
+  const generateNoticeText = (item: (typeof weeklyTotals)[0]) => {
+    return `[AiLab Makers · Comunicado Acadêmico de Frequência]
 Prezado(a) ${item.member.name} (Matrícula: ${item.member.matricula ?? "N/A"}):
 Informamos que nesta semana você registrou ${formatDuration(item.totalSeconds)} de permanência no laboratório.
 A meta obrigatória semanal é de 4h00 (débito restante de ${formatDuration(item.deficitSeconds)}).
 Pedimos que regularize seu horário até o encerramento do ciclo semanal para manter sua situação acadêmica regular.
 — Coordenação & Tutoria AiLab (${tutorEmail})`;
+  };
 
+  const handleCopyNotice = (item: (typeof weeklyTotals)[0]) => {
+    const text = generateNoticeText(item);
     navigator.clipboard.writeText(text);
     setCopiedId(item.member.id);
 
@@ -218,6 +221,25 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
     setTimeout(() => {
       setCopiedId(null);
     }, 3000);
+  };
+
+  const handleOpenWhatsApp = (item: (typeof weeklyTotals)[0]) => {
+    const text = generateNoticeText(item);
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+
+    saveWarning({
+      memberId: item.member.id,
+      memberName: item.member.name,
+      matricula: item.member.matricula ?? undefined,
+      hoursDone: formatDuration(item.totalSeconds),
+      hoursNeeded: formatDuration(item.deficitSeconds),
+      date: new Date().toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
   };
 
   const toggleSelectMember = (id: string) => {
@@ -302,6 +324,37 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
     }, 3000);
   };
 
+  const handleOpenBatchWhatsApp = () => {
+    const text = generateBatchNoticeText();
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+
+    const nextWarnings = { ...warnings };
+    const dateStr = new Date().toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    selectedItems.forEach((item) => {
+      nextWarnings[item.member.id] = {
+        memberId: item.member.id,
+        memberName: item.member.name,
+        matricula: item.member.matricula ?? undefined,
+        hoursDone: formatDuration(item.totalSeconds),
+        hoursNeeded: formatDuration(item.deficitSeconds),
+        date: dateStr,
+      };
+    });
+
+    setWarnings(nextWarnings);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextWarnings));
+    } catch {
+      // Ignora erro
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -361,7 +414,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
               {totalStudents}
             </span>
             <span className="hidden sm:inline-block text-2xs text-stone-400 font-medium mt-0.5">
-              integrantes ativos
+              {totalStudents > 0 ? Math.round((metTargetCount / totalStudents) * 100) : 0}% em conformidade
             </span>
           </div>
 
@@ -378,6 +431,9 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                 &lt; 4h
               </span>
             </div>
+            <span className="hidden sm:inline-block text-2xs text-amber-700 dark:text-amber-400 font-medium mt-0.5">
+              {totalStudents > 0 ? Math.round((underTargetStudents.length / totalStudents) * 100) : 0}% pendentes
+            </span>
           </div>
 
           {/* Regularizados */}
@@ -393,6 +449,9 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                 &ge; 4h
               </span>
             </div>
+            <span className="hidden sm:inline-block text-2xs text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">
+              {totalStudents > 0 ? Math.round((metTargetCount / totalStudents) * 100) : 0}% da turma
+            </span>
           </div>
         </div>
 
@@ -689,13 +748,23 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                           <button
                             type="button"
                             onClick={() => handleCopyNotice(item)}
-                            className={`rounded-2xl px-5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-claude cursor-pointer min-h-[42px] inline-flex items-center justify-center gap-2 active:scale-95 ${
+                            className={`rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-claude cursor-pointer min-h-[42px] inline-flex items-center justify-center gap-2 active:scale-95 ${
                               isCopied
                                 ? "bg-emerald-600 text-white"
                                 : "bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-700 hover:to-orange-700"
                             }`}
                           >
-                            {isCopied ? "✓ Mensagem Copiada!" : "⚠️ Emitir Advertência"}
+                            {isCopied ? "✓ Copiado!" : "⚠️ Advertir"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenWhatsApp(item)}
+                            title="Abrir WhatsApp com o comunicado pré-formatado"
+                            className="rounded-2xl border border-emerald-600/30 dark:border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 px-3.5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-2xs cursor-pointer min-h-[42px] inline-flex items-center justify-center gap-1.5 active:scale-95"
+                          >
+                            <span>📲</span>
+                            <span>WhatsApp</span>
                           </button>
 
                           {warning && (
@@ -762,19 +831,28 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                         <button
                           type="button"
                           onClick={() => handleCopyNotice(item)}
-                          className={`flex-1 rounded-2xl py-3.5 px-4 text-sm font-extrabold transition-all shadow-claude cursor-pointer min-h-[48px] inline-flex items-center justify-center gap-2 active:scale-98 ${
+                          className={`flex-1 rounded-2xl py-3.5 px-3 text-xs sm:text-sm font-extrabold transition-all shadow-claude cursor-pointer min-h-[48px] inline-flex items-center justify-center gap-1.5 active:scale-98 ${
                             isCopied
                               ? "bg-emerald-600 text-white"
                               : "bg-gradient-to-r from-amber-600 to-orange-600 text-white"
                           }`}
                         >
-                          {isCopied ? "✓ Mensagem Copiada!" : "⚠️ Aplicar Advertência ao Aluno"}
+                          {isCopied ? "✓ Copiado!" : "⚠️ Advertir"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenWhatsApp(item)}
+                          title="Abrir no WhatsApp"
+                          className="rounded-2xl py-3.5 px-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-600/30 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm font-extrabold min-h-[48px] inline-flex items-center justify-center gap-1 active:scale-98"
+                        >
+                          <span>📲</span>
+                          <span>WhatsApp</span>
                         </button>
                         {warning && (
                           <button
                             type="button"
                             onClick={() => removeWarning(item.member.id)}
-                            className="rounded-2xl border border-stone-200/90 dark:border-slate-700 bg-stone-100 dark:bg-slate-800 px-3.5 py-3 text-xs font-bold text-stone-600 dark:text-slate-300 hover:text-amber-800 min-h-[48px]"
+                            className="rounded-2xl border border-stone-200/90 dark:border-slate-700 bg-stone-100 dark:bg-slate-800 px-3 py-3 text-xs font-bold text-stone-600 dark:text-slate-300 hover:text-amber-800 min-h-[48px]"
                             title="Desfazer"
                           >
                             ✕
@@ -810,7 +888,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsPreviewOpen(true)}
@@ -827,7 +905,16 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                     : "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
                 }`}
               >
-                {batchCopied ? "✓ Comunicado Copiado!" : `📋 Copiar Comunicados em Lote (${selectedMemberIds.length})`}
+                {batchCopied ? "✓ Copiado!" : `📋 Copiar (${selectedMemberIds.length})`}
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenBatchWhatsApp}
+                className="flex-1 sm:flex-none rounded-xl border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100/70 text-emerald-900 dark:text-emerald-200 px-4 py-2 text-xs font-bold shadow-2xs active:scale-95 transition-all cursor-pointer min-h-[40px] inline-flex items-center justify-center gap-1.5"
+                title="Abrir WhatsApp com comunicado coletivo"
+              >
+                <span>📲</span>
+                <span>WhatsApp</span>
               </button>
             </div>
           </div>

@@ -119,7 +119,7 @@ export async function getRecognizeChallenge(signal?: AbortSignal): Promise<Chall
 /** POST /recognize — usa kiosk key (sem tutorToken) e anexa challenge_id de vivacidade temporal. */
 export async function recognizeFrame(
   frameOrFrames: UploadFile | UploadFile[],
-  action?: "check_in" | "check_out",
+  action?: "check_in" | "check_out" | null,
   signal?: AbortSignal
 ): Promise<RecognizeResult> {
   // 1. Obtém desafio efêmero de vivacidade temporal antes do upload
