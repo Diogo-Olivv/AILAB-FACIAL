@@ -232,6 +232,12 @@ export function MemberDetailDrawer({
     .filter((s) => s.profileId === member.id)
     .sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
 
+  const openSession = memberSessions.find((s) => s.checkOut === null && s.voidedAt === null);
+  const openSessionSeconds = openSession
+    ? Math.max(0, Math.floor((Date.now() - new Date(openSession.checkIn).getTime()) / 1000))
+    : 0;
+  const isLongSession = isPresent && openSessionSeconds >= 6 * 3600;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-end bg-black/50 backdrop-blur-xs transition-opacity animate-fade-in"
@@ -332,13 +338,20 @@ export function MemberDetailDrawer({
                   </span>
                 )}
                 {isPresent ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 pl-2 pr-2.5 py-0.5 text-[10.5px] font-medium text-emerald-800 dark:text-emerald-300 shadow-2xs">
-                    <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
-                      <span className="absolute h-1.5 w-1.5 rounded-full bg-emerald-400 opacity-75 animate-live-ping" />
-                      <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 pl-2 pr-2.5 py-0.5 text-[10.5px] font-medium text-emerald-800 dark:text-emerald-300 shadow-2xs">
+                      <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                        <span className="absolute h-1.5 w-1.5 rounded-full bg-emerald-400 opacity-75 animate-live-ping" />
+                        <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      </span>
+                      Presente
                     </span>
-                    Presente
-                  </span>
+                    {isLongSession && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/70 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-300 font-mono-data shadow-2xs" title="Sessão aberta há mais de 6 horas">
+                        ⚠️ Sessão longa (&gt; 6h)
+                      </span>
+                    )}
+                  </div>
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#FAF9F5] dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-2.5 py-0.5 text-[10.5px] font-medium text-[#706E6A] dark:text-slate-400">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#706E6A]/40 shrink-0" />
@@ -376,12 +389,12 @@ export function MemberDetailDrawer({
                   type="button"
                   onClick={() => handleTutorAction("checkout")}
                   disabled={busyAction !== null}
-                  className="flex flex-col items-center justify-center p-3 rounded-2xl border border-emerald-600/20 bg-emerald-50 hover:bg-emerald-100/60 active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs min-h-[54px]"
+                  className="flex flex-col items-center justify-center p-3 rounded-2xl border border-emerald-600/20 dark:border-emerald-700/40 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs min-h-[54px]"
                 >
-                  <span className="text-xs font-bold text-emerald-800">
+                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
                     {busyAction === "checkout" ? "Registrando..." : "🚪 Registrar Saída"}
                   </span>
-                  <span className="text-[10px] text-emerald-700/80 font-medium mt-0.5">
+                  <span className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 font-medium mt-0.5">
                     Computa horas até agora
                   </span>
                 </button>
@@ -390,12 +403,12 @@ export function MemberDetailDrawer({
                   type="button"
                   onClick={() => handleTutorAction("void")}
                   disabled={busyAction !== null}
-                  className="flex flex-col items-center justify-center p-3 rounded-2xl border border-rose-600/20 bg-rose-50 hover:bg-rose-100/60 active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs min-h-[54px]"
+                  className="flex flex-col items-center justify-center p-3 rounded-2xl border border-rose-600/20 dark:border-rose-700/40 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100/60 dark:hover:bg-rose-900/40 active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs min-h-[54px]"
                 >
-                  <span className="text-xs font-bold text-rose-800">
+                  <span className="text-xs font-bold text-rose-800 dark:text-rose-300">
                     {busyAction === "void" ? "Cancelando..." : "🛑 Cancelar Entrada"}
                   </span>
-                  <span className="text-[10px] text-rose-700/80 font-medium mt-0.5">
+                  <span className="text-[10px] text-rose-700/80 dark:text-rose-400/80 font-medium mt-0.5">
                     Zera horas (esquecimento)
                   </span>
                 </button>
@@ -406,22 +419,22 @@ export function MemberDetailDrawer({
                   type="button"
                   onClick={() => handleTutorAction("checkin")}
                   disabled={busyAction !== null}
-                  className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-emerald-600/25 bg-emerald-50/90 hover:bg-emerald-100/70 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 shadow-2xs min-h-[52px]"
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-emerald-600/25 dark:border-emerald-700/40 bg-emerald-50/90 dark:bg-emerald-950/40 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 shadow-2xs min-h-[52px]"
                 >
                   <div className="flex items-center gap-2.5 text-left">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white text-sm shadow-2xs">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600 dark:bg-emerald-700 text-white text-sm shadow-2xs">
                       🚪
                     </span>
                     <div>
-                      <span className="text-xs font-bold text-emerald-900 block font-sans">
+                      <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 block font-sans">
                         {busyAction === "checkin" ? "Registrando Entrada..." : "Registrar Entrada Manual"}
                       </span>
-                      <span className="text-[10.5px] text-emerald-700 font-medium">
+                      <span className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-medium">
                         Contingência para reconhecimento facial
                       </span>
                     </div>
                   </div>
-                  <span className="text-xs font-mono-data font-semibold text-emerald-800 bg-white/90 border border-emerald-200 px-2.5 py-1 rounded-full">
+                  <span className="text-xs font-mono-data font-semibold text-emerald-800 dark:text-emerald-300 bg-white/90 dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700/60 px-2.5 py-1 rounded-full">
                     Iniciar agora →
                   </span>
                 </button>
@@ -491,11 +504,15 @@ export function MemberDetailDrawer({
                         <span className="font-editorial font-medium text-sm text-[#171715] dark:text-slate-100 capitalize">
                           {dateLabel}
                         </span>
-                        {isOver10h && (
+                        {isOver10h ? (
                           <span className="rounded-full bg-amber-100/90 dark:bg-amber-900/60 border border-amber-300 dark:border-amber-700 px-2 py-0.5 font-bold text-amber-900 dark:text-amber-300 text-[10px] font-mono-data">
                             ⚠️ Anômala (&gt; 10h)
                           </span>
-                        )}
+                        ) : isOpenSession && (Date.now() - new Date(s.checkIn).getTime()) / 1000 > 21600 ? (
+                          <span className="rounded-full bg-amber-100/90 dark:bg-amber-900/60 border border-amber-300 dark:border-amber-700 px-2 py-0.5 font-bold text-amber-900 dark:text-amber-300 text-[10px] font-mono-data">
+                            ⚠️ Sessão longa (&gt; 6h)
+                          </span>
+                        ) : null}
                       </div>
 
                       {isVoided ? (

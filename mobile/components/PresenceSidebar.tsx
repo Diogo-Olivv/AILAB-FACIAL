@@ -92,6 +92,11 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
               onChangeText={setSearch}
               style={[styles.searchInput, isDark && styles.searchInputDark]}
               accessibilityLabel="Filtrar integrantes presentes"
+              autoCorrect={false}
+              autoCapitalize="none"
+              spellCheck={false}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
             />
             {search.length > 0 && (
               <TouchableOpacity

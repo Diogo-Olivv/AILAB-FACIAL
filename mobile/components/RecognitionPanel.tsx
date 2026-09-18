@@ -91,7 +91,11 @@ export function RecognitionPanel() {
             message: "Não foi possível comunicar com o servidor do laboratório.",
           });
         } else if (!res.recognized || !res.event) {
-          notifyInteraction("warning");
+          if (res.status === "spoof_detected") {
+            notifyInteraction("denied");
+          } else {
+            notifyInteraction("warning");
+          }
           if (res.status === "spoof_detected") {
             setBadgeData({
               type: "spoof_detected",

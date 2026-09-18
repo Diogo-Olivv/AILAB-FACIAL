@@ -8,13 +8,29 @@ services:
     healthCheckPath: /health
     branch: master
     envVars:
+      # ── Supabase ────────────────────────────────────────────────────────────
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
+      # ── Face Recognition ────────────────────────────────────────────────────
+      # FACE_THRESHOLD: Distância euclidiana máxima calibrada (0.87 ↔ cos >= 0.62)
       - key: FACE_THRESHOLD
-        value: "0.55"
+        value: "0.87"
       - key: DEBOUNCE_SECONDS
         value: "60"
+      # ── Auth & Access Control ───────────────────────────────────────────────
+      # API_KEY: legado — usado por tablets não migrados
       - key: API_KEY
+        sync: false
+      # KIOSK_API_KEY: chave dos totens de reconhecimento (POST /recognize)
+      - key: KIOSK_API_KEY
+        sync: false
+      # ADMIN_API_KEY: chave administrativa (manutenção, fechar sessões)
+      - key: ADMIN_API_KEY
+        sync: false
+      # ── CORS ────────────────────────────────────────────────────────────────
+      # Origens permitidas separadas por vírgula, ex: https://ailab.example.com
+      # Obrigatório: sem isso o backend rejeita TODAS as origens (fail-closed)
+      - key: CORS_ORIGINS
         sync: false

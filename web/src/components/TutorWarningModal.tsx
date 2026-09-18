@@ -168,6 +168,11 @@ export function TutorWarningModal({
   );
   const metTargetCount = totalStudents - underTargetStudents.length;
 
+  const neverPresentStudents = useMemo(
+    () => weeklyTotals.filter((item) => item.totalSeconds === 0),
+    [weeklyTotals]
+  );
+
   // Filtragem e busca
   const filteredList = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -346,7 +351,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
         </div>
 
         {/* Resumo de Indicadores Ampliado para Celular com Estilo Claude / Perplexity */}
-        <div className="shrink-0 p-3 sm:p-5 border-b border-stone-200/70 dark:border-slate-800 bg-stone-100/50 dark:bg-slate-850/50 grid grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="shrink-0 p-3 sm:p-5 border-b border-stone-200/70 dark:border-slate-800 bg-stone-100/50 dark:bg-slate-800/60 grid grid-cols-3 gap-2.5 sm:gap-4">
           {/* Total */}
           <div className="claude-card rounded-2xl p-3 sm:p-4 text-center sm:text-left dark:bg-slate-800 dark:border-slate-700">
             <span className="text-2xs sm:text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-slate-400 block truncate font-sans">
@@ -361,35 +366,53 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
           </div>
 
           {/* Abaixo da Meta */}
-          <div className="claude-card rounded-2xl border-amber-500/30 bg-gradient-to-br from-amber-500/[0.12] via-amber-500/[0.04] to-white p-3 sm:p-4 text-center sm:text-left">
-            <span className="text-2xs sm:text-xs font-bold uppercase tracking-widest text-amber-800 block truncate font-sans">
+          <div className="claude-card rounded-2xl border-amber-500/30 dark:border-amber-700/30 bg-gradient-to-br from-amber-500/[0.12] via-amber-500/[0.04] to-white dark:from-amber-500/[0.15] dark:via-amber-500/[0.06] dark:to-transparent dark:bg-slate-800 p-3 sm:p-4 text-center sm:text-left">
+            <span className="text-2xs sm:text-xs font-bold uppercase tracking-widest text-amber-800 dark:text-amber-300 block truncate font-sans">
               Em Débito
             </span>
             <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2 mt-1">
-              <span className="text-2xl sm:text-4xl font-extrabold text-amber-900 font-mono-data tracking-apple-tightest">
+              <span className="text-2xl sm:text-4xl font-extrabold text-amber-900 dark:text-amber-200 font-mono-data tracking-apple-tightest">
                 {underTargetStudents.length}
               </span>
-              <span className="inline-flex items-center justify-center rounded-full bg-amber-500/20 px-2 py-0.5 text-2xs font-bold text-amber-900 font-mono-data">
+              <span className="inline-flex items-center justify-center rounded-full bg-amber-500/20 dark:bg-amber-500/30 px-2 py-0.5 text-2xs font-bold text-amber-900 dark:text-amber-200 font-mono-data">
                 &lt; 4h
               </span>
             </div>
           </div>
 
           {/* Regularizados */}
-          <div className="claude-card rounded-2xl border-emerald-500/30 bg-gradient-to-br from-emerald-500/[0.12] via-emerald-500/[0.04] to-white p-3 sm:p-4 text-center sm:text-left">
-            <span className="text-2xs sm:text-xs font-bold uppercase tracking-widest text-emerald-800 block truncate font-sans">
+          <div className="claude-card rounded-2xl border-emerald-500/30 dark:border-emerald-700/30 bg-gradient-to-br from-emerald-500/[0.12] via-emerald-500/[0.04] to-white dark:from-emerald-500/[0.15] dark:via-emerald-500/[0.06] dark:to-transparent dark:bg-slate-800 p-3 sm:p-4 text-center sm:text-left">
+            <span className="text-2xs sm:text-xs font-bold uppercase tracking-widest text-emerald-800 dark:text-emerald-300 block truncate font-sans">
               Cumprida
             </span>
             <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2 mt-1">
-              <span className="text-2xl sm:text-4xl font-extrabold text-emerald-900 font-mono-data tracking-apple-tightest">
+              <span className="text-2xl sm:text-4xl font-extrabold text-emerald-900 dark:text-emerald-200 font-mono-data tracking-apple-tightest">
                 {metTargetCount}
               </span>
-              <span className="inline-flex items-center justify-center rounded-full bg-emerald-500/20 px-2 py-0.5 text-2xs font-bold text-emerald-900 font-mono-data">
+              <span className="inline-flex items-center justify-center rounded-full bg-emerald-500/20 dark:bg-emerald-500/30 px-2 py-0.5 text-2xs font-bold text-emerald-900 dark:text-emerald-200 font-mono-data">
                 &ge; 4h
               </span>
             </div>
           </div>
         </div>
+
+        {/* Alerta de Ausentes Completos */}
+        {neverPresentStudents.length > 0 && (
+          <div className="shrink-0 px-3 sm:px-5 py-2.5 border-b border-stone-200/70 dark:border-slate-800 bg-rose-50/60 dark:bg-rose-950/20 flex items-center gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-500/20 dark:bg-rose-500/30 text-sm">🚫</span>
+            <div className="flex-1 min-w-0">
+              <span className="text-xs font-bold text-rose-800 dark:text-rose-300">
+                {neverPresentStudents.length} {neverPresentStudents.length === 1 ? 'aluno ausente' : 'alunos ausentes'} esta semana
+              </span>
+              <span className="text-2xs text-rose-600/80 dark:text-rose-400/80 ml-1.5 font-sans">
+                — sem nenhum registro de presença
+              </span>
+            </div>
+            <span className="text-2xs font-mono-data text-rose-700 dark:text-rose-400 shrink-0 font-bold">
+              {neverPresentStudents.map(s => s.member.name.split(' ')[0]).slice(0, 3).join(', ')}{neverPresentStudents.length > 3 ? ` +${neverPresentStudents.length - 3}` : ''}
+            </span>
+          </div>
+        )}
 
         {/* Barra de Filtros e Busca estilo Perplexity Command Bar */}
         <div className="shrink-0 p-3 sm:p-4 border-b border-stone-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
@@ -442,6 +465,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onPointerDown={(e) => e.stopPropagation()}
                 placeholder="Buscar aluno ou matrícula..."
                 className="w-full rounded-2xl border border-stone-200/90 dark:border-slate-700 bg-stone-50/70 dark:bg-slate-800 py-2.5 pl-10 pr-9 text-sm text-slate-900 dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 focus:border-teal-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-teal-500/10 shadow-inner transition-all font-medium"
               />

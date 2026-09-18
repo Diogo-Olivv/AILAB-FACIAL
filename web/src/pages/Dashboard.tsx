@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../auth/useAuth";
 import { supabase } from "../lib/supabase";
 import {
@@ -22,6 +22,8 @@ import { ManualAttendanceModal } from "../components/ManualAttendanceModal";
 import { Footer } from "../components/Footer";
 import { ViewSelector } from "../components/ViewSelector";
 import { KpiSkeleton, TableSkeleton } from "../components/TableSkeleton";
+import { WeeklyChart } from "../components/WeeklyChart";
+import { ExportButton } from "../components/ExportButton";
 
 type View = "totals" | "history";
 
@@ -31,7 +33,11 @@ export function Dashboard() {
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [presentIds, setPresentIds] = useState<string[]>([]);
   const [period, setPeriod] = useState<PeriodKey>("week");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [view, setView] = useState<View>("totals");
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -80,8 +86,8 @@ export function Dashboard() {
   }, [loadMembers]);
 
   const range = useMemo(
-    () => rangeFor(period),
-    [period],
+    () => rangeFor(period, customFrom, customTo),
+    [period, customFrom, customTo],
   );
 
   const refreshData = useCallback(
@@ -389,42 +395,70 @@ export function Dashboard() {
           <PeriodSelector
             period={period}
             range={range}
-            onPeriod={setPeriod}
+            onPeriod={(p) => {
+              setPeriod(p);
+              if (p !== "custom") {
+                setCustomFrom("");
+                setCustomTo("");
+              }
+            }}
+            customFrom={customFrom}
+            customTo={customTo}
+            onCustomRange={(from, to) => {
+              setCustomFrom(from);
+              setCustomTo(to);
+            }}
           />
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-3xl p-3 sm:p-3.5 border border-[#E5E2DC] dark:border-slate-800 bg-white/85 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_4px_20px_rgba(23,23,21,0.02)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-300">
             {/* Segmented control de visualizações */}
             <ViewSelector view={view} onViewChange={setView} />
 
-            {/* Campo de Busca Reativa estilo Perplexity Command Bar */}
-            <div className="relative w-full sm:w-80 group">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#706E6A] dark:text-slate-400 group-focus-within:text-[#C15F3D] transition-colors">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                </svg>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {/* Campo de Busca Reativa com debounce de 150ms */}
+              <div className="relative flex-1 sm:w-80 group">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#706E6A] dark:text-slate-400 group-focus-within:text-[#C15F3D] transition-colors">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                  </svg>
+                </div>
+                <input
+                  key="search-main"
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSearchInput(val);
+                    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                    searchDebounceRef.current = setTimeout(() => setSearchQuery(val), 150);
+                  }}
+                  placeholder="Buscar integrante ou matrícula..."
+                  className="w-full h-11 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-950/60 py-2.5 pl-10 pr-9 text-xs sm:text-sm text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/60 dark:placeholder:text-slate-500 font-sans font-medium focus:border-[#C15F3D] focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-4 focus:ring-[#C15F3D]/10 transition-all"
+                  aria-label="Buscar integrantes por nome ou matrícula"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearchInput(""); setSearchQuery(""); }}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#706E6A] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white cursor-pointer"
+                    aria-label="Limpar busca"
+                  >
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#E5E2DC] dark:bg-slate-700 text-[10px] font-bold text-[#171715] dark:text-slate-200 hover:bg-[#D5D2CC]">
+                      ✕
+                    </span>
+                  </button>
+                )}
               </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar integrante ou matrícula..."
-                className="w-full h-11 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-950/60 py-2.5 pl-10 pr-9 text-xs sm:text-sm text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/60 dark:placeholder:text-slate-500 font-sans font-medium focus:border-[#C15F3D] focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-4 focus:ring-[#C15F3D]/10 transition-all"
-                aria-label="Buscar integrantes por nome ou matrícula"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#706E6A] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white cursor-pointer"
-                  aria-label="Limpar busca"
-                >
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#E5E2DC] dark:bg-slate-700 text-[10px] font-bold text-[#171715] dark:text-slate-200 hover:bg-[#D5D2CC]">
-                    ✕
-                  </span>
-                </button>
-              )}
+
+              {/* Botão de Exportação CSV */}
+              <ExportButton rows={filteredTotals} range={range} period={period} />
             </div>
           </div>
+
+          {/* Gráfico de Distribuição Semanal */}
+          {!loading && totals.length > 0 && (
+            <WeeklyChart rows={filteredTotals} range={range} />
+          )}
         </div>
 
         {/* Alerta de Erro Resiliente */}
