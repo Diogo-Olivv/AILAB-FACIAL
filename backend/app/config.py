@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     max_concurrent_inferences: int = 10         # Teto de inferências biométricas simultâneas por worker
     rate_limit_per_minute: int = 60             # Limite de requisições por minuto por chave/IP
 
+    # Busca Vetorial HNSW (pgvector) — Otimização de Latência (sub-15ms)
+    hnsw_ef_search: int = 40                    # ef_search: trade-off qualidade/velocidade (≥ ef_construction/2)
+
 
 settings = Settings()
 

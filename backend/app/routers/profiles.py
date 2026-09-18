@@ -5,14 +5,15 @@ import asyncio
 from datetime import datetime, timezone
 import logging
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 
 from app.config import settings
 from app.db.supabase_client import get_client
-from app.deps import validate_image, verify_api_key, verify_tutor_token
+from app.deps import validate_image, verify_api_key, verify_tutor_token, require_tutor_or_window
 from app.routers.contracts import EnrollResponse, RevokeConsentResponse
 from app.services.enroll_service import EnrollError, ProfileNotFound, refresh_embedding
 from app.services.face_service import invalidate_embeddings_cache
+from app.services.enrollment_window import is_enrollment_window_active
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
@@ -39,13 +40,18 @@ def get_profile(profile_id: str):
 @router.post(
     "/{profile_id}/refresh-embedding",
     response_model=EnrollResponse,
-    dependencies=[Depends(verify_tutor_token)],
+    dependencies=[Depends(require_tutor_or_window)],
 )
 async def refresh_embedding_route(
     profile_id: str,
     frames: list[UploadFile] = File(...),  # noqa: B008
+    response: Response = Response(),
 ):
-    """Atualiza o vetor biométrico do perfil com novas fotos, mantendo id e histórico."""
+    """Atualiza o vetor biométrico do perfil com novas fotos, mantendo id e histórico.
+
+    Durante a janela cadastral (28/09/2026 – 02/10/2026 GMT-3), aceita requisições
+    sem token de tutor. Fora desse período, exige autenticação JWT (role=tutor).
+    """
     if len(frames) > settings.max_enroll_frames:
         raise HTTPException(
             400,
@@ -61,11 +67,18 @@ async def refresh_embedding_route(
         images.append(data)
 
     try:
-        return await asyncio.to_thread(refresh_embedding, profile_id, images)
+        result = await asyncio.to_thread(refresh_embedding, profile_id, images)
     except ProfileNotFound as exc:
         raise HTTPException(404, "Perfil não encontrado.") from exc
     except EnrollError as exc:
         raise HTTPException(422, str(exc)) from exc
+
+    # Header de auditoria para rastreabilidade da janela cadastral
+    if response is not None:
+        window_header = "active" if is_enrollment_window_active() else "inactive"
+        response.headers["X-Enrollment-Window"] = window_header
+    return result
+
 
 
 @router.post(

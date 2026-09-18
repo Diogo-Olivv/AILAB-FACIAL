@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 :root {
+  /* Tokens Semânticos shadcn / Tailwind */
+  --background: #FAF9F5;
+  --foreground: #171715;
+  --border: #E5E2DC;
+  --input: #FAF9F5;
+
   /* Tokens Semânticos de Superfície e Fundo (Tema Claro) */
   --bg-canvas: #FAF9F5;
   --bg-surface: #FFFFFF;
@@ -50,6 +56,12 @@
 }
 
 html.dark {
+  /* Tokens Semânticos shadcn / Tailwind (Dark) */
+  --background: #0B0F19;
+  --foreground: #F9FAFB;
+  --border: #374151;
+  --input: #1F2937;
+
   /* Tokens Semânticos de Superfície e Fundo (Tema Escuro) */
   --bg-canvas: #0B0F19;
   --bg-surface: #111827;

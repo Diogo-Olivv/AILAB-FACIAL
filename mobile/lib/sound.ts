@@ -18,7 +18,8 @@ export type InteractionFeedbackType =
   | "success_big"
   | "denied"
   | "queue_next"
-  | "countdown";
+  | "countdown"
+  | "cooldown_alert";
 
 const soundSources: Record<string, any> = {
   check_in: require("../assets/sounds/check_in.wav"),
@@ -31,6 +32,7 @@ const soundSources: Record<string, any> = {
   tap: require("../assets/sounds/tap.wav"),
   queue_next: require("../assets/sounds/tap.wav"),
   countdown: require("../assets/sounds/tap.wav"),
+  cooldown_alert: require("../assets/sounds/warning.wav"),
 };
 
 // Cache de players nativos em memória para disparo com latência zero
@@ -112,6 +114,17 @@ export function triggerHaptic(type: InteractionFeedbackType) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {
           try { Vibration.vibrate(30); } catch {}
         });
+        break;
+
+      case "cooldown_alert":
+        // Triple buzz — bloqueio de cooldown biométrico inequívoco
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {
+          try { Vibration.vibrate([0, 60, 50, 60, 50, 80]); } catch {}
+        });
+        // Segundo pulso reforçado 250ms depois
+        setTimeout(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+        }, 250);
         break;
     }
   } catch {
@@ -254,6 +267,13 @@ function playWebAudioFeedback(type: InteractionFeedbackType): void {
       case "countdown": {
         // Beep limpo e curto — contagem regressiva
         createHarmonicTone(ctx, 880, 1760, "sine", "sine", 0.06, 0.02, now, 0.07);
+        break;
+      }
+
+      case "cooldown_alert": {
+        // Dois tons descendentes rápidos — bloqueio/espera
+        createHarmonicTone(ctx, 440, 220, "triangle", "sine", 0.07, 0.02, now, 0.1);
+        createHarmonicTone(ctx, 330, 165, "triangle", "sawtooth", 0.06, 0.015, now + 0.15, 0.12);
         break;
       }
     }

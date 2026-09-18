@@ -45,6 +45,10 @@ export default {
         "perplexity-title": "-0.025em",
       },
       colors: {
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        border: "var(--border)",
+        input: "var(--input)",
         cream: "#FAF9F5",
         canvas: "#FAF9F5",
         card: "#FFFFFF",

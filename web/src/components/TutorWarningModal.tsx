@@ -359,7 +359,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-stone-900/60 backdrop-blur-md overflow-hidden animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm overflow-hidden animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -367,11 +367,11 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
     >
       <div
         ref={modalRef}
-        className="relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-4xl bg-[#FAF9F5] sm:bg-[#FAF9F5]/98 sm:backdrop-blur-2xl sm:rounded-3xl border-0 sm:border sm:border-stone-200/80 dark:bg-slate-900 dark:sm:bg-slate-900/98 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-scale-up text-slate-900 dark:text-slate-100"
+        className="relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-4xl bg-background sm:bg-background/98 sm:backdrop-blur-2xl sm:rounded-3xl border-0 sm:border sm:border-stone-200/80 dark:bg-slate-900 dark:sm:bg-slate-900/98 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-scale-up text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header estilo Editorial Claude com Safe-Area para Celular */}
-        <div className="shrink-0 flex items-center justify-between border-b border-stone-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 pt-[max(env(safe-area-inset-top),16px)] pb-4 px-4 sm:px-6 gap-3">
+        <div className="shrink-0 flex items-center justify-between border-b border-stone-200/70 dark:border-slate-800 bg-background/90 dark:bg-slate-900/90 pt-[max(env(safe-area-inset-top),16px)] pb-4 px-4 sm:px-6 gap-3">
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-serif text-2xl shadow-md shadow-amber-500/20">
               §
@@ -526,7 +526,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                 onChange={(e) => setSearch(e.target.value)}
                 onPointerDown={(e) => e.stopPropagation()}
                 placeholder="Buscar aluno ou matrícula..."
-                className="w-full rounded-2xl border border-stone-200/90 dark:border-slate-700 bg-stone-50/70 dark:bg-slate-800 py-2.5 pl-10 pr-9 text-sm text-slate-900 dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 focus:border-teal-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-teal-500/10 shadow-inner transition-all font-medium"
+                className="w-full rounded-2xl border border-stone-200/90 dark:border-slate-700 bg-stone-50/70 dark:bg-slate-800 py-2.5 pl-10 pr-9 text-sm text-slate-900 dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-400 focus:border-teal-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-teal-500/10 shadow-inner transition-all font-medium"
               />
               {search && (
                 <button

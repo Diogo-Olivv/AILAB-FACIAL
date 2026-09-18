@@ -1,11 +1,15 @@
 /**
  * Gerenciador de fila offline resiliente para totens acadêmicos (AILAB-FACIAL)
  * Armazena presenças localmente quando a rede Wi-Fi do campus oscilar ou cair.
+ *
+ * Cada registro possui um `idempotency_key` (UUID v4) gerado no momento do enqueue.
+ * O backend utiliza este header para deduplicar reenvios em caso de falha de rede.
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface OfflineAttendanceRecord {
   id: string;
+  idempotency_key: string; // UUID v4 — usado como header Idempotency-Key no sync
   timestamp: string; // ISO string do momento exato do registro
   action: "check_in" | "check_out" | null;
   name?: string;
@@ -18,10 +22,27 @@ const OFFLINE_QUEUE_KEY = "@ailab_offline_attendance_queue";
 const MAX_RETRIES = 5;
 
 /**
- * Salva um evento de presença no buffer offline local
+ * Gera um UUID v4 de forma segura e compatível com React Native.
+ * Usa crypto.randomUUID() quando disponível (Hermes ≥ 0.71 / RN ≥ 0.72),
+ * com fallback baseado em Math.random() para ambientes legados.
+ */
+function generateUUIDv4(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Fallback RFC 4122 v4 manual
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+/**
+ * Salva um evento de presença no buffer offline local com chave de idempotência
  */
 export async function enqueueOfflineAttendance(
-  record: Omit<OfflineAttendanceRecord, "id" | "attempts" | "status">
+  record: Omit<OfflineAttendanceRecord, "id" | "idempotency_key" | "attempts" | "status">
 ): Promise<OfflineAttendanceRecord> {
   try {
     const raw = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
@@ -30,6 +51,7 @@ export async function enqueueOfflineAttendance(
     const newRecord: OfflineAttendanceRecord = {
       ...record,
       id: `offline_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      idempotency_key: generateUUIDv4(),
       attempts: 0,
       status: "pending",
     };
@@ -42,6 +64,7 @@ export async function enqueueOfflineAttendance(
     throw err;
   }
 }
+
 
 /**
  * Retorna todos os registros de presença offline pendentes

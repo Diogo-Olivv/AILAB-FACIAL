@@ -149,6 +149,38 @@ def verify_tutor_token(
         raise HTTPException(status_code=401, detail="Falha na validação do token de tutor.") from exc
 
 
+# ── Janela Cadastral Temporária ───────────────────────────────────────────────
+
+
+def require_tutor_or_window(
+    authorization: str | None = Security(_bearer_header),
+) -> dict:
+    """Autoriza se: (a) janela de recadastro ativa, OU (b) token JWT de tutor válido.
+
+    Durante a janela cadastral (28/09/2026 – 02/10/2026 GMT-3) o endpoint de
+    refresh-embedding dispensa autenticação de tutor. Fora desse período, o
+    comportamento é idêntico a verify_tutor_token().
+
+    Retorna dict de claims para auditoria.
+    """
+    from app.services.enrollment_window import is_enrollment_window_active, enrollment_window_status
+
+    if is_enrollment_window_active():
+        log.info(
+            "require_tutor_or_window: janela cadastral ativa — autenticação dispensada. "
+            "Authorization presente: %s",
+            bool(authorization),
+        )
+        return {
+            "user_id": "enrollment-window",
+            "role": "enrollment_window",
+            **enrollment_window_status(),
+        }
+
+    # Fora da janela: exige token de tutor normalmente (fail-closed)
+    return verify_tutor_token(authorization=authorization)
+
+
 # ── Autenticação de Cloud Scheduler OIDC ─────────────────────────────────────
 
 

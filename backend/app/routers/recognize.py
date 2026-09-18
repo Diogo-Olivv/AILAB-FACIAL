@@ -43,6 +43,13 @@ _request_history: dict[str, collections.deque] = collections.defaultdict(collect
 _profile_locks_guard = threading.Lock()
 _profile_locks: dict[str, asyncio.Lock] = collections.defaultdict(asyncio.Lock)
 
+# Cache de idempotência para deduplicar reenvios offline (TTL de 5 minutos)
+# chave: idempotency_key (UUID v4), valor: (timestamp, resposta serializada)
+_idempotency_lock = threading.Lock()
+_idempotency_cache: dict[str, tuple[float, dict]] = {}
+_IDEMPOTENCY_TTL = 300  # 5 minutos em segundos
+
+
 
 def _get_profile_lock(profile_id: str) -> asyncio.Lock:
     with _profile_locks_guard:
@@ -71,6 +78,31 @@ def clear_rate_limits_for_testing() -> None:
         _request_history.clear()
 
 
+def _check_idempotency(key: str) -> dict | None:
+    """Retorna resposta cacheada se a chave já foi processada. Limpa entradas expiradas."""
+    if not key:
+        return None
+    now = time.time()
+    with _idempotency_lock:
+        # Limpeza de TTL
+        expired = [k for k, (ts, _) in _idempotency_cache.items() if now - ts > _IDEMPOTENCY_TTL]
+        for k in expired:
+            del _idempotency_cache[k]
+        entry = _idempotency_cache.get(key)
+        if entry:
+            _, cached_response = entry
+            return cached_response
+    return None
+
+
+def _store_idempotency(key: str, response: dict) -> None:
+    """Armazena resposta para deduplicação futura."""
+    if not key:
+        return
+    with _idempotency_lock:
+        _idempotency_cache[key] = (time.time(), response)
+
+
 @router.post("/recognize/challenge", response_model=ChallengeResponse, dependencies=[Depends(verify_kiosk_key)])
 @router.get("/recognize/challenge", response_model=ChallengeResponse, dependencies=[Depends(verify_kiosk_key)])
 def request_challenge():
@@ -84,8 +116,24 @@ async def recognize(
     x_challenge_id: str | None = Header(None, alias="X-Challenge-Id"),
     x_challenge_token: str | None = Header(None, alias="X-Challenge-Token"),
     kiosk_key: str | None = Header(None, alias="X-Kiosk-Key"),
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
 ):
-    """Recebe frame(s) da camera, valida o desafio temporal, identifica o rosto e registra o evento."""
+    """Recebe frame(s) da camera, valida o desafio temporal, identifica o rosto e registra o evento.
+
+    Suporta header `Idempotency-Key` (UUID v4) para deduplicação de reenvios offline:
+    se a mesma chave for enviada novamente dentro de 5 minutos, retorna a resposta
+    cacheada sem reprocessar (header `X-Idempotent-Replayed: true`).
+    """
+    # 0. Verificação de idempotência — deduplicação de reenvios offline
+    if idempotency_key:
+        cached = _check_idempotency(idempotency_key)
+        if cached is not None:
+            log.info("Idempotência: requisição duplicada detectada para key=%s", idempotency_key[:12])
+            from fastapi.responses import JSONResponse
+            resp = JSONResponse(content=cached)
+            resp.headers["X-Idempotent-Replayed"] = "true"
+            return resp
+
     # Leitura manual do multipart: `list[UploadFile]` opcional via File() é parseado como escalar
     # em versões do FastAPI, gerando 422. getlist() lida com single e multi-frame de forma robusta.
     form = await request.form()
@@ -131,11 +179,15 @@ async def recognize(
     async with _inference_semaphore:
         result = await asyncio.to_thread(identify_frames, raw_images)
     if not result or not result.get("recognized"):
-        return result or {
+        final_result = result or {
             "recognized": False,
             "status": "not_recognized",
             "message": "Rosto não reconhecido na base.",
         }
+        # Armazena resultado negativo no cache de idempotência
+        if idempotency_key:
+            _store_idempotency(idempotency_key, final_result)
+        return final_result
 
     profile_id = result.get("profile_id")
     event = None
@@ -152,7 +204,13 @@ async def recognize(
 
             event = register_event(profile_id, action)
 
-    return {"recognized": True, **result, "event": event}
+    final_result = {"recognized": True, **result, "event": event}
+
+    # Armazena resultado positivo no cache de idempotência
+    if idempotency_key:
+        _store_idempotency(idempotency_key, final_result)
+
+    return final_result
 
 
 @router.get("/sessions/open", dependencies=[Depends(verify_api_key)])

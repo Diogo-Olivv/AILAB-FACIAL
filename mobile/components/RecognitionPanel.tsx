@@ -33,6 +33,36 @@ export function RecognitionPanel() {
   const busyRef = useRef(false);
   busyRef.current = busy || loading;
 
+  // FSM Hands-Free: IDLE | PROCESSING | SUCCESS | COOLDOWN
+  type KioskState = "IDLE" | "PROCESSING" | "SUCCESS" | "COOLDOWN";
+  const kioskState = useRef<KioskState>("IDLE");
+  const cooldownEndRef = useRef<number>(0);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const COOLDOWN_MS = 4500;
+
+  const startCooldown = useCallback(() => {
+    kioskState.current = "COOLDOWN";
+    const endTime = Date.now() + COOLDOWN_MS;
+    cooldownEndRef.current = endTime;
+    setCooldownRemaining(Math.ceil(COOLDOWN_MS / 1000));
+    notifyInteraction("cooldown_alert");
+
+    if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    cooldownTimerRef.current = setInterval(() => {
+      const remaining = Math.max(0, cooldownEndRef.current - Date.now());
+      const secs = Math.ceil(remaining / 1000);
+      setCooldownRemaining(secs);
+      if (remaining <= 0) {
+        clearInterval(cooldownTimerRef.current!);
+        cooldownTimerRef.current = null;
+        kioskState.current = "IDLE";
+        setCooldownRemaining(0);
+      }
+    }, 200);
+  }, []);
+
   // Pulso animado sutil da moldura oval durante modo ocioso / hands-free
   const pulseAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -137,6 +167,7 @@ export function RecognitionPanel() {
         const res = await recognize(captured, action);
 
         if (!res) {
+          startCooldown();
           try {
             await enqueueOfflineAttendance({
               timestamp: new Date().toISOString(),
@@ -160,6 +191,7 @@ export function RecognitionPanel() {
             });
           }
         } else if (!res.recognized || !res.event) {
+          startCooldown();
           if (res.status === "spoof_detected") {
             notifyInteraction("denied");
           } else {
@@ -214,6 +246,12 @@ export function RecognitionPanel() {
         } else {
           // Sucesso no reconhecimento
           lastSuccessTimeRef.current = Date.now();
+          kioskState.current = "SUCCESS";
+          setTimeout(() => {
+            if (kioskState.current === "SUCCESS") {
+              kioskState.current = "IDLE";
+            }
+          }, COOLDOWN_MS);
           triggerPresenceRefresh();
           const evtAction = res.event.action;
 
@@ -282,6 +320,7 @@ export function RecognitionPanel() {
           }
         }
       } catch (err: any) {
+        startCooldown();
         console.error("[RecognitionPanel] Erro ao registrar biometria:", err);
         // Em caso de falha de conexão, salva no buffer offline
         try {
@@ -311,24 +350,46 @@ export function RecognitionPanel() {
         setCurrentAction(null);
       }
     },
-    [busy, loading, recognize]
+    [busy, loading, recognize, startCooldown]
   );
 
-  // Loop inteligente de Auto-Trigger Hands-Free (sem toque)
+  // Hands-Free: trigger controlado pela FSM (IDLE -> PROCESSING -> SUCCESS / COOLDOWN)
+  const handleFaceDetected = useCallback(() => {
+    if (
+      !isHandsFree ||
+      !active ||
+      !permission?.granted ||
+      kioskState.current !== "IDLE" ||
+      busyRef.current
+    ) return;
+
+    kioskState.current = "PROCESSING";
+    capture(null).finally(() => {
+      // capture() vai setBusy(false) no finally — se der erro vira COOLDOWN
+      // O estado SUCCESS/COOLDOWN é definido dentro do capture baseado no resultado
+      if (kioskState.current === "PROCESSING") {
+        kioskState.current = "IDLE";
+      }
+    });
+  }, [isHandsFree, active, permission?.granted, capture]);
+
+  // Scheduler da FSM para modo mãos-livres: dispara apenas se estado for rigorosamente IDLE
   useEffect(() => {
     if (!isHandsFree || !active || !permission?.granted) return;
 
-    const timer = setInterval(() => {
-      const now = Date.now();
-      // Não dispara se a câmera estiver ocupada ou dentro do cooldown pós-reconhecimento (4.5s)
-      if (busyRef.current || now - lastSuccessTimeRef.current < 4500) {
-        return;
-      }
-      capture(null);
-    }, 2800);
+    const interval = setInterval(() => {
+      handleFaceDetected();
+    }, 2000);
 
-    return () => clearInterval(timer);
-  }, [isHandsFree, active, permission?.granted, capture]);
+    return () => clearInterval(interval);
+  }, [isHandsFree, active, permission?.granted, handleFaceDetected]);
+
+  // Limpa timer de cooldown ao desmontar
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    };
+  }, []);
 
   if (!permission) return <View style={styles.container} />;
 
@@ -393,6 +454,14 @@ export function RecognitionPanel() {
               : "👤 Alinhe seu rosto no centro e selecione Entrada ou Saída"}
           </Text>
         </View>
+
+        {/* Contador regressivo de cooldown */}
+        {cooldownRemaining > 0 && (
+          <View style={styles.cooldownOverlay} pointerEvents="none">
+            <Text style={styles.cooldownText}>{cooldownRemaining}s</Text>
+            <Text style={styles.cooldownSub}>Aguarde para nova tentativa</Text>
+          </View>
+        )}
 
         {/* Guia Oval de Posicionamento Facial com Feedback Inteligente */}
         {!disabled && (
@@ -852,4 +921,28 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
   },
   permBtnText: { color: "#FAF9F5", fontWeight: "600" },
+  cooldownOverlay: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(220, 38, 38, 0.88)',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    alignItems: 'center',
+    gap: 2,
+  },
+  cooldownText: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    lineHeight: 32,
+  },
+  cooldownSub: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
 });

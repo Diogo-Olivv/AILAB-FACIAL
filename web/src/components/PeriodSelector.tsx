@@ -1,4 +1,6 @@
+import { createPortal } from "react-dom";
 import { useRef, useState, useEffect, type PointerEvent } from "react";
+import { CalendarDays, ChevronDown } from "lucide-react";
 import type { DateRange } from "../lib/reports";
 import type { PeriodKey } from "../lib/period";
 import { PERIOD_LABELS, formatRange } from "../lib/period";
@@ -30,6 +32,8 @@ export function PeriodSelector({
   onCustomRange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [pickerPos, setPickerPos] = useState<{top: number; right: number}>({top: 0, right: 0});
   const [isDragging, setIsDragging] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [localFrom, setLocalFrom] = useState(customFrom || toDateInputValue(new Date()));
@@ -49,12 +53,25 @@ export function PeriodSelector({
   useEffect(() => {
     if (!isPickerOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
+      // Allow clicks inside the button itself to be handled by the button's onClick
+      if (buttonRef.current && buttonRef.current.contains(e.target as Node)) return;
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
         setIsPickerOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isPickerOpen]);
+
+  useEffect(() => {
+    if (!isPickerOpen) return;
+    const close = () => setIsPickerOpen(false);
+    window.addEventListener('scroll', close, { passive: true, capture: true });
+    window.addEventListener('resize', close, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', close, { capture: true });
+      window.removeEventListener('resize', close);
+    };
   }, [isPickerOpen]);
 
   const updateSegmentFromClientX = (clientX: number) => {
@@ -104,6 +121,13 @@ export function PeriodSelector({
   };
 
   const handleDateDisplayClick = () => {
+    if (!isPickerOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPickerPos({
+        top: rect.bottom + window.scrollY + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
     setIsPickerOpen((prev) => !prev);
   };
 
@@ -162,6 +186,7 @@ export function PeriodSelector({
         {/* Indicador de intervalo de datas — clicável para abrir o picker */}
         <div className="flex items-center justify-between sm:justify-end gap-2 relative">
           <button
+            ref={buttonRef}
             type="button"
             onClick={handleDateDisplayClick}
             className={`h-11 inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-xs text-[#171715] dark:text-slate-200 shadow-2xs font-mono-data cursor-pointer transition-all duration-200 select-none ${
@@ -173,29 +198,27 @@ export function PeriodSelector({
             aria-expanded={isPickerOpen}
             title="Clique para selecionar um intervalo de datas personalizado"
           >
-            <span className="text-xs text-[#706E6A] dark:text-slate-400">📅</span>
+            <CalendarDays className="h-3.5 w-3.5 text-[#706E6A] dark:text-slate-400 shrink-0" />
             <span className="font-medium text-[#171715] dark:text-slate-200">{formatRange(range)}</span>
             {period === "custom" && (
               <span className="text-2xs font-sans font-semibold text-[#C15F3D] dark:text-amber-400 uppercase tracking-wide">
                 Personalizado
               </span>
             )}
-            <svg
-              className={`h-3 w-3 text-[#706E6A] dark:text-slate-400 transition-transform duration-200 ${isPickerOpen ? "rotate-180" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
+            <ChevronDown className={`h-3 w-3 text-[#706E6A] dark:text-slate-400 transition-transform duration-200 ${isPickerOpen ? "rotate-180" : ""}`} />
           </button>
 
           {/* Dropdown do Date-Range Picker */}
-          {isPickerOpen && (
+          {isPickerOpen && typeof document !== 'undefined' && createPortal(
             <div
               ref={pickerRef}
-              className="absolute top-full right-0 mt-2 z-50 w-72 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-900 shadow-[0_8px_32px_rgba(23,23,21,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-4 animate-fade-in"
+              style={{
+                position: 'fixed',
+                top: pickerPos.top,
+                right: pickerPos.right,
+                zIndex: 9999,
+              }}
+              className="w-72 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-900 shadow-[0_8px_32px_rgba(23,23,21,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-4 animate-fade-in"
               onPointerDown={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-2 mb-3">
@@ -279,7 +302,8 @@ export function PeriodSelector({
                   Aplicar
                 </button>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       </div>

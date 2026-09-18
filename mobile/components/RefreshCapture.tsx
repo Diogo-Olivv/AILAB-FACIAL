@@ -18,6 +18,7 @@ import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadg
 import { TermsModal } from "@/components/TermsModal";
 import { ENROLL_PHOTO_COUNT, getAvatarColor } from "@/lib/config";
 import { notifyInteraction } from "@/lib/sound";
+import { isEnrollmentWindowActive, getEnrollmentWindowInfo } from "@/lib/enrollmentWindow";
 
 interface Props {
   tutorToken?: string;
@@ -29,6 +30,10 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
   const { profiles, loading: loadingProfiles, error: profilesError, reload } = useProfiles();
   const { refresh, loading: refreshing } = useRefreshEmbedding();
   const insets = useSafeAreaInsets();
+
+  // Janela cadastral temporária: dispensa PIN de tutor entre 28/09 e 02/10/2026
+  const windowActive = useMemo(() => isEnrollmentWindowActive(), []);
+  const windowInfo = useMemo(() => getEnrollmentWindowInfo(), []);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProfile, setSelectedProfile] = useState<ProfileItem | null>(null);
@@ -47,6 +52,7 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
       return nameMatch || matMatch;
     });
   }, [profiles, searchQuery]);
+
 
   const canSubmit =
     Boolean(selectedProfile) &&
@@ -135,7 +141,22 @@ export function RefreshCapture({ tutorToken, onSuccess }: Props) {
       ]}
       keyboardShouldPersistTaps="handled"
     >
+      {/* ── BADGE DE JANELA CADASTRAL ── */}
+      {windowActive && (
+        <View style={styles.enrollWindowBadge}>
+          <Text style={styles.enrollWindowIcon}>📅</Text>
+          <View style={styles.enrollWindowTextWrap}>
+            <Text style={styles.enrollWindowTitle}>Janela de Atualização Cadastral Ativa</Text>
+            <Text style={styles.enrollWindowSub}>
+              Até {windowInfo.windowEnd} — autenticação de tutor dispensada. Atualize sua biometria
+              de forma autônoma.
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* ── SEÇÃO 1: SELEÇÃO DO INTEGRANTE ── */}
+
       <Text style={styles.sectionHeader}>1. Selecione o integrante cadastrado</Text>
 
       {selectedProfile ? (
@@ -649,5 +670,37 @@ const styles = StyleSheet.create({
     color: "#78350F",
     fontSize: 12.5,
     lineHeight: 18,
+  },
+
+  // Janela Cadastral Temporária
+  enrollWindowBadge: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    backgroundColor: "#FFFBEB",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#F59E0B",
+    padding: 14,
+    marginBottom: 8,
+  },
+  enrollWindowIcon: {
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  enrollWindowTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  enrollWindowTitle: {
+    color: "#92400E",
+    fontSize: 13.5,
+    fontWeight: "800",
+    letterSpacing: -0.1,
+  },
+  enrollWindowSub: {
+    color: "#78350F",
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

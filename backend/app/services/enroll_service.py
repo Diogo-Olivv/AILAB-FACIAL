@@ -182,6 +182,10 @@ def enroll(name: str, matricula: str | None, images: list[bytes], consent: bool)
             "Nenhum rosto válido detectado nas fotos. " + " | ".join(errors_detail[:2])
         )
 
+    # Libera buffer de imagens brutas da memória imediatamente após extração de embeddings
+    # LGPD Art. 46 / ISO 29101: zero armazenamento de dados biométricos brutos além do necessário
+    del images
+
     # 1. Verificação de consistência intra-burst e anti-duplicidade 1:N
     mean_vector, photos_used = _validate_intra_burst_consistency(valid_encs)
     _check_1_to_n_duplicate(mean_vector)
@@ -279,6 +283,10 @@ def refresh_embedding(profile_id: str, images: list[bytes]) -> dict:
         raise EnrollError(
             "Nenhum rosto válido detectado nas fotos. " + " | ".join(errors_detail[:2])
         )
+
+    # Libera buffer de imagens brutas da memória imediatamente após extração de embeddings
+    # LGPD Art. 46 / ISO 29101: zero armazenamento de dados biométricos brutos além do necessário
+    del images
 
     mean_vector, photos_used = _validate_intra_burst_consistency(valid_encs)
 

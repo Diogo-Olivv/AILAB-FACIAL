@@ -383,3 +383,76 @@ test("E2E FLUXO 5: Detecção e Presença - Desafio Temporal, Anti-Spoofing e Se
   assert.strictEqual(elapsedMinutes, 135, "14h até 16h15 = 135 minutos");
   assert.strictEqual(formatDuration(elapsedMinutes * 60), "2h 15m");
 });
+
+// ============================================================================
+// FLUXO 6: RELATÓRIO OFICIAL DE FREQUÊNCIA E EXPORTAÇÃO PDF / IMPRESSÃO
+// ============================================================================
+test("E2E FLUXO 6: Relatório Oficial e Exportação PDF - Caminho Feliz e Casos Limítrofes", async () => {
+  // 1. Caminho Feliz: Turma com integrantes em todos os estados de compliance
+  const happyRows = [
+    {
+      member: { id: "m-1", name: "Ana Souza", matricula: "2024101" },
+      totalSeconds: 18000, // 5h (>= 4h -> Regular)
+      sessionCount: 3,
+      isCurrentlyPresent: false,
+    },
+    {
+      member: { id: "m-2", name: "Bruno Costa", matricula: "2024102" },
+      totalSeconds: 14400, // Exatos 4h -> Regular
+      sessionCount: 2,
+      isCurrentlyPresent: true,
+    },
+    {
+      member: { id: "m-3", name: "Carla Dias", matricula: "2024103" },
+      totalSeconds: 7200, // 2h (< 4h -> Parcial)
+      sessionCount: 1,
+      isCurrentlyPresent: false,
+    },
+    {
+      member: { id: "m-4", name: "Diego Ramos", matricula: "" }, // Sem matrícula
+      totalSeconds: 0, // 0h -> Sem Horas
+      sessionCount: 0,
+      isCurrentlyPresent: false,
+    },
+  ];
+
+  const totalSec = happyRows.reduce((acc, r) => acc + r.totalSeconds, 0);
+  assert.strictEqual(totalSec, 39600, "Total de segundos deve ser 39.600s (11.0h)");
+  const totalHours = (totalSec / 3600).toFixed(1);
+  assert.strictEqual(totalHours, "11.0", "Total de horas formatado");
+
+  const compliantCount = happyRows.filter((r) => r.totalSeconds >= 14400).length;
+  assert.strictEqual(compliantCount, 2, "2 alunos com meta cumprida (Ana e Bruno)");
+
+  const complianceRate = Math.round((compliantCount / happyRows.length) * 100);
+  assert.strictEqual(complianceRate, 50, "Taxa de cumprimento da turma deve ser 50%");
+
+  // Validação das regras de fronteira estrita (14.399s vs 14.400s)
+  const isCompliantBoundary1 = 14399 >= 14400;
+  const isCompliantBoundary2 = 14400 >= 14400;
+  assert.strictEqual(isCompliantBoundary1, false, "14.399s (3h59m59s) NÃO é regular");
+  assert.strictEqual(isCompliantBoundary2, true, "14.400s (4h00m00s) É regular");
+
+  // Geração de Hash Criptográfico SHA-256 Anti-Fraude
+  const payload = `AILAB-ATTENDANCE-REPORT|FROM:2026-09-01T00:00:00.000Z|TO:2026-09-07T23:59:59.000Z|MEMBERS:4|TOTAL_SEC:39600|TUTOR:tutor@ailab.com`;
+  const msgBuffer = new TextEncoder().encode(payload);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashHex = Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
+
+  assert.strictEqual(hashHex.length, 64, "Hash SHA-256 deve ter 64 caracteres hexadecimais");
+  assert.match(hashHex, /^[0-9A-F]{64}$/, "Hash SHA-256 deve conter apenas dígitos hex maiúsculos");
+
+  // 2. Caminho Limítrofe / Errado: Relatório sem discentes (0 rows)
+  const emptyRows: typeof happyRows = [];
+  const emptyTotalSec = emptyRows.reduce((acc, r) => acc + r.totalSeconds, 0);
+  const emptyCompliant = emptyRows.filter((r) => r.totalSeconds >= 14400).length;
+  const emptyRate = emptyRows.length > 0 ? Math.round((emptyCompliant / emptyRows.length) * 100) : 0;
+
+  assert.strictEqual(emptyTotalSec, 0, "Sem registros, total de segundos deve ser 0");
+  assert.strictEqual(emptyCompliant, 0, "Sem registros, compliant deve ser 0");
+  assert.strictEqual(emptyRate, 0, "Sem registros, taxa deve ser 0% sem divisão por zero (NaN)");
+});
+

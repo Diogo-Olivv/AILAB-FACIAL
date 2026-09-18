@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { GraduationCap, ClipboardList, Settings, AlertTriangle, Clock, Users, Bookmark, FileText, AlertCircle } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { supabase } from "../lib/supabase";
 import {
@@ -244,7 +245,7 @@ export function Dashboard() {
                 />
               ) : (
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/40 text-[#C15F3D] dark:text-amber-400 text-xl shadow-2xs">
-                  🎓
+                  <GraduationCap className="h-5 w-5 text-amber-500" />
                 </span>
               )}
               <div>
@@ -268,7 +269,7 @@ export function Dashboard() {
                 onClick={() => setIsManualAttendanceOpen(true)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs sm:text-sm font-medium text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-[#706E6A]/40 shadow-2xs active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
               >
-                <span>📝</span>
+                <ClipboardList className="h-4 w-4" />
                 <span>Registrar Presença Manual</span>
               </button>
 
@@ -277,7 +278,7 @@ export function Dashboard() {
                 onClick={() => setIsTutorProfileOpen(true)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs sm:text-sm font-medium text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-[#706E6A]/40 shadow-2xs active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
               >
-                <span>⚙️</span>
+                <Settings className="h-4 w-4" />
                 <span>Configurar Acesso (@ailab.com)</span>
               </button>
 
@@ -286,7 +287,7 @@ export function Dashboard() {
                 onClick={() => setIsTutorWarningOpen(true)}
                 className="inline-flex items-center gap-2 rounded-full bg-[#171715] dark:bg-white hover:bg-[#2A2925] dark:hover:bg-slate-100 px-4 py-2 text-xs sm:text-sm font-sans font-medium text-[#FAF9F5] dark:text-slate-900 shadow-sm active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
               >
-                <span>⚠️</span>
+                <AlertTriangle className="h-4 w-4" />
                 <span>Auditoria Semanal & Metas ({studentsUnderFourHoursCount})</span>
               </button>
             </div>
@@ -306,7 +307,7 @@ export function Dashboard() {
                   Presentes agora
                 </span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-xs shadow-2xs group-hover:scale-110 transition-transform">
-                  🟢
+                  <Users className="h-4 w-4 text-emerald-500" />
                 </span>
               </div>
               <div className="mt-2.5 flex items-center gap-2">
@@ -334,7 +335,7 @@ export function Dashboard() {
                   Total de horas
                 </span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/60 border border-orange-200/80 dark:border-orange-800/60 text-[#C15F3D] dark:text-orange-400 text-xs shadow-2xs group-hover:scale-110 transition-transform">
-                  ⏱️
+                  <Clock className="h-4 w-4 text-orange-500" />
                 </span>
               </div>
               <div className="mt-2.5">
@@ -355,7 +356,7 @@ export function Dashboard() {
                   Integrantes ativos
                 </span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/60 text-indigo-800 dark:text-indigo-400 text-xs shadow-2xs group-hover:scale-110 transition-transform">
-                  👥
+                  <Users className="h-4 w-4 text-indigo-500" />
                 </span>
               </div>
               <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
@@ -377,7 +378,7 @@ export function Dashboard() {
                   Total de sessões
                 </span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-400 text-xs shadow-2xs group-hover:scale-110 transition-transform">
-                  📌
+                  <Bookmark className="h-4 w-4 text-amber-500" />
                 </span>
               </div>
               <div className="mt-2.5">
@@ -461,7 +462,7 @@ export function Dashboard() {
                   className="inline-flex items-center gap-1.5 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-3 sm:px-3.5 py-2 text-xs font-semibold text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-[#C15F3D]/40 shadow-2xs active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
                   title="Gerar Relatório Oficial com Certificação SHA-256 e PDF"
                 >
-                  <span>📑</span>
+                  <FileText className="h-4 w-4" />
                   <span className="hidden sm:inline">Relatório Oficial (PDF)</span>
                   <span className="sm:hidden">PDF</span>
                 </button>
@@ -478,7 +479,7 @@ export function Dashboard() {
         {/* Alerta de Erro Resiliente */}
         {error && (
           <div className="flex items-center justify-between rounded-2xl border border-warn/30 bg-warn/10 p-4 text-sm text-warn animate-slide-down" role="alert">
-            <span>⚠️ {error}</span>
+            <span className="flex items-center gap-1.5"><AlertCircle className="h-4 w-4 shrink-0" />{error}</span>
             <button
               onClick={() => refreshData(false)}
               className="font-bold underline hover:text-warn/80 cursor-pointer min-h-[44px] px-2"
