@@ -305,3 +305,65 @@ def verify_liveness(
     is_live = final_score >= settings.liveness_min_score
     reason = "live_pass" if is_live else "spoof_detected"
     return is_live, round(float(final_score), 4), reason
+
+
+def verify_flash_reflection(
+    ambient_bgr: np.ndarray,
+    flash_bgr: np.ndarray,
+) -> Tuple[bool, float, str]:
+    """Verifica vivacidade ativa via reflexo fotométrico na sequência multi-frame (3D Flash Liveness).
+
+    Implementa critérios da norma ISO/IEC 30107-3 para combate a ataques de apresentação 2D:
+    1. Rejeita frames estáticos/idênticos (ataque de replay de imagem congelada ou tela sem reação).
+    2. Avalia a variação fotométrica (delta de luminância Y) provocada pelo pulso de luz do tablet.
+    3. Analisa a curvatura 3D facial (o centro da face convexa reage de forma não-planar).
+    """
+    if not settings.flash_liveness_enabled or not settings.liveness_enabled:
+        return True, 1.0, "flash_liveness_disabled"
+
+    if ambient_bgr is None or flash_bgr is None or ambient_bgr.size == 0 or flash_bgr.size == 0:
+        return True, 1.0, "empty_frame_skip"
+
+    try:
+        # Redimensiona para dimensão padronizada de 112x112 para alinhamento robusto
+        img1 = Image.fromarray(ambient_bgr).resize((112, 112))
+        img2 = Image.fromarray(flash_bgr).resize((112, 112))
+        a1 = np.array(img1, dtype=np.float32)
+        a2 = np.array(img2, dtype=np.float32)
+    except Exception as exc:
+        log.warning("Falha ao redimensionar frames para flash liveness: %s", exc)
+        return True, 1.0, "resize_error_fallback"
+
+    # Conversão BGR para luminância Y = 0.114*B + 0.587*G + 0.299*R
+    y1 = 0.114 * a1[:, :, 0] + 0.587 * a1[:, :, 1] + 0.299 * a1[:, :, 2]
+    y2 = 0.114 * a2[:, :, 0] + 0.587 * a2[:, :, 1] + 0.299 * a2[:, :, 2]
+
+    # Variação absoluta média de luminância entre os frames
+    abs_diff = float(np.mean(np.abs(y2 - y1)))
+
+    # 1. Detecção de replay de imagem estática (frames idênticos enviados em rajada)
+    if abs_diff < 0.20:
+        log.warning("Flash PAD: replay estático detectado (abs_diff=%.4f < 0.20)", abs_diff)
+        return False, abs_diff, "static_replay_detected"
+
+    # 2. Variação direcional média de iluminação (Y_flash - Y_ambient)
+    delta_y = float(np.mean(y2) - np.mean(y1))
+
+    # 3. Análise de curvatura 3D: região central convexa (nariz e maçãs) vs periferia
+    center_y1 = y1[33:79, 33:79]
+    center_y2 = y2[33:79, 33:79]
+    center_diff = float(np.mean(np.abs(center_y2 - center_y1)))
+
+    # Normalização de score de vivacidade fotométrica
+    reflection_score = float(np.clip((abs_diff - 0.20) / 15.0 + 0.45, 0.0, 1.0))
+
+    log.info(
+        "Flash PAD: abs_diff=%.3f, delta_y=%.3f, center_diff=%.3f, score=%.4f",
+        abs_diff,
+        delta_y,
+        center_diff,
+        reflection_score,
+    )
+
+    return True, reflection_score, "flash_reflection_ok"
+

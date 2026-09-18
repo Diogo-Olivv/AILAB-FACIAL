@@ -24,6 +24,7 @@ import { ViewSelector } from "../components/ViewSelector";
 import { KpiSkeleton, TableSkeleton } from "../components/TableSkeleton";
 import { WeeklyChart } from "../components/WeeklyChart";
 import { ExportButton } from "../components/ExportButton";
+import { OfficialReportModal } from "../components/OfficialReportModal";
 
 type View = "totals" | "history";
 
@@ -58,6 +59,7 @@ export function Dashboard() {
   const [isTutorWarningOpen, setIsTutorWarningOpen] = useState(false);
   const [isTutorProfileOpen, setIsTutorProfileOpen] = useState(false);
   const [isManualAttendanceOpen, setIsManualAttendanceOpen] = useState(false);
+  const [isOfficialReportOpen, setIsOfficialReportOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   const loadMembers = useCallback(async () => {
@@ -450,8 +452,20 @@ export function Dashboard() {
                 )}
               </div>
 
-              {/* Botão de Exportação CSV */}
-              <ExportButton rows={filteredTotals} range={range} period={period} />
+              {/* Botões de Exportação CSV e Relatório Oficial PDF */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <ExportButton rows={filteredTotals} range={range} period={period} />
+                <button
+                  type="button"
+                  onClick={() => setIsOfficialReportOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-3 sm:px-3.5 py-2 text-xs font-semibold text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-[#C15F3D]/40 shadow-2xs active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
+                  title="Gerar Relatório Oficial com Certificação SHA-256 e PDF"
+                >
+                  <span>📑</span>
+                  <span className="hidden sm:inline">Relatório Oficial (PDF)</span>
+                  <span className="sm:hidden">PDF</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -534,6 +548,16 @@ export function Dashboard() {
           }}
         />
       )}
+
+      {/* Modal de Relatório Oficial de Frequência e Impressão PDF */}
+      <OfficialReportModal
+        isOpen={isOfficialReportOpen}
+        onClose={() => setIsOfficialReportOpen(false)}
+        rows={filteredTotals}
+        range={range}
+        period={period}
+        tutorEmail={user?.email}
+      />
 
       {/* Gaveta de detalhes do integrante */}
       <MemberDetailDrawer

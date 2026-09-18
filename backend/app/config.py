@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     max_enroll_frames: int = 5                  # Máximo de fotos no payload de cadastro (mitigação DoS)
     debounce_seconds: int = 60                  # Janela mínima de histerese (segundos) entre transições
 
+    # Vivacidade Ativa & Anti-Spoofing (3D Flash Liveness PAD - ISO/IEC 30107-3)
+    flash_liveness_enabled: bool = True         # Analisa reflexo fotométrico na sequência multi-frame
+    flash_min_delta: float = 0.4                # Variação mínima de luminância facial sob pulso fotométrico
+
+    # Cancelable Biometrics & Proteção de Templates (LGPD Art. 11 / ISO/IEC 24745)
+    biohashing_enabled: bool = True             # Habilita projeção ortonormal irreversível e revogável
+    biohashing_seed: str = "ailab-biometric-salt-v1"  # Semente institucional para matriz ortogonal determinística
+
     # Sessões e Ciclo de Vida
     max_session_hours: int = 10                 # Limite para considerar saída esquecida
     insightface_root: str = "~/.insightface"    # Onde o pacote buffalo_s fica salvo

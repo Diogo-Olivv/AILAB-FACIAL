@@ -569,3 +569,100 @@ def test_extract_representative_embeddings_clustering():
         assert np.isclose(np.linalg.norm(r), 1.0, atol=1e-5)
 
 
+# ── Testes de Cancelable Biometrics & BioHashing (ISO/IEC 24745) ─────────────
+
+
+def test_biohashing_projection_isometry_linear():
+    """Valida que a projeção de BioHashing é uma isometria linear perfeita."""
+    from app.services.face_service import (
+        apply_template_protection,
+        get_biohash_projection_matrix,
+    )
+
+    rng = np.random.default_rng(123)
+    u = rng.standard_normal(512)
+    v = rng.standard_normal(512)
+    u = u / np.linalg.norm(u)
+    v = v / np.linalg.norm(v)
+
+    raw_euclidean = float(np.linalg.norm(u - v))
+    raw_cosine = float(np.dot(u, v))
+
+    # Projeta no espaço protegido
+    u_prot = apply_template_protection(u)
+    v_prot = apply_template_protection(v)
+
+    prot_euclidean = float(np.linalg.norm(u_prot - v_prot))
+    prot_cosine = float(np.dot(u_prot, v_prot))
+
+    # 1. Distância euclidiana rigorosamente preservada
+    assert np.isclose(raw_euclidean, prot_euclidean, atol=1e-6)
+    # 2. Similaridade cosseno rigorosamente preservada
+    assert np.isclose(raw_cosine, prot_cosine, atol=1e-6)
+    # 3. Norma unitária preservada
+    assert np.isclose(np.linalg.norm(u_prot), 1.0, atol=1e-6)
+    assert np.isclose(np.linalg.norm(v_prot), 1.0, atol=1e-6)
+
+
+def test_biohashing_orthonormality_and_revocability():
+    """Valida ortonormalidade Q^T Q = I e cancelabilidade entre chaves diferentes."""
+    from app.services.face_service import (
+        apply_template_protection,
+        get_biohash_projection_matrix,
+    )
+
+    Q = get_biohash_projection_matrix("seed-campus-central-1")
+    # Q^T Q deve ser a matriz identidade I_512
+    identity_approx = np.dot(Q.T, Q)
+    eye = np.eye(512)
+    assert np.allclose(identity_approx, eye, atol=1e-6)
+
+    # Revocabilidade: duas sementes institucionais distintas produzem espaços não-correlacionados
+    rng = np.random.default_rng(456)
+    face_raw = rng.standard_normal(512)
+    face_raw /= np.linalg.norm(face_raw)
+
+    prot_seed1 = apply_template_protection(face_raw, seed="campus-1")
+    prot_seed2 = apply_template_protection(face_raw, seed="campus-2-revoked")
+
+    # O vetor protegido é completamente diferente do bruto
+    assert not np.allclose(prot_seed1, face_raw, atol=0.1)
+    # E templates de instituições/chaves diferentes não se correlacionam (cosseno ~ 0)
+    cross_sim = float(np.dot(prot_seed1, prot_seed2))
+    assert abs(cross_sim) < 0.20
+
+
+# ── Testes de 3D Flash Liveness (ISO/IEC 30107-3) ───────────────────────────
+
+
+def test_verify_flash_reflection_rejects_identical_static_frames():
+    """Dois frames idênticos em rajada indicam replay de imagem estática ou vídeo congelado."""
+    from app.services.liveness_service import verify_flash_reflection
+
+    rng = np.random.default_rng(88)
+    frame_static = rng.integers(40, 220, size=(112, 112, 3), dtype=np.uint8)
+
+    is_live, score, reason = verify_flash_reflection(frame_static, frame_static)
+    assert is_live is False
+    assert reason == "static_replay_detected"
+    assert score < 0.20
+
+
+def test_verify_flash_reflection_accepts_dynamic_flash_response():
+    """Frames com resposta de iluminação fotométrica na face são aprovados."""
+    from app.services.liveness_service import verify_flash_reflection
+
+    rng = np.random.default_rng(99)
+    ambient = rng.integers(60, 180, size=(112, 112, 3), dtype=np.uint8)
+    # Flash eleva a iluminação frontal da face
+    flash = ambient.copy().astype(np.int16)
+    flash[30:80, 30:80] += 25  # Convexidade central iluminada
+    flash = np.clip(flash, 0, 255).astype(np.uint8)
+
+    is_live, score, reason = verify_flash_reflection(ambient, flash)
+    assert is_live is True
+    assert reason == "flash_reflection_ok"
+    assert score >= 0.45
+
+
+

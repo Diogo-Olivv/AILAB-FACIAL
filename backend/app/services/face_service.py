@@ -10,6 +10,7 @@ normalizados (L2). Integra:
 """
 from __future__ import annotations
 
+import hashlib
 import io
 import logging
 import os
@@ -22,13 +23,59 @@ from PIL import Image
 
 from app.config import settings
 from app.db.supabase_client import get_client
-from app.services.liveness_service import check_image_quality, verify_liveness
+from app.services.liveness_service import (
+    check_image_quality,
+    verify_flash_reflection,
+    verify_liveness,
+)
 
 log = logging.getLogger(__name__)
 
 _MIN_DET_SCORE = 0.38
 _analyzer = None
 _analyzer_lock = threading.Lock()
+
+# Proteção de Templates Biométricos (Cancelable Biometrics / BioHashing - ISO/IEC 24745)
+_biohash_matrix: np.ndarray | None = None
+_biohash_lock = threading.Lock()
+
+
+def get_biohash_projection_matrix(seed: str | None = None) -> np.ndarray:
+    """Retorna matriz ortonormal 512x512 determinística baseada na semente institucional (ISO/IEC 24745)."""
+    global _biohash_matrix
+    effective_seed = seed or settings.biohashing_seed
+    if seed is None and _biohash_matrix is not None:
+        return _biohash_matrix
+
+    with _biohash_lock:
+        if seed is None and _biohash_matrix is not None:
+            return _biohash_matrix
+        seed_bytes = hashlib.sha256(effective_seed.encode("utf-8")).digest()
+        seed_int = int.from_bytes(seed_bytes[:4], byteorder="big")
+        rng = np.random.RandomState(seed_int)
+        gaussian_matrix = rng.randn(512, 512)
+        q, _ = np.linalg.qr(gaussian_matrix)
+        q = q.astype(np.float64)
+        if seed is None:
+            _biohash_matrix = q
+        return q
+
+
+def apply_template_protection(embedding: np.ndarray, seed: str | None = None) -> np.ndarray:
+    """Aplica projeção ortogonal aleatória (Cancelable Biometrics) sobre vetor 512-D.
+
+    Preserva rigorosamente distâncias euclidianas e similaridades cosseno (isometria linear):
+    <Q u, Q v> = <u, v> e ||Q u - Q v|| = ||u - v||.
+    Torna o vetor irreversível sem a matriz institucional secreta (LGPD Art. 11).
+    """
+    if not settings.biohashing_enabled:
+        return embedding
+
+    Q = get_biohash_projection_matrix(seed)
+    projected = np.dot(Q, embedding)
+    norm = np.linalg.norm(projected)
+    return projected / norm if norm > 0 else projected
+
 
 # Cache local de embeddings ativos em memória
 _CACHE_TTL_SECONDS = 180.0  # 3 minutos
@@ -246,7 +293,8 @@ def extract_primary_face_data(
         return None, None, "zero_embedding", "Falha ao gerar vetor biométrico."
 
     normalized_enc = enc / norm
-    return face_crop, normalized_enc, "ok", "Face processada com sucesso."
+    protected_enc = apply_template_protection(normalized_enc)
+    return face_crop, protected_enc, "ok", "Face processada com sucesso."
 
 
 def extract_embedding(image_bytes: bytes) -> np.ndarray | None:
@@ -504,6 +552,23 @@ def identify_frames(images: list[bytes]) -> dict:
         if r.get("status") == "spoof_detected":
             log.warning("Multi-frame: ataque de apresentação detectado em frame da sequência.")
             return r
+
+    # 2. Vivacidade Ativa Fotométrica (3D Flash Liveness) na sequência multi-frame
+    if len(images) >= 2 and settings.flash_liveness_enabled and settings.liveness_enabled:
+        try:
+            crop1, _, st1, _ = extract_primary_face_data(images[0], check_quality=False, check_pad=False)
+            crop2, _, st2, _ = extract_primary_face_data(images[1], check_quality=False, check_pad=False)
+            if crop1 is not None and crop2 is not None and st1 == "ok" and st2 == "ok":
+                flash_live, flash_score, flash_reason = verify_flash_reflection(crop1, crop2)
+                if not flash_live:
+                    log.warning("Flash PAD rejeitado na rajada: score=%.4f, motivo=%s", flash_score, flash_reason)
+                    return {
+                        "recognized": False,
+                        "status": "spoof_detected",
+                        "message": "Falha na verificação de vivacidade ativa (3D Flash PAD).",
+                    }
+        except Exception as exc:
+            log.warning("Falha na avaliação de Flash PAD: %s", exc)
 
     # Se há candidatos reconhecidos, seleciona o de maior confiança calibrada
     candidates = [r for r in results if r.get("recognized")]

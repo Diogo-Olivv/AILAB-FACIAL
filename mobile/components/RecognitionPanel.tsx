@@ -28,6 +28,7 @@ export function RecognitionPanel() {
   // Estados Hands-Free e Resiliência Offline
   const [isHandsFree, setIsHandsFree] = useState(true);
   const [pendingOfflineCount, setPendingOfflineCount] = useState(0);
+  const [flashPulseActive, setFlashPulseActive] = useState(false);
   const lastSuccessTimeRef = useRef<number>(0);
   const busyRef = useRef(false);
   busyRef.current = busy || loading;
@@ -100,10 +101,12 @@ export function RecognitionPanel() {
           }
         }
 
-        // Segundo frame após estabilização do toque na tela (~100ms)
+        // Segundo frame com pulso fotométrico ativo (3D Flash Liveness - ISO/IEC 30107-3)
         if (uris.length > 0 && cameraRef.current) {
           try {
-            await new Promise((r) => setTimeout(r, 100));
+            // Emite pulso luminoso na tela para análise de reflexo especular na face
+            setFlashPulseActive(true);
+            await new Promise((r) => setTimeout(r, 85));
             const photo2 = await cameraRef.current.takePictureAsync({
               quality: 0.82,
               shutterSound: false,
@@ -111,6 +114,8 @@ export function RecognitionPanel() {
             if (photo2?.uri) uris.push(photo2.uri);
           } catch {
             // Se o segundo frame falhar, segue com o primeiro com segurança
+          } finally {
+            setFlashPulseActive(false);
           }
         }
 
@@ -404,6 +409,11 @@ export function RecognitionPanel() {
 
         {/* HUD Fluido de Escaneamento Biométrico */}
         {disabled && <BiometricScanHUD action={currentAction} />}
+
+        {/* Pulso Fotométrico de Tela para Vivacidade Ativa (3D Flash Liveness PAD) */}
+        {flashPulseActive && (
+          <View style={styles.flashOverlay} pointerEvents="none" />
+        )}
 
         {/* Badge Animada de Notificação Flutuante */}
         <FeedbackBadge
@@ -820,6 +830,16 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.65 },
   actionText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16, letterSpacing: -0.2 },
   sublabelText: { color: "rgba(255, 255, 255, 0.72)", fontSize: 11, fontWeight: "500" },
+  flashOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#E0F7FA",
+    opacity: 0.88,
+    zIndex: 999,
+  },
   permText: { color: "#171715", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
   permBtn: {
     backgroundColor: "#171715",
