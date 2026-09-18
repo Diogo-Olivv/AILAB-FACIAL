@@ -18,6 +18,7 @@ import { PrivacyTermsModal } from "../components/PrivacyTermsModal";
 import { MemberDetailDrawer } from "../components/MemberDetailDrawer";
 import { TutorWarningModal } from "../components/TutorWarningModal";
 import { TutorProfileModal } from "../components/TutorProfileModal";
+import { ManualAttendanceModal } from "../components/ManualAttendanceModal";
 import { Footer } from "../components/Footer";
 import { ViewSelector } from "../components/ViewSelector";
 import { KpiSkeleton, TableSkeleton } from "../components/TableSkeleton";
@@ -50,6 +51,7 @@ export function Dashboard() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isTutorWarningOpen, setIsTutorWarningOpen] = useState(false);
   const [isTutorProfileOpen, setIsTutorProfileOpen] = useState(false);
+  const [isManualAttendanceOpen, setIsManualAttendanceOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   const loadMembers = useCallback(async () => {
@@ -253,6 +255,15 @@ export function Dashboard() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsManualAttendanceOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs sm:text-sm font-medium text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-[#706E6A]/40 shadow-2xs active:scale-[0.98] transition-all cursor-pointer min-h-[42px]"
+              >
+                <span>📝</span>
+                <span>Registrar Presença Manual</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setIsTutorProfileOpen(true)}
@@ -475,6 +486,18 @@ export function Dashboard() {
         <TutorProfileModal
           isOpen={isTutorProfileOpen}
           onClose={() => setIsTutorProfileOpen(false)}
+        />
+      )}
+
+      {/* Modal de Registro Manual de Presença (contingência lista de papel) */}
+      {user && (
+        <ManualAttendanceModal
+          isOpen={isManualAttendanceOpen}
+          onClose={() => setIsManualAttendanceOpen(false)}
+          members={members}
+          onRegistered={async () => {
+            await refreshData(true);
+          }}
         />
       )}
 

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test src/lib/aggregate.test.ts src/lib/e2e_all_flows.test.ts src/lib/mutation.test.ts src/lib/property_based.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/aggregate.test.ts src/lib/e2e_all_flows.test.ts src/lib/manualSession.test.ts src/lib/mutation.test.ts src/lib/property_based.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

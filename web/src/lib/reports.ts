@@ -101,6 +101,41 @@ export async function fetchSessions(range: DateRange): Promise<SessionRecord[]> 
   }));
 }
 
+export async function fetchMemberSessionsOnDate(
+  profileId: string,
+  dayStartISO: string,
+  dayEndISO: string
+): Promise<SessionRecord[]> {
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("id, profile_id, check_in, check_out, duration_s, auto_closed, voided_at")
+    .eq("profile_id", profileId)
+    .gte("check_in", dayStartISO)
+    .lte("check_in", dayEndISO)
+    .order("check_in", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((s) => ({
+    id: s.id,
+    profileId: s.profile_id,
+    checkIn: s.check_in,
+    checkOut: s.check_out,
+    durationS: s.duration_s,
+    autoClosed: s.auto_closed,
+    voidedAt: s.voided_at,
+  }));
+}
+
+export async function tutorRegisterManualSession(
+  profileId: string,
+  checkInISO: string,
+  checkOutISO: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("sessions")
+    .insert({ profile_id: profileId, check_in: checkInISO, check_out: checkOutISO });
+  if (error) throw error;
+}
+
 export async function fetchPresentIds(): Promise<string[]> {
   const { data, error } = await supabase
     .from("sessions")
