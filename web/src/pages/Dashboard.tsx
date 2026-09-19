@@ -628,14 +628,9 @@ export function Dashboard() {
               {/* Cabeçalho Limpo e Acolhedor do Aluno */}
               <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
                 <div>
-                  <div className="flex items-center gap-2.5">
-                    <h2 className="font-editorial text-2xl sm:text-3xl font-normal text-[#171715] dark:text-slate-100 tracking-tight">
-                      Painel do Aluno
-                    </h2>
-                    <span className="inline-flex items-center gap-1 font-mono-data rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 text-2xs font-semibold text-emerald-800 dark:text-emerald-300">
-                      AiLab Makers
-                    </span>
-                  </div>
+                  <h2 className="font-editorial text-2xl sm:text-3xl font-normal text-[#171715] dark:text-slate-100 tracking-tight">
+                    Painel do Aluno
+                  </h2>
                   <p className="text-xs sm:text-sm text-[#57534E] dark:text-slate-400 font-sans mt-1">
                     Acompanhe em tempo real a lotação do laboratório, horários de pico e a melhor hora para estudar.
                   </p>
@@ -784,7 +779,7 @@ export function Dashboard() {
               {/* Tabela de Discentes com Busca Reativa (Visual original refinado estilo Apple) */}
               <div className="space-y-4">
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#57534E] dark:text-slate-400 group-focus-within:text-[#C15F3D] transition-colors">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-stone-400 dark:text-slate-400 group-focus-within:text-[#C15F3D] dark:group-focus-within:text-amber-400 transition-colors">
                     <Search className="h-4 w-4" />
                   </div>
                   <input
@@ -842,7 +837,7 @@ export function Dashboard() {
               {/* Barra de Busca, Alternância e Exportação */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-3xl p-3 sm:p-3.5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs transition-all duration-300">
                 <div className="relative flex-1 group">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#57534E] dark:text-slate-400 group-focus-within:text-[#C15F3D] transition-colors">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-stone-400 dark:text-slate-400 group-focus-within:text-[#C15F3D] dark:group-focus-within:text-amber-400 transition-colors">
                     <Search className="h-4 w-4" />
                   </div>
                   <input

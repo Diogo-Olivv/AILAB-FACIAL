@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { KeyRound, Lock, AlertCircle } from "lucide-react";
+import { KeyRound, Lock, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import logo from "../ailab_makers.jpeg";
 
@@ -14,6 +14,7 @@ interface Props {
 export function SiteAccessGate({ children }: Props) {
   const { user } = useAuth();
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [hasAccess, setHasAccess] = useState<boolean>(() => {
     try {
@@ -104,9 +105,9 @@ export function SiteAccessGate({ children }: Props) {
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-[#171715] dark:text-slate-200">Senha de presença (Makers)</label>
-            <div className="relative">
+            <div className="relative flex items-center">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -115,13 +116,17 @@ export function SiteAccessGate({ children }: Props) {
                 placeholder="Digite a senha..."
                 required
                 autoFocus
-                className="w-full rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-950 py-3.5 px-4 text-sm font-mono-data text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/60 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:border-[#C15F3D] dark:focus:border-amber-500 focus:ring-4 focus:ring-[#C15F3D]/10 shadow-2xs transition-all outline-none"
+                className="w-full rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-950 py-3.5 pl-4 pr-12 text-sm font-mono-data text-[#171715] dark:text-slate-100 placeholder:text-[#706E6A]/60 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:border-[#C15F3D] dark:focus:border-amber-500 focus:ring-4 focus:ring-[#C15F3D]/10 shadow-2xs transition-all outline-none"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <span className="font-mono-data text-[10px] text-[#706E6A]/70 dark:text-slate-400 border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                  ↵ Enter
-                </span>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 p-1.5 rounded-xl text-[#706E6A] dark:text-slate-400 hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer flex items-center justify-center"
+                aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
+                title={showPassword ? "Ocultar senha" : "Exibir senha"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
           </div>
 

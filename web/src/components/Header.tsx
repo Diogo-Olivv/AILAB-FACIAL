@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { SunMedium, MoonStar, Scale, KeyRound, RotateCw } from "lucide-react";
+import { SunMedium, MoonStar, Scale, KeyRound } from "lucide-react";
 import logo from "../ailab_makers.jpeg";
 import { useTheme } from "../lib/useTheme";
 import { InstallPwaButton } from "./InstallPwaButton";
@@ -8,8 +8,8 @@ interface HeaderProps {
   user: any;
   signOut: () => Promise<void>;
   onOpenTerms: () => void;
-  onRefresh: () => void;
-  isRefreshing: boolean;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
   presentCount?: number;
 }
 
@@ -17,8 +17,6 @@ export function Header({
   user,
   signOut,
   onOpenTerms,
-  onRefresh,
-  isRefreshing,
 }: HeaderProps) {
   const { isDark, toggleTheme } = useTheme();
 
@@ -70,23 +68,6 @@ export function Header({
             )}
             <span className="hidden sm:inline font-semibold">
               {isDark ? "Modo Claro" : "Modo Escuro"}
-            </span>
-          </button>
-
-          {/* Botão de Atualizar */}
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-stone-300/80 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:border-stone-400 dark:hover:border-slate-600 shadow-xs transition-all cursor-pointer min-h-[40px] disabled:opacity-50"
-            title="Atualizar dados de permanência agora"
-            aria-label="Atualizar dados de permanência agora"
-          >
-            <RotateCw
-              className={`h-3.5 w-3.5 transition-transform ${isRefreshing ? "animate-spin text-teal-600 dark:text-teal-400" : "text-stone-500 dark:text-slate-400"}`}
-            />
-            <span className="hidden sm:inline font-medium">
-              {isRefreshing ? "Sincronizando..." : "Atualizar"}
             </span>
           </button>
 
