@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { SearchX, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import type { MemberTotal } from "../lib/aggregate";
 import { formatDuration } from "../lib/aggregate";
 
@@ -112,8 +113,8 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
   if (sortedRows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-3xl border border-[#E5E2DC] bg-white/80 p-12 text-center shadow-xs dark:border-slate-800 dark:bg-slate-900/80">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] text-xl text-[#706E6A] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
-          📋
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] text-[#706E6A] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
+          <SearchX className="h-6 w-6" />
         </div>
         <p className="font-editorial text-lg text-[#171715] dark:text-slate-100">Nenhum integrante encontrado</p>
         <p className="text-xs sm:text-sm text-[#706E6A] dark:text-slate-400 mt-1 max-w-xs">
@@ -128,6 +129,17 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
   const getSortAriaLabel = (field: SortField, label: string) => {
     if (sortField !== field) return `Ordenar por ${label}`;
     return `Ordenar por ${label}, atualmente em ordem ${sortDirection === "asc" ? "crescente" : "decrescente"}`;
+  };
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity" />;
+    }
+    return sortDirection === "asc" ? (
+      <ArrowUp className="h-3 w-3 text-slate-900 dark:text-slate-100" />
+    ) : (
+      <ArrowDown className="h-3 w-3 text-slate-900 dark:text-slate-100" />
+    );
   };
 
   return (
@@ -157,9 +169,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                   className="group flex items-center gap-1.5 text-left hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1 -ml-1"
                 >
                   <span>Integrante</span>
-                  <span className="text-2xs opacity-60 font-mono-data group-hover:opacity-100">
-                    {sortField === "name" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
-                  </span>
+                  {renderSortIcon("name")}
                 </button>
               </th>
               <th
@@ -174,9 +184,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                   className="group flex items-center gap-1.5 text-left hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1 -ml-1"
                 >
                   <span>Matrícula</span>
-                  <span className="text-2xs opacity-60 font-mono-data group-hover:opacity-100">
-                    {sortField === "matricula" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
-                  </span>
+                  {renderSortIcon("matricula")}
                 </button>
               </th>
               <th
@@ -191,9 +199,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                   className="group flex items-center justify-center gap-1.5 w-full hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1"
                 >
                   <span>Sessões</span>
-                  <span className="text-2xs opacity-60 font-mono-data group-hover:opacity-100">
-                    {sortField === "sessions" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
-                  </span>
+                  {renderSortIcon("sessions")}
                 </button>
               </th>
               <th
@@ -209,9 +215,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                 >
                   <span className="hidden sm:inline">Total Permanência</span>
                   <span className="sm:hidden">Tempo</span>
-                  <span className="text-2xs opacity-60 font-mono-data group-hover:opacity-100">
-                    {sortField === "duration" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
-                  </span>
+                  {renderSortIcon("duration")}
                 </button>
               </th>
               <th
@@ -226,9 +230,7 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                   className="group flex items-center justify-end sm:justify-start gap-1.5 w-full hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1"
                 >
                   <span>Status</span>
-                  <span className="text-2xs opacity-60 font-mono-data group-hover:opacity-100">
-                    {sortField === "status" ? (sortDirection === "asc" ? "▲" : "▼") : "↕"}
-                  </span>
+                  {renderSortIcon("status")}
                 </button>
               </th>
             </tr>

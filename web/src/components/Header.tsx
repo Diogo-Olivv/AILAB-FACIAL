@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { SunMedium, MoonStar, Scale, KeyRound } from "lucide-react";
 import logo from "../ailab_makers.jpeg";
 import { useTheme } from "../lib/useTheme";
 
@@ -57,7 +58,11 @@ export function Header({
             title={isDark ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"}
             aria-label={isDark ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"}
           >
-            <span className="text-sm leading-none">{isDark ? "☀️" : "🌙"}</span>
+            {isDark ? (
+              <SunMedium className="h-4 w-4 text-amber-400" />
+            ) : (
+              <MoonStar className="h-4 w-4 text-slate-700" />
+            )}
             <span className="hidden sm:inline font-semibold">
               {isDark ? "Modo Claro" : "Modo Escuro"}
             </span>
@@ -93,7 +98,7 @@ export function Header({
             className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-stone-300/80 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:border-stone-400 dark:hover:border-slate-600 shadow-xs transition-all cursor-pointer min-h-[40px]"
             title="Políticas de Privacidade Biométrica (LGPD Art. 11)"
           >
-            <span className="text-xs">⚖️</span>
+            <Scale className="h-3.5 w-3.5 text-[#C15F3D] dark:text-amber-400" />
             <span className="font-medium hidden sm:inline">Termos LGPD</span>
           </button>
 
@@ -113,7 +118,7 @@ export function Header({
               className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-[#C15F3D] to-orange-600 hover:from-[#A84828] hover:to-orange-700 text-white font-bold px-4 py-2 text-xs shadow-sm shadow-orange-500/25 active:scale-98 transition-all min-h-[40px]"
               title="Área administrativa de tutores e coordenadores"
             >
-              <span>🎓</span>
+              <KeyRound className="h-3.5 w-3.5" />
               <span>Acesso Tutor</span>
             </Link>
           )}

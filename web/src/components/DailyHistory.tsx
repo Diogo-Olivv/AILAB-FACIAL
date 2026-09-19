@@ -1,3 +1,4 @@
+import { CalendarRange, Ban } from "lucide-react";
 import type { DayGroup } from "../lib/aggregate";
 import { formatDuration, formatTime } from "../lib/aggregate";
 
@@ -5,8 +6,8 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
   if (days.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-3xl border border-[#E5E2DC] bg-white/80 p-12 text-center shadow-xs dark:border-slate-800 dark:bg-slate-900/80">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] text-xl text-[#706E6A] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
-          📅
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] text-[#706E6A] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
+          <CalendarRange className="h-6 w-6" />
         </div>
         <p className="font-editorial text-lg text-[#171715] dark:text-slate-100">Nenhum registro no período</p>
         <p className="text-xs sm:text-sm text-[#706E6A] dark:text-slate-400 mt-1 max-w-xs">
@@ -51,7 +52,8 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
                       {formatTime(entry.checkIn)} às{" "}
                       {entry.voided ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/50 px-2 py-0.5 text-[10px] font-medium text-[#C15F3D] dark:text-amber-400">
-                          ⚠️ anulada
+                          <Ban className="h-2.5 w-2.5" />
+                          <span>anulada</span>
                         </span>
                       ) : entry.open ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-700/80 px-2.5 py-0.5 text-[10px] font-bold shadow-2xs">

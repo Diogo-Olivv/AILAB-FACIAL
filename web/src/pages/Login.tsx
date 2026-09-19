@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type KeyboardEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { SunMedium, MoonStar, KeyRound, Sparkles, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { useTheme } from "../lib/useTheme";
 import logo from "../ailab_makers.jpeg";
@@ -85,7 +86,11 @@ export function Login() {
               title={theme === "dark" ? "Alternar para modo claro" : "Alternar para modo escuro"}
               aria-label={theme === "dark" ? "Alternar para modo claro" : "Alternar para modo escuro"}
             >
-              {theme === "dark" ? "☀️" : "🌙"}
+              {theme === "dark" ? (
+                <SunMedium className="h-4 w-4 text-amber-400" />
+              ) : (
+                <MoonStar className="h-4 w-4 text-slate-700" />
+              )}
             </button>
 
             <Link
@@ -115,8 +120,8 @@ export function Login() {
         >
           {/* Cabeçalho de Identidade com Tipografia Editorial Claude */}
           <div className="flex items-center gap-3.5">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/50 text-[#C15F3D] dark:text-amber-400 text-2xl shadow-2xs">
-              🎓
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/50 text-[#C15F3D] dark:text-amber-400 shadow-2xs">
+              <KeyRound className="h-6 w-6" />
             </span>
             <div>
               <h2 className="font-editorial text-2xl sm:text-3xl font-normal text-[#171715] dark:text-slate-100 tracking-tight leading-none">
@@ -130,7 +135,7 @@ export function Login() {
 
           {/* Dica Institucional estilo Claude Callout */}
           <div className="rounded-2xl border border-[#F0DCD3] dark:border-amber-800/40 bg-[#FAF5F0]/80 dark:bg-amber-950/20 p-3.5 text-xs text-[#171715] dark:text-slate-200 flex items-start gap-2.5">
-            <span className="text-sm leading-none select-none text-[#C15F3D] dark:text-amber-400 mt-0.5">✦</span>
+            <Sparkles className="h-4 w-4 text-[#C15F3D] dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <strong className="text-[#171715] dark:text-slate-100 font-semibold block font-sans">
                 Acesso Institucional com E-mail @ailab.com
@@ -212,7 +217,7 @@ export function Login() {
                 aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
                 aria-pressed={showPassword}
               >
-                {showPassword ? "👁️" : "👁️‍🗨️"}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -222,9 +227,10 @@ export function Login() {
               id="login-error-alert"
               role="alert"
               aria-live="assertive"
-              className="rounded-2xl border border-[#C15F3D]/30 dark:border-rose-800/50 bg-[#FAF5F0] dark:bg-rose-950/40 p-3.5 text-xs text-[#C15F3D] dark:text-rose-300 font-medium text-center animate-fade-in leading-relaxed"
+              className="rounded-2xl border border-[#C15F3D]/30 dark:border-rose-800/50 bg-[#FAF5F0] dark:bg-rose-950/40 p-3.5 text-xs text-[#C15F3D] dark:text-rose-300 font-medium text-center animate-fade-in leading-relaxed flex items-center justify-center gap-1.5"
             >
-              ⚠️ {error}
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 

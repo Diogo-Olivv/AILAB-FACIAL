@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Camera, FolderOpen, AlertCircle } from "lucide-react";
 import { WebcamCapture } from "./WebcamCapture";
 import { ImageUploader } from "./ImageUploader";
 import { AnalysisProgress } from "./AnalysisProgress";
@@ -89,7 +90,7 @@ export function AnalysisWorkflow({
                   : "text-ink/80 hover:text-ink hover:bg-navy/5"
               }`}
             >
-              <span>📷</span>
+              <Camera className="h-4 w-4" />
               <span>Câmera</span>
             </button>
 
@@ -103,7 +104,7 @@ export function AnalysisWorkflow({
                   : "text-ink/80 hover:text-ink hover:bg-navy/5"
               }`}
             >
-              <span>📁</span>
+              <FolderOpen className="h-4 w-4" />
               <span>Upload</span>
             </button>
           </div>
@@ -170,7 +171,7 @@ export function AnalysisWorkflow({
           role="alert"
           className="flex items-center justify-between rounded-2xl border border-warn/30 bg-warn/10 p-4 text-xs sm:text-sm text-warn w-full max-w-lg"
         >
-          <span>⚠️ {errorAlert}</span>
+          <span className="flex items-center gap-1.5"><AlertCircle className="h-4 w-4 shrink-0" />{errorAlert}</span>
           <button
             onClick={resetAnalysis}
             className="font-bold underline hover:text-warn/80 cursor-pointer min-h-[44px] px-2"

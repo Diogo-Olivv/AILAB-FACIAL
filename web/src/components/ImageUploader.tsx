@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { FolderOpen, FlaskConical, AlertCircle } from "lucide-react";
 
 interface ImageUploaderProps {
   onFileSelected: (file: File) => void;
@@ -112,8 +113,8 @@ export function ImageUploader({ onFileSelected, disabled }: ImageUploaderProps) 
               : "border-line bg-card/60 hover:bg-card hover:border-navy/40"
           } ${disabled ? "opacity-50 pointer-events-none" : ""}`}
         >
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-navy/10 text-3xl mb-3">
-            📁
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-navy/10 mb-3 text-primary">
+            <FolderOpen className="h-8 w-8 text-[#C15F3D]" />
           </div>
           <div className="space-y-1">
             <p className="text-sm sm:text-base font-bold text-ink">
@@ -155,7 +156,7 @@ export function ImageUploader({ onFileSelected, disabled }: ImageUploaderProps) 
               disabled={disabled}
               className="inline-flex items-center gap-2 rounded-xl bg-green px-6 py-2.5 text-sm font-extrabold text-white shadow-sm transition-all hover:bg-green/90 active:scale-95 disabled:opacity-50 cursor-pointer min-h-[44px]"
             >
-              <span>🔬</span>
+              <FlaskConical className="h-4 w-4" />
               <span>Analisar Foto</span>
             </button>
           </div>
@@ -164,7 +165,7 @@ export function ImageUploader({ onFileSelected, disabled }: ImageUploaderProps) 
 
       {validationError && (
         <div className="flex items-center gap-2 rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs text-warn w-full" role="alert">
-          <span>⚠️</span>
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{validationError}</span>
         </div>
       )}

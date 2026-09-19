@@ -1,4 +1,20 @@
 import { useState, useEffect, useRef } from "react";
+import {
+  Camera,
+  ClockAlert,
+  X,
+  ShieldCheck,
+  LogOut,
+  Undo2,
+  LogIn,
+  AlertTriangle,
+  Slash,
+  Trash2,
+  UserMinus,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import type { Member, SessionRecord } from "../lib/reports";
 import {
   tutorCloseSession,
@@ -42,9 +58,17 @@ export function MemberDetailDrawer({
   const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
   const [typedMemberName, setTypedMemberName] = useState("");
   const [sessionToVoid, setSessionToVoid] = useState<{ id: number; isCurrentlyVoided: boolean } | null>(null);
-  const [actionMessage, setActionMessage] = useState("");
+  const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(member?.avatarUrl ?? null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const showSuccess = (text: string) => {
+    setActionMessage({ type: "success", text });
+    setTimeout(() => setActionMessage(null), 3500);
+  };
+  const showError = (text: string) => {
+    setActionMessage({ type: "error", text });
+  };
 
   const drawerRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
@@ -63,34 +87,9 @@ export function MemberDetailDrawer({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        e.preventDefault();
         onClose();
-        return;
-      }
-
-      if (e.key === "Tab" && drawerRef.current) {
-        const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusable.length === 0) return;
-
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
@@ -108,22 +107,21 @@ export function MemberDetailDrawer({
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setActionMessage("⚠️ Por favor selecione um arquivo de imagem válido (JPG, PNG, WebP).");
+      showError("Por favor selecione um arquivo de imagem válido (JPG, PNG, WebP).");
       return;
     }
     setIsUploadingAvatar(true);
-    setActionMessage("");
+    setActionMessage(null);
     try {
       const base64 = await compressImageToBase64(file, 256);
       await updateMemberAvatar(member.id, base64);
       setAvatarUrl(base64);
-      setActionMessage("✅ Foto de perfil atualizada com sucesso!");
+      showSuccess("Foto de perfil atualizada com sucesso!");
       if (onSessionUpdated) {
         await onSessionUpdated();
       }
-      setTimeout(() => setActionMessage(""), 3500);
     } catch (err: any) {
-      setActionMessage(`⚠️ Falha ao salvar foto: ${err?.message || "Erro desconhecido"}`);
+      showError(`Falha ao salvar foto: ${err?.message || "Erro desconhecido"}`);
     } finally {
       setIsUploadingAvatar(false);
       e.target.value = "";
@@ -133,17 +131,16 @@ export function MemberDetailDrawer({
   const handleRemoveAvatar = async () => {
     if (!window.confirm("Deseja realmente remover a foto de perfil deste integrante?")) return;
     setIsUploadingAvatar(true);
-    setActionMessage("");
+    setActionMessage(null);
     try {
       await updateMemberAvatar(member.id, null);
       setAvatarUrl(null);
-      setActionMessage("✅ Foto de perfil removida com sucesso!");
+      showSuccess("Foto de perfil removida com sucesso!");
       if (onSessionUpdated) {
         await onSessionUpdated();
       }
-      setTimeout(() => setActionMessage(""), 3500);
     } catch (err: any) {
-      setActionMessage(`⚠️ Falha ao remover foto: ${err?.message || "Erro desconhecido"}`);
+      showError(`Falha ao remover foto: ${err?.message || "Erro desconhecido"}`);
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -151,21 +148,20 @@ export function MemberDetailDrawer({
 
   const handleVoidSpecificSession = async (sessionId: number, isCurrentlyVoided: boolean) => {
     setBusySessionId(sessionId);
-    setActionMessage("");
+    setActionMessage(null);
     try {
       if (isCurrentlyVoided) {
         await tutorUnvoidSession(sessionId);
-        setActionMessage("✅ Sessão reativada! Horas restauradas.");
+        showSuccess("Sessão reativada! Horas restauradas.");
       } else {
         await tutorVoidSession(sessionId, "anomalous_or_over_10h");
-        setActionMessage("✅ Sessão anulada com sucesso! Horas zeradas (0h 00m).");
+        showSuccess("Sessão anulada com sucesso! Horas zeradas (0h 00m).");
       }
       if (onSessionUpdated) {
         await onSessionUpdated();
       }
-      setTimeout(() => setActionMessage(""), 3500);
     } catch (err: any) {
-      setActionMessage(`⚠️ Falha: ${err?.message || "Erro desconhecido"}`);
+      showError(`Falha: ${err?.message || "Erro desconhecido"}`);
     } finally {
       setBusySessionId(null);
     }
@@ -173,17 +169,16 @@ export function MemberDetailDrawer({
 
   const handleDeleteSpecificSession = async (sessionId: number) => {
     setBusySessionId(sessionId);
-    setActionMessage("");
+    setActionMessage(null);
     try {
       await tutorDeleteSession(sessionId);
-      setActionMessage("✅ Sessão excluída permanentemente do histórico.");
+      showSuccess("Sessão excluída permanentemente do histórico.");
       setConfirmDeleteSessionId(null);
       if (onSessionUpdated) {
         await onSessionUpdated();
       }
-      setTimeout(() => setActionMessage(""), 3500);
     } catch (err: any) {
-      setActionMessage(`⚠️ Falha ao excluir sessão: ${err?.message || "Erro desconhecido"}`);
+      showError(`Falha ao excluir sessão: ${err?.message || "Erro desconhecido"}`);
     } finally {
       setBusySessionId(null);
     }
@@ -191,37 +186,34 @@ export function MemberDetailDrawer({
 
   const handleTutorAction = async (action: "checkout" | "void" | "checkin" | "remove") => {
     setBusyAction(action);
-    setActionMessage("");
+    setActionMessage(null);
     try {
       if (action === "checkin") {
         await tutorRegisterEntry(member.id);
-        setActionMessage("✅ Entrada registrada com sucesso! Presença iniciada.");
+        showSuccess("Entrada registrada com sucesso! Presença iniciada.");
         if (onSessionUpdated) {
           await onSessionUpdated();
         }
       } else if (action === "remove") {
         await tutorRemoveMember(member.id, false);
-        setActionMessage("✅ Integrante descadastrado com sucesso!");
+        showSuccess("Integrante descadastrado com sucesso!");
         if (onMemberRemoved) {
           await onMemberRemoved();
         }
         return;
       } else {
         await tutorCloseSession(member.id, action);
-        setActionMessage(
+        showSuccess(
           action === "checkout"
-            ? "✅ Saída registrada computando as horas até agora!"
-            : "✅ Entrada cancelada com sucesso (0 horas computadas)!"
+            ? "Saída registrada computando as horas até agora!"
+            : "Entrada cancelada com sucesso (0 horas computadas)!"
         );
         if (onSessionUpdated) {
           await onSessionUpdated();
         }
       }
-      setTimeout(() => {
-        setActionMessage("");
-      }, 3500);
     } catch (err: any) {
-      setActionMessage(`⚠️ Falha: ${err?.message || "Erro desconhecido"}`);
+      showError(`Falha: ${err?.message || "Erro desconhecido"}`);
     } finally {
       setBusyAction(null);
       setIsConfirmingRemove(false);
@@ -279,10 +271,10 @@ export function MemberDetailDrawer({
                 title="Alterar foto de perfil"
               >
                 {isUploadingAvatar ? (
-                  <span className="text-xs animate-spin">⏳</span>
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
                 ) : (
                   <>
-                    <span className="text-sm leading-none">📷</span>
+                    <Camera className="h-4 w-4" />
                     <span className="text-[9px] font-semibold mt-0.5">Editar</span>
                   </>
                 )}
@@ -300,7 +292,7 @@ export function MemberDetailDrawer({
                 className="sm:hidden absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 shadow-xs text-xs cursor-pointer text-slate-700 dark:text-slate-200"
                 title="Alterar foto"
               >
-                📷
+                <Camera className="h-3 w-3" />
                 <input
                   type="file"
                   accept="image/*"
@@ -348,7 +340,8 @@ export function MemberDetailDrawer({
                     </span>
                     {isLongSession && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/70 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-300 font-mono-data shadow-2xs" title="Sessão aberta há mais de 6 horas">
-                        ⚠️ Sessão longa (&gt; 6h)
+                        <ClockAlert className="h-2.5 w-2.5" />
+                        <span>Sessão longa (&gt; 6h)</span>
                       </span>
                     )}
                   </div>
@@ -366,7 +359,7 @@ export function MemberDetailDrawer({
             aria-label="Fechar detalhes do integrante"
             className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.04] hover:bg-black/[0.08] dark:bg-white/10 dark:hover:bg-white/20 text-[#706E6A] dark:text-slate-300 hover:text-[#171715] dark:hover:text-white transition-colors cursor-pointer"
           >
-            ✕
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -375,7 +368,8 @@ export function MemberDetailDrawer({
           <div className="border-b border-[#E5E2DC] dark:border-slate-800 bg-[#FAF5F0]/70 dark:bg-slate-800/60 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C15F3D] dark:text-amber-400 flex items-center gap-1.5">
-                <span>🛡️</span> Ações da Tutoria
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Ações da Tutoria</span>
               </span>
               <span className="text-[10.5px] text-[#706E6A] dark:text-slate-400 font-medium">
                 Controle de presença & cadastro
@@ -391,8 +385,9 @@ export function MemberDetailDrawer({
                   disabled={busyAction !== null}
                   className="flex flex-col items-center justify-center p-3 rounded-2xl border border-emerald-600/20 dark:border-emerald-700/40 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs min-h-[54px]"
                 >
-                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                    {busyAction === "checkout" ? "Registrando..." : "🚪 Registrar Saída"}
+                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                    <LogOut className="h-3.5 w-3.5" />
+                    <span>{busyAction === "checkout" ? "Registrando..." : "Registrar Saída"}</span>
                   </span>
                   <span className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 font-medium mt-0.5">
                     Computa horas até agora
@@ -405,8 +400,9 @@ export function MemberDetailDrawer({
                   disabled={busyAction !== null}
                   className="flex flex-col items-center justify-center p-3 rounded-2xl border border-rose-600/20 dark:border-rose-700/40 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100/60 dark:hover:bg-rose-900/40 active:scale-98 transition-all cursor-pointer disabled:opacity-50 text-center shadow-2xs min-h-[54px]"
                 >
-                  <span className="text-xs font-bold text-rose-800 dark:text-rose-300">
-                    {busyAction === "void" ? "Cancelando..." : "🛑 Cancelar Entrada"}
+                  <span className="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                    <Undo2 className="h-3.5 w-3.5" />
+                    <span>{busyAction === "void" ? "Cancelando..." : "Cancelar Entrada"}</span>
                   </span>
                   <span className="text-[10px] text-rose-700/80 dark:text-rose-400/80 font-medium mt-0.5">
                     Zera horas (esquecimento)
@@ -423,7 +419,7 @@ export function MemberDetailDrawer({
                 >
                   <div className="flex items-center gap-2.5 text-left">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600 dark:bg-emerald-700 text-white text-sm shadow-2xs">
-                      🚪
+                      <LogIn className="h-4 w-4" />
                     </span>
                     <div>
                       <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 block font-sans">
@@ -442,8 +438,19 @@ export function MemberDetailDrawer({
             )}
 
             {actionMessage && (
-              <div className="rounded-xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-xs font-medium text-center text-[#171715] dark:text-slate-100 shadow-2xs animate-fade-in">
-                {actionMessage}
+              <div
+                className={`rounded-xl border p-2.5 text-xs font-medium text-center shadow-2xs animate-fade-in flex items-center justify-center gap-1.5 ${
+                  actionMessage.type === "success"
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+                    : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300"
+                }`}
+              >
+                {actionMessage.type === "success" ? (
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                )}
+                <span>{actionMessage.text}</span>
               </div>
             )}
           </div>
@@ -505,23 +512,27 @@ export function MemberDetailDrawer({
                           {dateLabel}
                         </span>
                         {isOver10h ? (
-                          <span className="rounded-full bg-amber-100/90 dark:bg-amber-900/60 border border-amber-300 dark:border-amber-700 px-2 py-0.5 font-bold text-amber-900 dark:text-amber-300 text-[10px] font-mono-data">
-                            ⚠️ Anômala (&gt; 10h)
+                          <span className="rounded-full bg-amber-100/90 dark:bg-amber-900/60 border border-amber-300 dark:border-amber-700 px-2 py-0.5 font-bold text-amber-900 dark:text-amber-300 text-[10px] font-mono-data inline-flex items-center gap-1">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            <span>Anômala (&gt; 10h)</span>
                           </span>
                         ) : isOpenSession && (Date.now() - new Date(s.checkIn).getTime()) / 1000 > 21600 ? (
-                          <span className="rounded-full bg-amber-100/90 dark:bg-amber-900/60 border border-amber-300 dark:border-amber-700 px-2 py-0.5 font-bold text-amber-900 dark:text-amber-300 text-[10px] font-mono-data">
-                            ⚠️ Sessão longa (&gt; 6h)
+                          <span className="rounded-full bg-amber-100/90 dark:bg-amber-900/60 border border-amber-300 dark:border-amber-700 px-2 py-0.5 font-bold text-amber-900 dark:text-amber-300 text-[10px] font-mono-data inline-flex items-center gap-1">
+                            <ClockAlert className="h-2.5 w-2.5" />
+                            <span>Sessão longa (&gt; 6h)</span>
                           </span>
                         ) : null}
                       </div>
 
                       {isVoided ? (
-                        <span className="rounded-full bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/50 px-2 py-0.5 font-medium text-[#C15F3D] dark:text-amber-400 text-[10px]">
-                          🚫 Anulada (0h)
+                        <span className="rounded-full bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/50 px-2 py-0.5 font-medium text-[#C15F3D] dark:text-amber-400 text-[10px] inline-flex items-center gap-1">
+                          <Slash className="h-2.5 w-2.5" />
+                          <span>Anulada (0h)</span>
                         </span>
                       ) : isOpenSession ? (
-                        <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 px-2 py-0.5 font-medium text-emerald-800 dark:text-emerald-300 text-[10px] animate-pulse">
-                          ● Em andamento
+                        <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 px-2 py-0.5 font-medium text-emerald-800 dark:text-emerald-300 text-[10px] inline-flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>Em andamento</span>
                         </span>
                       ) : (
                         <span className="font-mono-data font-semibold text-[#171715] dark:text-slate-200 text-xs sm:text-sm">
@@ -597,7 +608,7 @@ export function MemberDetailDrawer({
                                 </>
                               ) : (
                                 <>
-                                  <span>🚫</span>
+                                  <Slash className="h-3 w-3" />
                                   <span>Anular (zerar horas)</span>
                                 </>
                               )}
@@ -610,7 +621,7 @@ export function MemberDetailDrawer({
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-rose-200/80 dark:border-rose-800/80 bg-rose-50/60 dark:bg-rose-950/50 hover:bg-rose-100/80 text-rose-700 dark:text-rose-300 text-[11px] font-sans font-medium transition-all cursor-pointer"
                               title="Excluir permanentemente do histórico"
                             >
-                              <span>🗑️</span>
+                              <Trash2 className="h-3 w-3" />
                               <span>Excluir</span>
                             </button>
                           </>
@@ -628,7 +639,7 @@ export function MemberDetailDrawer({
             <div className="mt-8 pt-4 border-t border-rose-200/60 dark:border-rose-950/60">
               <div className="rounded-2xl border border-rose-200/80 dark:border-rose-900/40 bg-rose-50/30 dark:bg-rose-950/20 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-rose-800 dark:text-rose-300">
-                  <span className="text-base select-none">⚠️</span>
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider font-sans">
                       Zona de Perigo · Descadastramento
@@ -649,7 +660,7 @@ export function MemberDetailDrawer({
                     disabled={busyAction !== null}
                     className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-sans font-semibold text-rose-700 dark:text-rose-400 transition-all cursor-pointer min-h-[40px] shadow-2xs"
                   >
-                    <span>🗑️</span>
+                    <UserMinus className="h-4 w-4" />
                     <span>Descadastrar este integrante do laboratório</span>
                   </button>
                 ) : (
@@ -717,8 +728,8 @@ export function MemberDetailDrawer({
           >
             <div className="w-full max-w-sm rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xl space-y-4 animate-scale-up text-slate-900 dark:text-slate-100">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-lg">
-                  🚫
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300">
+                  <Slash className="h-5 w-5" />
                 </span>
                 <div>
                   <h4 id="void-modal-title" className="font-editorial text-lg font-bold">

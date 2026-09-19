@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GraduationCap, X, Lightbulb, Camera, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { compressImageToBase64 } from "../lib/reports";
 
@@ -120,8 +121,8 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white text-xl shadow-md shadow-blue-500/25">
-              🎓
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25">
+              <GraduationCap className="h-6 w-6" />
             </span>
             <div>
               <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100">
@@ -137,12 +138,12 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
             aria-label="Fechar modal de acesso do tutor"
             className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] dark:bg-white/10 dark:hover:bg-white/20 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
-            ✕
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="rounded-2xl border border-blue-500/15 dark:border-blue-500/30 bg-blue-500/[0.04] dark:bg-blue-500/10 p-3 text-2xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
-          <span className="text-base leading-none">💡</span>
+          <Lightbulb className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
           <div>
             <strong className="text-slate-800 dark:text-slate-200 font-semibold block">
               Regra de Credenciais AiLab
@@ -163,8 +164,8 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
                 className="h-14 w-14 rounded-2xl object-cover ring-2 ring-[#C15F3D]/25 dark:ring-amber-500/30 shadow-md"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-[#C15F3D] text-white text-2xl shadow-md shadow-orange-500/25">
-                🎓
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-[#C15F3D] text-white shadow-md shadow-orange-500/25">
+                <GraduationCap className="h-7 w-7" />
               </div>
             )}
 
@@ -175,10 +176,10 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
               title="Carregar foto de perfil"
             >
               {isUploadingPhoto ? (
-                <span className="text-xs animate-spin">⏳</span>
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
               ) : (
                 <>
-                  <span className="text-sm">📷</span>
+                  <Camera className="h-4 w-4" />
                   <span className="text-[9px] font-semibold mt-0.5">Trocar</span>
                 </>
               )}
@@ -201,7 +202,8 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
             </p>
             <div className="flex items-center gap-2 mt-1.5">
               <label className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#C15F3D] dark:text-amber-400 hover:underline cursor-pointer">
-                <span>📷 Alterar foto</span>
+                <Camera className="h-3 w-3 inline" />
+                <span>Alterar foto</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -279,14 +281,16 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
           </div>
 
           {error && (
-            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300 font-semibold text-center">
-              ⚠️ {error}
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300 font-semibold text-center flex items-center justify-center gap-1.5">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-300 font-semibold text-center animate-fade-in">
-              ✅ Credenciais atualizadas com sucesso!
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-300 font-semibold text-center animate-fade-in flex items-center justify-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span>Credenciais atualizadas com sucesso!</span>
             </div>
           )}
 

@@ -1,4 +1,23 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import {
+  X,
+  Ban,
+  ClockAlert,
+  CheckCircle2,
+  CheckSquare,
+  Square,
+  LayoutList,
+  LayoutGrid,
+  Sparkles,
+  AlertCircle,
+  BellRing,
+  Check,
+  Send,
+  RotateCcw,
+  Eye,
+  Copy,
+  FileText,
+} from "lucide-react";
 import type { Member, SessionRecord } from "../lib/reports";
 import { formatDuration, sessionSeconds } from "../lib/aggregate";
 import { rangeFor } from "../lib/period";
@@ -397,9 +416,9 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
           <button
             onClick={onClose}
             aria-label="Fechar modal de auditoria"
-            className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-stone-100 dark:bg-slate-800 hover:bg-stone-200 dark:hover:bg-slate-700 text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer text-base font-bold"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-stone-100 dark:bg-slate-800 hover:bg-stone-200 dark:hover:bg-slate-700 text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
-            ✕
+            <X className="h-5 w-5" />
           </button>
         </div>
 
@@ -458,7 +477,9 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
         {/* Alerta de Ausentes Completos */}
         {neverPresentStudents.length > 0 && (
           <div className="shrink-0 px-3 sm:px-5 py-2.5 border-b border-stone-200/70 dark:border-slate-800 bg-rose-50/60 dark:bg-rose-950/20 flex items-center gap-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-500/20 dark:bg-rose-500/30 text-sm">🚫</span>
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-500/20 dark:bg-rose-500/30 text-rose-600 dark:text-rose-400">
+              <Ban className="h-4 w-4" />
+            </span>
             <div className="flex-1 min-w-0">
               <span className="text-xs font-bold text-rose-800 dark:text-rose-300">
                 {neverPresentStudents.length} {neverPresentStudents.length === 1 ? 'aluno ausente' : 'alunos ausentes'} esta semana
@@ -487,7 +508,10 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                     : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
-                ⚠️ Em Débito ({underTargetStudents.length})
+                <span className="inline-flex items-center gap-1.5">
+                  <ClockAlert className="h-4 w-4 shrink-0" />
+                  <span>Em Débito ({underTargetStudents.length})</span>
+                </span>
               </button>
               <button
                 type="button"
@@ -498,7 +522,10 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                     : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
-                ✓ Cumprida ({metTargetCount})
+                <span className="inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>Cumprida ({metTargetCount})</span>
+                </span>
               </button>
               <button
                 type="button"
@@ -535,7 +562,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                   className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer text-sm"
                   aria-label="Limpar busca"
                 >
-                  ✕
+                  <X className="h-4 w-4" />
                 </button>
               )}
             </div>
@@ -555,7 +582,11 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                 }}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 hover:bg-stone-100 dark:hover:bg-slate-750 px-2.5 py-1.5 text-slate-700 dark:text-slate-200 font-medium transition-colors cursor-pointer"
               >
-                <span>{selectedMemberIds.length === underTargetStudents.length && underTargetStudents.length > 0 ? "☑️" : "☐"}</span>
+                {selectedMemberIds.length === underTargetStudents.length && underTargetStudents.length > 0 ? (
+                  <CheckSquare className="h-4 w-4 text-amber-600 shrink-0" />
+                ) : (
+                  <Square className="h-4 w-4 text-stone-400 shrink-0" />
+                )}
                 <span>
                   {selectedMemberIds.length === underTargetStudents.length && underTargetStudents.length > 0
                     ? "Desmarcar todos"
@@ -581,7 +612,17 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
               title="Alternar entre visualização densa ou cartões expandidos"
               aria-pressed={isCompactView}
             >
-              <span>{isCompactView ? "📑 Modo Detalhado" : "⚡ Modo Compacto (50+ alunos)"}</span>
+              {isCompactView ? (
+                <>
+                  <LayoutList className="h-3.5 w-3.5 shrink-0" />
+                  <span>Modo Detalhado</span>
+                </>
+              ) : (
+                <>
+                  <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
+                  <span>Modo Compacto (50+ alunos)</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -590,7 +631,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
         <div className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 space-y-3 bg-stone-100/30 dark:bg-slate-950/40">
           {filteredList.length === 0 ? (
             <div className="claude-card rounded-3xl p-8 sm:p-12 text-center bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800">
-              <div className="font-editorial-italic text-3xl text-stone-400 mb-2">✦</div>
+              <Sparkles className="h-8 w-8 text-stone-400 dark:text-slate-500 mx-auto mb-2" />
               <p className="font-editorial text-lg font-bold text-slate-800 dark:text-slate-100">
                 Nenhum registro encontrado
               </p>
@@ -636,8 +677,9 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                             </span>
                           )}
                           {warning && (
-                            <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.2 text-[10px] font-bold text-amber-900 dark:text-amber-300 font-mono-data">
-                              ⚠️ Advertido
+                            <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-900 dark:text-amber-300 font-mono-data inline-flex items-center gap-1">
+                              <AlertCircle className="h-2.5 w-2.5 shrink-0" />
+                              <span>Advertido</span>
                             </span>
                           )}
                         </div>
@@ -663,11 +705,22 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                               : "bg-amber-600 hover:bg-amber-700 text-white shadow-2xs"
                           }`}
                         >
-                          {isCopied ? "✓ Copiado!" : "⚠️ Advertir"}
+                          {isCopied ? (
+                            <>
+                              <Check className="h-3.5 w-3.5" />
+                              <span>Copiado!</span>
+                            </>
+                          ) : (
+                            <>
+                              <BellRing className="h-3.5 w-3.5" />
+                              <span>Advertir</span>
+                            </>
+                          )}
                         </button>
                       ) : (
                         <span className="text-emerald-700 dark:text-emerald-400 font-bold text-xs inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/10 rounded-lg">
-                          ✓ Ok
+                          <Check className="h-3.5 w-3.5" />
+                          <span>Ok</span>
                         </span>
                       )}
                     </div>
@@ -727,7 +780,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                           </h3>
                           {warning && (
                             <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-2xs font-bold text-amber-900 dark:text-amber-300 font-mono-data inline-flex items-center gap-1">
-                              <span>⚠️</span>
+                              <AlertCircle className="h-3 w-3 shrink-0" />
                               <span>Advertido ({warning.date})</span>
                             </span>
                           )}
@@ -754,7 +807,17 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                                 : "bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-700 hover:to-orange-700"
                             }`}
                           >
-                            {isCopied ? "✓ Copiado!" : "⚠️ Advertir"}
+                            {isCopied ? (
+                              <>
+                                <Check className="h-4 w-4" />
+                                <span>Copiado!</span>
+                              </>
+                            ) : (
+                              <>
+                                <BellRing className="h-4 w-4" />
+                                <span>Advertir</span>
+                              </>
+                            )}
                           </button>
 
                           <button
@@ -763,7 +826,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                             title="Abrir WhatsApp com o comunicado pré-formatado"
                             className="rounded-2xl border border-emerald-600/30 dark:border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 px-3.5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-2xs cursor-pointer min-h-[42px] inline-flex items-center justify-center gap-1.5 active:scale-95"
                           >
-                            <span>📲</span>
+                            <Send className="h-4 w-4" />
                             <span>WhatsApp</span>
                           </button>
 
@@ -780,7 +843,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                         </>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 px-4 py-2 text-xs sm:text-sm font-bold text-emerald-800 dark:text-emerald-300">
-                          <span>✓</span>
+                          <Check className="h-4 w-4 text-emerald-600" />
                           <span>Meta Cumprida</span>
                         </span>
                       )}
@@ -837,7 +900,17 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                               : "bg-gradient-to-r from-amber-600 to-orange-600 text-white"
                           }`}
                         >
-                          {isCopied ? "✓ Copiado!" : "⚠️ Advertir"}
+                          {isCopied ? (
+                            <>
+                              <Check className="h-4 w-4" />
+                              <span>Copiado!</span>
+                            </>
+                          ) : (
+                            <>
+                              <BellRing className="h-4 w-4" />
+                              <span>Advertir</span>
+                            </>
+                          )}
                         </button>
                         <button
                           type="button"
@@ -845,23 +918,24 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                           title="Abrir no WhatsApp"
                           className="rounded-2xl py-3.5 px-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-600/30 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm font-extrabold min-h-[48px] inline-flex items-center justify-center gap-1 active:scale-98"
                         >
-                          <span>📲</span>
+                          <Send className="h-4 w-4" />
                           <span>WhatsApp</span>
                         </button>
                         {warning && (
                           <button
                             type="button"
                             onClick={() => removeWarning(item.member.id)}
-                            className="rounded-2xl border border-stone-200/90 dark:border-slate-700 bg-stone-100 dark:bg-slate-800 px-3 py-3 text-xs font-bold text-stone-600 dark:text-slate-300 hover:text-amber-800 min-h-[48px]"
+                            className="rounded-2xl border border-stone-200/90 dark:border-slate-700 bg-stone-100 dark:bg-slate-800 px-3 py-3 text-xs font-bold text-stone-600 dark:text-slate-300 hover:text-amber-800 min-h-[48px] flex items-center justify-center"
                             title="Desfazer"
                           >
-                            ✕
+                            <RotateCcw className="h-4 w-4" />
                           </button>
                         )}
                       </div>
                     ) : (
-                      <div className="w-full text-center py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                        ✓ Aluno regularizado com a meta semanal de 4 horas
+                      <div className="w-full text-center py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span>Aluno regularizado com a meta semanal de 4 horas</span>
                       </div>
                     )}
                   </div>
@@ -892,9 +966,10 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
               <button
                 type="button"
                 onClick={() => setIsPreviewOpen(true)}
-                className="flex-1 sm:flex-none rounded-xl border border-amber-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors cursor-pointer min-h-[40px]"
+                className="flex-1 sm:flex-none rounded-xl border border-amber-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors cursor-pointer min-h-[40px] inline-flex items-center justify-center gap-1.5"
               >
-                👁️ Pré-visualizar
+                <Eye className="h-4 w-4 shrink-0" />
+                <span>Pré-visualizar</span>
               </button>
               <button
                 type="button"
@@ -905,7 +980,17 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                     : "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
                 }`}
               >
-                {batchCopied ? "✓ Copiado!" : `📋 Copiar (${selectedMemberIds.length})`}
+                {batchCopied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    <span>Copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    <span>Copiar ({selectedMemberIds.length})</span>
+                  </>
+                )}
               </button>
               <button
                 type="button"
@@ -913,7 +998,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                 className="flex-1 sm:flex-none rounded-xl border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100/70 text-emerald-900 dark:text-emerald-200 px-4 py-2 text-xs font-bold shadow-2xs active:scale-95 transition-all cursor-pointer min-h-[40px] inline-flex items-center justify-center gap-1.5"
                 title="Abrir WhatsApp com comunicado coletivo"
               >
-                <span>📲</span>
+                <Send className="h-4 w-4" />
                 <span>WhatsApp</span>
               </button>
             </div>
@@ -931,7 +1016,9 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
             <div className="w-full max-w-lg rounded-3xl border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl space-y-4 animate-scale-up text-slate-900 dark:text-slate-100">
               <div className="flex items-center justify-between border-b border-stone-200 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-xl">📋</span>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300">
+                    <FileText className="h-5 w-5" />
+                  </div>
                   <div>
                     <h4 id="preview-batch-title" className="font-editorial text-lg font-bold">
                       Pré-visualização do Comunicado em Lote
@@ -947,7 +1034,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                   className="rounded-full h-8 w-8 flex items-center justify-center bg-stone-100 dark:bg-slate-800 text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                   aria-label="Fechar pré-visualização"
                 >
-                  ✕
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 

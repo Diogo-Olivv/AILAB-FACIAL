@@ -1,14 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
+import { Shield, Sparkles, Binary, Search, Cpu, CheckCheck } from "lucide-react";
 
 interface AnalysisProgressProps {
   onCancel?: () => void;
 }
 
-const STEPS = [
-  { id: 1, label: "Emitindo desafio temporal anti-injeção", icon: "🛡️" },
-  { id: 2, label: "Avaliando vivacidade óptica (Anti-Spoofing)", icon: "✨" },
-  { id: 3, label: "Extraindo embedding vetorial ArcFace 512-D", icon: "📐" },
-  { id: 4, label: "Comparando distância no pgvector HNSW", icon: "🔍" },
+interface StepItem {
+  id: number;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+}
+
+const STEPS: StepItem[] = [
+  { id: 1, label: "Emitindo desafio temporal anti-injeção", icon: Shield },
+  { id: 2, label: "Avaliando vivacidade óptica (Anti-Spoofing)", icon: Sparkles },
+  { id: 3, label: "Extraindo embedding vetorial ArcFace 512-D", icon: Binary },
+  { id: 4, label: "Comparando distância no pgvector HNSW", icon: Search },
 ];
 
 export function AnalysisProgress({ onCancel }: AnalysisProgressProps) {
@@ -36,7 +43,9 @@ export function AnalysisProgress({ onCancel }: AnalysisProgressProps) {
       {/* Spinner Circular com Pulso */}
       <div className="relative flex items-center justify-center">
         <div className="h-16 w-16 rounded-full border-4 border-navy/15 border-t-green animate-spin" />
-        <span className="absolute text-xl">🧠</span>
+        <span className="absolute flex items-center justify-center text-primary">
+          <Cpu className="h-6 w-6 text-[#C15F3D] dark:text-amber-400" />
+        </span>
       </div>
 
       <div className="text-center space-y-1">
@@ -49,10 +58,11 @@ export function AnalysisProgress({ onCancel }: AnalysisProgressProps) {
       </div>
 
       {/* Lista de Etapas Dinâmicas */}
-      <div className="w-full space-y-2.5 bg-cream/60 rounded-2xl p-4 border border-line/50">
+      <div className="w-full space-y-2.5 bg-cream/60 dark:bg-slate-800/60 rounded-2xl p-4 border border-line/50">
         {STEPS.map((step) => {
           const isDone = currentStep > step.id;
           const isCurrent = currentStep === step.id;
+          const IconComp = step.icon;
 
           return (
             <div
@@ -65,7 +75,13 @@ export function AnalysisProgress({ onCancel }: AnalysisProgressProps) {
                   : "text-muted/60"
               }`}
             >
-              <span className="text-base">{isDone ? "✅" : step.icon}</span>
+              <span className="flex items-center justify-center h-5 w-5 shrink-0">
+                {isDone ? (
+                  <CheckCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <IconComp className="h-4 w-4 text-[#706E6A] dark:text-slate-400" />
+                )}
+              </span>
               <span className="flex-1">{step.label}</span>
               {isCurrent && (
                 <span className="relative flex h-2 w-2 items-center justify-center shrink-0">

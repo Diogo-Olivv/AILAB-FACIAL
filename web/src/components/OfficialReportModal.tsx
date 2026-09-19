@@ -273,7 +273,7 @@ export function OfficialReportModal({
 <body>
   <div class="header">
     <div>
-      <div class="inst-title">Ministério da Educação • AILAB Makers</div>
+      <div class="inst-title">AILAB MAKERS • LABORATÓRIO DE INTELIGÊNCIA ARTIFICIAL</div>
       <h1 class="main-title">Relatório Oficial de Frequência e Atividades</h1>
       <div class="sub-title">Sistema Biométrico de Registro Facial de Presença</div>
     </div>
@@ -571,7 +571,7 @@ export function OfficialReportModal({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#C15F3D] dark:text-amber-400">
-                      MINISTÉRIO DA EDUCAÇÃO • AILAB MAKERS
+                      AILAB MAKERS • LABORATÓRIO DE INTELIGÊNCIA ARTIFICIAL
                     </span>
                   </div>
                   <h1 className="text-xl sm:text-2xl font-bold font-editorial tracking-tight text-[#171715] dark:text-white mt-1">

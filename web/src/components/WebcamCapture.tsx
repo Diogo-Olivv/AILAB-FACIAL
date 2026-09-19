@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Camera, AlertTriangle, Aperture, SwitchCamera } from "lucide-react";
 
 interface WebcamCaptureProps {
   onCapture: (blob: Blob) => void;
@@ -104,8 +105,8 @@ export function WebcamCapture({ onCapture, disabled }: WebcamCaptureProps) {
       {/* Estado Inicial: Pré-aviso Educativo de Câmera */}
       {permissionState === "idle" && (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-line bg-card/60 p-8 text-center max-w-lg w-full gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-navy/10 text-3xl">
-            📷
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-navy/10 text-primary">
+            <Camera className="h-8 w-8" />
           </div>
           <div className="space-y-1.5">
             <h2 className="text-base sm:text-lg font-bold text-ink">
@@ -142,7 +143,7 @@ export function WebcamCapture({ onCapture, disabled }: WebcamCaptureProps) {
       {/* Estado Erro ou Permissão Negada */}
       {(permissionState === "denied" || permissionState === "unsupported") && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-warn/30 bg-warn/10 p-6 text-center max-w-lg w-full gap-3" role="alert">
-          <span className="text-3xl">⚠️</span>
+          <AlertTriangle className="h-8 w-8 text-amber-500" />
           <div className="space-y-1">
             <h2 className="text-sm font-bold text-warn">
               Acesso à Câmera Indisponível
@@ -208,17 +209,17 @@ export function WebcamCapture({ onCapture, disabled }: WebcamCaptureProps) {
               disabled={disabled}
               className="inline-flex items-center gap-2 rounded-xl bg-green px-6 py-2.5 text-sm font-extrabold text-white shadow-sm transition-all hover:bg-green/90 active:scale-95 disabled:opacity-50 cursor-pointer min-h-[44px]"
             >
-              <span>📸</span>
+              <Aperture className="h-4 w-4" />
               <span>Capturar e Analisar</span>
             </button>
 
             <button
               onClick={toggleFacingMode}
-              className="rounded-xl border border-line bg-white p-2.5 text-xs font-semibold text-ink hover:bg-navy/5 cursor-pointer min-h-[44px]"
+              className="rounded-xl border border-line bg-white p-2.5 text-xs font-semibold text-ink hover:bg-navy/5 cursor-pointer min-h-[44px] flex items-center justify-center"
               title="Alternar Câmera (Frontal / Traseira)"
               aria-label="Alternar Câmera"
             >
-              🔄
+              <SwitchCamera className="h-4 w-4 text-slate-700" />
             </button>
           </div>
         </div>

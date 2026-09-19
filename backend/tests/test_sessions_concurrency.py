@@ -67,6 +67,7 @@ def test_register_event_checkout_computes_fractional_duration_and_updates_db():
         patch("app.services.session_service.get_client", return_value=mock_db),
         patch("app.services.session_service._last_event_ts", return_value=None),
         patch("app.services.session_service._open_session", return_value=open_sess),
+        patch("app.services.session_service._is_stale", return_value=False),
         patch.object(settings, "debounce_seconds", 60),
     ):
         res = register_event(profile_id, action="check_out")

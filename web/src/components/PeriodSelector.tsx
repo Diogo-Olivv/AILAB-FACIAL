@@ -1,26 +1,61 @@
+import { useRef, useState, useEffect, useCallback, useMemo, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { useRef, useState, useEffect, type PointerEvent } from "react";
-import { CalendarDays, ChevronDown } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarRange,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Check,
+} from "lucide-react";
 import type { DateRange } from "../lib/reports";
-import type { PeriodKey } from "../lib/period";
-import { PERIOD_LABELS, formatRange } from "../lib/period";
+import { formatRange } from "../lib/period";
 
-const KEYS: PeriodKey[] = ["day", "week", "month"];
+const PERIOD_LABELS: Record<"day" | "week" | "month", string> = {
+  day: "Hoje",
+  week: "Semana",
+  month: "Mês",
+};
+
+const KEYS: ("day" | "week" | "month")[] = ["day", "week", "month"];
+
+const MONTH_NAMES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+const WEEKDAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 interface Props {
-  period: PeriodKey;
+  period: "day" | "week" | "month" | "custom";
   range: DateRange;
-  onPeriod: (period: PeriodKey) => void;
+  onPeriod: (p: "day" | "week" | "month" | "custom") => void;
   customFrom?: string;
   customTo?: string;
   onCustomRange?: (from: string, to: string) => void;
 }
 
-function toDateInputValue(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+function toDateInputValue(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateInput(s: string): Date {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
 export function PeriodSelector({
@@ -33,47 +68,158 @@ export function PeriodSelector({
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [pickerPos, setPickerPos] = useState<{top: number; right: number}>({top: 0, right: 0});
-  const [isDragging, setIsDragging] = useState(false);
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [localFrom, setLocalFrom] = useState(customFrom || toDateInputValue(new Date()));
-  const [localTo, setLocalTo] = useState(customTo || toDateInputValue(new Date()));
   const pickerRef = useRef<HTMLDivElement>(null);
 
-  const safePeriod = period === "custom" ? "custom" : period;
-  const displayIndex = period === "custom" ? -1 : Math.max(0, KEYS.indexOf(period as "day" | "week" | "month"));
+  const [pickerPos, setPickerPos] = useState<{ top: number; right: number }>({
+    top: 0,
+    right: 0,
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  // Sync local values when external customFrom/customTo change
+  // Intervalo em edição no calendário
+  const [localFrom, setLocalFrom] = useState(
+    customFrom || toDateInputValue(range.from)
+  );
+  const [localTo, setLocalTo] = useState(
+    customTo || toDateInputValue(range.to)
+  );
+  const [hoverDate, setHoverDate] = useState<string | null>(null);
+
+  // Mês e Ano sendo visualizados no calendário
+  const [viewYear, setViewYear] = useState(() => range.to.getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => range.to.getMonth());
+
+  const safePeriod = period === "custom" ? "custom" : period;
+  const displayIndex =
+    period === "custom"
+      ? -1
+      : Math.max(0, KEYS.indexOf(period as "day" | "week" | "month"));
+
+  // Sincroniza valores quando customFrom / customTo externos mudarem
   useEffect(() => {
     if (customFrom) setLocalFrom(customFrom);
     if (customTo) setLocalTo(customTo);
   }, [customFrom, customTo]);
 
-  // Close picker on click outside
+  // Atualiza posição do popover (ancorado com segurança no botão)
+  const updatePickerPosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const pickerHeight = 440;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const shouldFlipUp = spaceBelow < pickerHeight && rect.top > pickerHeight;
+
+    const top = shouldFlipUp
+      ? Math.max(12, rect.top - pickerHeight - 8)
+      : Math.min(window.innerHeight - pickerHeight - 12, rect.bottom + 8);
+
+    const right = Math.max(
+      12,
+      Math.min(window.innerWidth - 340, window.innerWidth - rect.right)
+    );
+
+    setPickerPos({ top, right });
+  }, []);
+
   useEffect(() => {
     if (!isPickerOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      // Allow clicks inside the button itself to be handled by the button's onClick
-      if (buttonRef.current && buttonRef.current.contains(e.target as Node)) return;
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setIsPickerOpen(false);
+    updatePickerPosition();
+    const handleResize = () => updatePickerPosition();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isPickerOpen, updatePickerPosition]);
+
+  const handleDateDisplayClick = () => {
+    if (!isPickerOpen) {
+      const initialFrom = customFrom || toDateInputValue(range.from);
+      const initialTo = customTo || toDateInputValue(range.to);
+      setLocalFrom(initialFrom);
+      setLocalTo(initialTo);
+
+      const toDate = parseDateInput(initialTo);
+      setViewYear(toDate.getFullYear());
+      setViewMonth(toDate.getMonth());
+
+      updatePickerPosition();
+    }
+    setIsPickerOpen((prev) => !prev);
+  };
+
+  const handleApplyCustomRange = () => {
+    if (!localFrom || !localTo) return;
+    // Garante ordem cronológica
+    const f = localFrom <= localTo ? localFrom : localTo;
+    const t = localFrom <= localTo ? localTo : localFrom;
+
+    onPeriod("custom");
+    onCustomRange?.(f, t);
+    setIsPickerOpen(false);
+  };
+
+  // Navegação de mês
+  const handlePrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y: number) => y - 1);
+    } else {
+      setViewMonth((m: number) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y: number) => y + 1);
+    } else {
+      setViewMonth((m: number) => m + 1);
+    }
+  };
+
+  // Clique em um dia do calendário visual
+  const handleDayClick = (dateStr: string) => {
+    if (!localFrom || (localFrom && localTo)) {
+      // Começa nova seleção
+      setLocalFrom(dateStr);
+      setLocalTo("");
+    } else {
+      // Já tem data inicial
+      if (dateStr < localFrom) {
+        setLocalFrom(dateStr);
+        setLocalTo(localFrom);
+      } else {
+        setLocalTo(dateStr);
       }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isPickerOpen]);
+    }
+  };
 
-  useEffect(() => {
-    if (!isPickerOpen) return;
-    const close = () => setIsPickerOpen(false);
-    window.addEventListener('scroll', close, { passive: true, capture: true });
-    window.addEventListener('resize', close, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', close, { capture: true });
-      window.removeEventListener('resize', close);
-    };
-  }, [isPickerOpen]);
+  // Atalhos rápidos pré-configurados
+  const applyPreset = (days: number) => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - (days - 1));
+    const fromStr = toDateInputValue(from);
+    const toStr = toDateInputValue(to);
 
+    setLocalFrom(fromStr);
+    setLocalTo(toStr);
+    setViewYear(to.getFullYear());
+    setViewMonth(to.getMonth());
+  };
+
+  const applyThisMonthPreset = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const fromStr = toDateInputValue(firstDay);
+    const toStr = toDateInputValue(now);
+
+    setLocalFrom(fromStr);
+    setLocalTo(toStr);
+    setViewYear(now.getFullYear());
+    setViewMonth(now.getMonth());
+  };
+
+  // Segmented control drag/click
   const updateSegmentFromClientX = (clientX: number) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -91,7 +237,7 @@ export function PeriodSelector({
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
-      // Ignora caso não suporte pointer capture
+      // Ignora
     }
     updateSegmentFromClientX(e.clientX);
   };
@@ -113,23 +259,68 @@ export function PeriodSelector({
     }
   };
 
-  const handleApplyCustomRange = () => {
-    if (!localFrom || !localTo) return;
-    onPeriod("custom");
-    onCustomRange?.(localFrom, localTo);
-    setIsPickerOpen(false);
-  };
+  // Grade do calendário do mês visualizado
+  const calendarDays = useMemo(() => {
+    const totalDays = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
 
-  const handleDateDisplayClick = () => {
-    if (!isPickerOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setPickerPos({
-        top: rect.bottom + window.scrollY + 8,
-        right: window.innerWidth - rect.right,
+    const days: { dateStr: string; dayNumber: number; isCurrentMonth: boolean }[] = [];
+
+    // Dias do mês anterior para completar a primeira semana
+    const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate();
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+      const prevDate = new Date(viewYear, viewMonth - 1, prevMonthDays - i);
+      days.push({
+        dateStr: toDateInputValue(prevDate),
+        dayNumber: prevMonthDays - i,
+        isCurrentMonth: false,
       });
     }
-    setIsPickerOpen((prev) => !prev);
-  };
+
+    // Dias do mês atual
+    for (let day = 1; day <= totalDays; day++) {
+      const d = new Date(viewYear, viewMonth, day);
+      days.push({
+        dateStr: toDateInputValue(d),
+        dayNumber: day,
+        isCurrentMonth: true,
+      });
+    }
+
+    // Completa o grid até 35 ou 42 células
+    const remaining = (7 - (days.length % 7)) % 7;
+    for (let i = 1; i <= remaining; i++) {
+      const nextDate = new Date(viewYear, viewMonth + 1, i);
+      days.push({
+        dateStr: toDateInputValue(nextDate),
+        dayNumber: i,
+        isCurrentMonth: false,
+      });
+    }
+
+    return days;
+  }, [viewYear, viewMonth]);
+
+  const todayStr = useMemo(() => toDateInputValue(new Date()), []);
+
+  // Determina seleção atual efetiva para pintar o intervalo
+  const effectiveEnd = localTo || hoverDate || localFrom;
+  const [rangeStart, rangeEnd] = useMemo(() => {
+    if (!localFrom) return ["", ""];
+    if (localFrom <= effectiveEnd) {
+      return [localFrom, effectiveEnd];
+    }
+    return [effectiveEnd, localFrom];
+  }, [localFrom, effectiveEnd]);
+
+  // Contagem de dias no intervalo selecionado
+  const selectedDaysCount = useMemo(() => {
+    if (!localFrom || !localTo) return null;
+    const f = parseDateInput(localFrom).getTime();
+    const t = parseDateInput(localTo).getTime();
+    const diff = Math.round(Math.abs(t - f) / (1000 * 3600 * 24)) + 1;
+    return diff;
+  }, [localFrom, localTo]);
 
   return (
     <div className="rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl p-3 sm:p-3.5 shadow-[0_4px_20px_rgba(23,23,21,0.02)] dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-300">
@@ -183,7 +374,7 @@ export function PeriodSelector({
           </div>
         </div>
 
-        {/* Indicador de intervalo de datas — clicável para abrir o picker */}
+        {/* Indicador de intervalo de datas — abre o calendário interativo */}
         <div className="flex items-center justify-between sm:justify-end gap-2 relative">
           <button
             ref={buttonRef}
@@ -194,117 +385,228 @@ export function PeriodSelector({
                 ? "border-[#C15F3D]/50 bg-[#FAF5F0] dark:border-amber-600/50 dark:bg-amber-950/30 ring-2 ring-[#C15F3D]/15 dark:ring-amber-600/15"
                 : "border-[#E5E2DC] bg-[#FAF9F5] dark:border-slate-700 dark:bg-slate-800/80 hover:border-[#C15F3D]/40 hover:bg-white dark:hover:bg-slate-800"
             }`}
-            aria-label="Selecionar período personalizado"
+            aria-label="Selecionar período personalizado no calendário"
             aria-expanded={isPickerOpen}
-            title="Clique para selecionar um intervalo de datas personalizado"
+            title="Clique para abrir o calendário e selecionar datas"
           >
             <CalendarDays className="h-3.5 w-3.5 text-[#706E6A] dark:text-slate-400 shrink-0" />
-            <span className="font-medium text-[#171715] dark:text-slate-200">{formatRange(range)}</span>
+            <span className="font-medium text-[#171715] dark:text-slate-200">
+              {formatRange(range)}
+            </span>
             {period === "custom" && (
               <span className="text-2xs font-sans font-semibold text-[#C15F3D] dark:text-amber-400 uppercase tracking-wide">
                 Personalizado
               </span>
             )}
-            <ChevronDown className={`h-3 w-3 text-[#706E6A] dark:text-slate-400 transition-transform duration-200 ${isPickerOpen ? "rotate-180" : ""}`} />
+            <ChevronDown
+              className={`h-3 w-3 text-[#706E6A] dark:text-slate-400 transition-transform duration-200 ${
+                isPickerOpen ? "rotate-180" : ""
+              }`}
+            />
           </button>
 
-          {/* Dropdown do Date-Range Picker */}
-          {isPickerOpen && typeof document !== 'undefined' && createPortal(
-            <div
-              ref={pickerRef}
-              style={{
-                position: 'fixed',
-                top: pickerPos.top,
-                right: pickerPos.right,
-                zIndex: 9999,
-              }}
-              className="w-72 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-900 shadow-[0_8px_32px_rgba(23,23,21,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-4 animate-fade-in"
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-sm font-editorial font-semibold text-[#171715] dark:text-slate-100">
-                  Período personalizado
-                </span>
-              </div>
-
-              <div className="space-y-2.5">
-                {/* De */}
-                <div>
-                  <label className="block text-2xs font-sans font-semibold uppercase tracking-wider text-[#706E6A] dark:text-slate-400 mb-1">
-                    De
-                  </label>
-                  <input
-                    type="date"
-                    value={localFrom}
-                    max={localTo || toDateInputValue(new Date())}
-                    onChange={(e) => setLocalFrom(e.target.value)}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    className="w-full rounded-xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-3 py-2 text-sm font-mono-data text-[#171715] dark:text-slate-100 focus:border-[#C15F3D] focus:outline-none focus:ring-2 focus:ring-[#C15F3D]/15 transition-all cursor-pointer"
-                  />
-                </div>
-
-                {/* Até */}
-                <div>
-                  <label className="block text-2xs font-sans font-semibold uppercase tracking-wider text-[#706E6A] dark:text-slate-400 mb-1">
-                    Até
-                  </label>
-                  <input
-                    type="date"
-                    value={localTo}
-                    min={localFrom}
-                    max={toDateInputValue(new Date())}
-                    onChange={(e) => setLocalTo(e.target.value)}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    className="w-full rounded-xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-3 py-2 text-sm font-mono-data text-[#171715] dark:text-slate-100 focus:border-[#C15F3D] focus:outline-none focus:ring-2 focus:ring-[#C15F3D]/15 transition-all cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {/* Atalhos rápidos */}
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {[
-                  { label: "Últimos 7 dias", days: 7 },
-                  { label: "Últimos 30 dias", days: 30 },
-                  { label: "Últimos 90 dias", days: 90 },
-                ].map(({ label, days }) => (
-                  <button
-                    key={days}
-                    type="button"
-                    onClick={() => {
-                      const to = new Date();
-                      const from = new Date();
-                      from.setDate(from.getDate() - days);
-                      setLocalFrom(toDateInputValue(from));
-                      setLocalTo(toDateInputValue(to));
-                    }}
-                    className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2.5 py-1 text-2xs font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Botões de ação */}
-              <div className="mt-3.5 flex items-center gap-2 pt-3 border-t border-[#E5E2DC] dark:border-slate-700">
-                <button
-                  type="button"
+          {/* Modal / Popover com Calendário Interativo */}
+          {isPickerOpen &&
+            typeof document !== "undefined" &&
+            createPortal(
+              <>
+                {/* Backdrop transparente / escurecido para clique fora seguro */}
+                <div
+                  className="fixed inset-0 z-[9990] bg-black/40 sm:bg-transparent backdrop-blur-[2px] sm:backdrop-blur-none transition-opacity"
                   onClick={() => setIsPickerOpen(false)}
-                  className="flex-1 rounded-xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  aria-hidden="true"
+                />
+
+                <div
+                  ref={(node) => {
+                    (pickerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+                    if (node && typeof window !== "undefined" && window.innerWidth >= 640) {
+                      node.style.top = `${pickerPos.top}px`;
+                      node.style.right = `${pickerPos.right}px`;
+                      node.style.left = "auto";
+                      node.style.transform = "none";
+                    }
+                  }}
+                  style={{
+                    position: "fixed",
+                    zIndex: 9999,
+                  }}
+                  className="w-[340px] max-w-[calc(100vw-24px)] rounded-3xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-900 shadow-[0_12px_48px_rgba(23,23,21,0.18)] dark:shadow-[0_12px_48px_rgba(0,0,0,0.65)] p-4 sm:p-5 animate-scale-up text-[#171715] dark:text-slate-100 left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 sm:left-auto sm:translate-x-0 sm:translate-y-0"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleApplyCustomRange}
-                  disabled={!localFrom || !localTo}
-                  className="flex-1 rounded-xl bg-[#171715] dark:bg-white hover:bg-[#2A2925] dark:hover:bg-slate-100 px-3 py-2 text-xs font-sans font-medium text-white dark:text-slate-900 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Aplicar
-                </button>
-              </div>
-            </div>,
-            document.body
-          )}
+                  {/* Cabeçalho do Calendário */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[#E5E2DC] dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FAF5F0] dark:bg-amber-950/40 text-[#C15F3D] dark:text-amber-400 border border-[#F0DCD3] dark:border-amber-800/50">
+                        <CalendarRange className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-editorial text-sm font-bold text-[#171715] dark:text-slate-100 leading-tight">
+                          Selecionar Período
+                        </h4>
+                        <p className="text-[11px] text-[#706E6A] dark:text-slate-400 font-sans">
+                          {localFrom && localTo
+                            ? `${selectedDaysCount} ${selectedDaysCount === 1 ? "dia" : "dias"} selecionados`
+                            : "Escolha as datas de início e fim"}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsPickerOpen(false)}
+                      className="rounded-full h-7 w-7 flex items-center justify-center text-[#706E6A] dark:text-slate-400 hover:bg-[#FAF9F5] dark:hover:bg-slate-800 hover:text-[#171715] dark:hover:text-white transition-colors cursor-pointer"
+                      aria-label="Fechar calendário"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Atalhos Rápidos */}
+                  <div className="flex flex-wrap gap-1.5 pt-3 pb-2">
+                    <button
+                      type="button"
+                      onClick={() => applyPreset(1)}
+                      className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                    >
+                      Hoje
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset(7)}
+                      className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                    >
+                      7 dias
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset(15)}
+                      className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                    >
+                      15 dias
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset(30)}
+                      className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                    >
+                      30 dias
+                    </button>
+                    <button
+                      type="button"
+                      onClick={applyThisMonthPreset}
+                      className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                    >
+                      Este Mês
+                    </button>
+                  </div>
+
+                  {/* Barra de Mês e Controles de Navegação */}
+                  <div className="flex items-center justify-between py-2 px-1">
+                    <button
+                      type="button"
+                      onClick={handlePrevMonth}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E5E2DC] dark:border-slate-700 hover:bg-[#FAF9F5] dark:hover:bg-slate-800 text-[#706E6A] dark:text-slate-300 cursor-pointer transition-colors"
+                      aria-label="Mês anterior"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <span className="font-sans text-xs font-bold text-[#171715] dark:text-slate-100">
+                      {MONTH_NAMES[viewMonth]} {viewYear}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E5E2DC] dark:border-slate-700 hover:bg-[#FAF9F5] dark:hover:bg-slate-800 text-[#706E6A] dark:text-slate-300 cursor-pointer transition-colors"
+                      aria-label="Próximo mês"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Dias da Semana */}
+                  <div className="grid grid-cols-7 gap-1 text-center py-1 font-sans text-[10px] font-semibold text-[#706E6A] dark:text-slate-400 uppercase tracking-wider">
+                    {WEEKDAY_NAMES.map((w) => (
+                      <div key={w} className="py-0.5">
+                        {w}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Grade dos Dias */}
+                  <div className="grid grid-cols-7 gap-1 text-center font-mono-data text-xs">
+                    {calendarDays.map(({ dateStr, dayNumber, isCurrentMonth }) => {
+                      const isSelectedStart = dateStr === localFrom;
+                      const isSelectedEnd = dateStr === localTo;
+                      const isInRange =
+                        rangeStart &&
+                        rangeEnd &&
+                        dateStr >= rangeStart &&
+                        dateStr <= rangeEnd;
+                      const isToday = dateStr === todayStr;
+
+                      return (
+                        <button
+                          key={dateStr}
+                          type="button"
+                          onClick={() => handleDayClick(dateStr)}
+                          onMouseEnter={() => {
+                            if (localFrom && !localTo) {
+                              setHoverDate(dateStr);
+                            }
+                          }}
+                          className={`relative h-8 rounded-lg flex items-center justify-center font-medium transition-all cursor-pointer select-none ${
+                            isSelectedStart || isSelectedEnd
+                              ? "bg-[#C15F3D] text-white font-bold shadow-xs z-10 scale-105"
+                              : isInRange
+                              ? "bg-[#C15F3D]/15 dark:bg-amber-500/25 text-[#C15F3D] dark:text-amber-300 font-semibold"
+                              : isCurrentMonth
+                              ? "text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-800"
+                              : "text-[#706E6A]/40 dark:text-slate-600 hover:text-[#706E6A]"
+                          }`}
+                        >
+                          <span>{dayNumber}</span>
+                          {isToday && !isSelectedStart && !isSelectedEnd && (
+                            <span className="absolute bottom-1 h-1 w-1 rounded-full bg-[#C15F3D] dark:bg-amber-400" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Faixa com Resumo de Datas e Botões de Ação */}
+                  <div className="mt-3.5 pt-3 border-t border-[#E5E2DC] dark:border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between text-2xs font-mono-data text-[#706E6A] dark:text-slate-400 px-0.5">
+                      <div>
+                        De: <strong className="text-[#171715] dark:text-slate-200">{localFrom || "—"}</strong>
+                      </div>
+                      <div>
+                        Até: <strong className="text-[#171715] dark:text-slate-200">{localTo || "—"}</strong>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsPickerOpen(false)}
+                        className="flex-1 rounded-xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 transition-colors cursor-pointer min-h-[38px]"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleApplyCustomRange}
+                        disabled={!localFrom || !localTo}
+                        className="flex-1 rounded-xl bg-[#171715] dark:bg-white hover:bg-[#2A2925] dark:hover:bg-slate-100 px-3 py-2 text-xs font-sans font-bold text-white dark:text-slate-900 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-h-[38px] inline-flex items-center justify-center gap-1.5"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        <span>Aplicar Período</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>,
+              document.body
+            )}
         </div>
       </div>
     </div>
