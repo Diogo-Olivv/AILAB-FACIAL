@@ -1,0 +1,8 @@
+# AILAB Makers · Controle de Frequência & Auditoria
+
+> Sistema inteligente e seguro de controle biométrico de presença acadêmica e auditoria do laboratório AILAB Makers.
+
+## Recursos e Navegação
+- [Painel de Tutoria](https://diogo-olivv.github.io/AILAB-FACIAL/): Acompanhamento em tempo real de bolsistas e indicadores acadêmicos.
+- [Autenticação Institucional](https://diogo-olivv.github.io/AILAB-FACIAL/login): Acesso seguro para tutores e coordenadores do laboratório.
+- [Repositório do Projeto](https://github.com/Diogo-Olivv/AILAB-FACIAL): Código-fonte, contratos de API e documentação arquitetural.

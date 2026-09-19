@@ -1,8 +1,9 @@
 import { useState, type FormEvent, type KeyboardEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { SunMedium, MoonStar, KeyRound, Sparkles, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { SunMedium, MoonStar, KeyRound, Sparkles, Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { useTheme } from "../lib/useTheme";
+import { InstallPwaButton } from "../components/InstallPwaButton";
 import logo from "../ailab_makers.jpeg";
 
 export function Login() {
@@ -93,19 +94,13 @@ export function Login() {
               )}
             </button>
 
+            <InstallPwaButton />
+
             <Link
               to="/dashboard"
-              className="group inline-flex items-center gap-2 rounded-full border border-[#E5E2DC] dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 px-4 py-2 text-xs font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:text-[#171715] dark:hover:text-white shadow-2xs hover:border-[#706E6A]/40 transition-all min-h-[40px]"
+              className="group inline-flex items-center gap-2 rounded-full border border-[#E5E2DC] dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 px-4 py-2 text-xs font-sans font-medium text-[#57534E] dark:text-slate-300 hover:text-[#171715] dark:hover:text-white shadow-2xs hover:border-[#706E6A]/40 transition-all min-h-[40px]"
             >
-              <svg
-                className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 text-[#706E6A] dark:text-slate-400 group-hover:text-[#171715] dark:group-hover:text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-              </svg>
+              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 text-[#57534E] dark:text-slate-400 group-hover:text-[#171715] dark:group-hover:text-white" />
               <span>Voltar ao painel</span>
             </Link>
           </div>
@@ -244,10 +239,10 @@ export function Login() {
         </form>
       </main>
 
-      <footer className="border-t border-[#E5E2DC]/80 dark:border-slate-800 bg-[#FAF9F5]/70 dark:bg-slate-900/70 backdrop-blur-xl px-4 py-4 text-center text-xs text-[#706E6A] dark:text-slate-400">
+      <footer className="border-t border-[#E5E2DC]/80 dark:border-slate-800 bg-[#FAF9F5]/70 dark:bg-slate-900/70 backdrop-blur-xl px-4 py-4 text-center text-xs text-[#57534E] dark:text-slate-300">
         <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="font-sans">© {new Date().getFullYear()} AILAB Makers · Controle de Frequência e Permanência</span>
-          <span className="font-mono-data text-[11px] text-[#706E6A]/80 dark:text-slate-500">Ambiente Seguro em Conformidade com LGPD</span>
+          <span className="font-mono-data text-[11px] text-[#57534E] dark:text-slate-300 font-medium">Ambiente Seguro em Conformidade com LGPD</span>
         </div>
       </footer>
     </div>

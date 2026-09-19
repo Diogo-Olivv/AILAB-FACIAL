@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "br.edu.ailab.facial",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#1E2D5F",
         "foregroundImage": "./assets/android-icon-foreground.png",
