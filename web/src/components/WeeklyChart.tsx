@@ -62,7 +62,7 @@ const WEEKDAY_FULL = [
 export function WeeklyChart({ rows, range, sessions = [] }: Props) {
   const [mode, setMode] = useState<ChartMode>("bar");
   const [isDragging, setIsDragging] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragLeftPx, setDragLeftPx] = useState<number | null>(null);
   const modeSelectorRef = useRef<HTMLDivElement>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
@@ -248,16 +248,25 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
   // Índice da pílula deslizante do Segmented Control iOS
   const modeIndex = Math.max(0, MODES.findIndex((m) => m.id === mode));
 
-  const updateModeFromClientX = (clientX: number) => {
+  const updateModeFromClientX = (clientX: number, isFinal = false) => {
     if (!modeSelectorRef.current) return;
     const rect = modeSelectorRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const nextIndex = Math.min(2, Math.floor((x / rect.width) * 3));
-    setDragIndex(nextIndex);
-    const nextMode = MODES[nextIndex]?.id;
-    if (nextMode && nextMode !== mode) {
-      setMode(nextMode);
-      setSelectedDayIndex(null);
+    const padding = 4;
+    const usableWidth = Math.max(rect.width - padding * 2, 1);
+    const pillWidth = usableWidth / 3;
+    const maxLeft = usableWidth - pillWidth;
+
+    const relativeX = clientX - rect.left - padding;
+    const currentLeft = Math.max(0, Math.min(relativeX - pillWidth / 2, maxLeft));
+    setDragLeftPx(currentLeft);
+
+    if (isFinal) {
+      const nearestIndex = Math.min(2, Math.max(0, Math.round(currentLeft / pillWidth)));
+      const nextMode = MODES[nearestIndex]?.id;
+      if (nextMode && nextMode !== mode) {
+        setMode(nextMode);
+        setSelectedDayIndex(null);
+      }
     }
   };
 
@@ -268,22 +277,32 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
     } catch {
       // Ignora navegadores sem suporte a captura de ponteiro.
     }
-    updateModeFromClientX(event.clientX);
+    updateModeFromClientX(event.clientX, false);
   };
 
   const handleModePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (isDragging) updateModeFromClientX(event.clientX);
+    if (isDragging) updateModeFromClientX(event.clientX, false);
   };
 
   const handleModePointerUp = (event: PointerEvent<HTMLDivElement>) => {
     if (!isDragging) return;
-    updateModeFromClientX(event.clientX);
+    updateModeFromClientX(event.clientX, true);
     setIsDragging(false);
-    setDragIndex(null);
+    setDragLeftPx(null);
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
     } catch {
       // Ignora navegadores sem suporte a captura de ponteiro.
+    }
+  };
+
+  const handleModePointerCancel = (event: PointerEvent<HTMLDivElement>) => {
+    setIsDragging(false);
+    setDragLeftPx(null);
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Ignora
     }
   };
 
@@ -331,19 +350,23 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
             onPointerDown={handleModePointerDown}
             onPointerMove={handleModePointerMove}
             onPointerUp={handleModePointerUp}
-            onPointerCancel={() => {
-              setIsDragging(false);
-              setDragIndex(null);
-            }}
-            className="relative inline-flex h-9 rounded-2xl bg-[#FAF9F5] dark:bg-slate-800/90 p-1 border border-[#E5E2DC] dark:border-slate-700 shadow-2xs select-none"
+            onPointerCancel={handleModePointerCancel}
+            className="relative inline-flex h-9 rounded-2xl bg-[#FAF9F5] dark:bg-slate-800/90 p-1 border border-[#E5E2DC] dark:border-slate-700 shadow-2xs select-none touch-none cursor-grab active:cursor-grabbing"
             role="tablist"
             aria-label="Modo de visualização do gráfico"
           >
             {/* Pílula Deslizante Fluida iOS */}
             <div
-              className="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 border border-[#E5E2DC]/80 dark:border-slate-600 shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+              className={`absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 border border-[#E5E2DC]/80 dark:border-slate-600 shadow-2xs pointer-events-none ${
+                isDragging
+                  ? "transition-none shadow-md scale-[1.02]"
+                  : "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+              }`}
               style={{
-                left: `calc(4px + ${(dragIndex ?? modeIndex)} * ((100% - 8px) / 3))`,
+                left:
+                  isDragging && dragLeftPx !== null
+                    ? `${4 + dragLeftPx}px`
+                    : `calc(4px + ${modeIndex} * ((100% - 8px) / 3))`,
                 width: "calc((100% - 8px) / 3)",
               }}
             />

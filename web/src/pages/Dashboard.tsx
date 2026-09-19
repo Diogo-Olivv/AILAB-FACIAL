@@ -74,18 +74,29 @@ export function Dashboard() {
   const [tutorTab, setTutorTab] = useState<TutorTab>("overview");
   const tutorTabContainerRef = useRef<HTMLDivElement>(null);
   const [isTutorTabDragging, setIsTutorTabDragging] = useState(false);
-  const [tutorTabDragIndex, setTutorTabDragIndex] = useState<number | null>(null);
+  const [tutorTabDragLeftPx, setTutorTabDragLeftPx] = useState<number | null>(null);
 
-  const updateTutorTabFromClientX = (clientX: number) => {
+  const tutorTabsList: TutorTab[] = ["overview", "audit", "records"];
+  const tutorTabIndex = Math.max(0, tutorTabsList.indexOf(tutorTab));
+
+  const updateTutorTabFromClientX = (clientX: number, isFinal = false) => {
     if (!tutorTabContainerRef.current) return;
     const rect = tutorTabContainerRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const tabIndex = Math.min(2, Math.floor((x / rect.width) * 3));
-    const tabs: TutorTab[] = ["overview", "audit", "records"];
-    const targetTab = tabs[tabIndex];
-    setTutorTabDragIndex(tabIndex);
-    if (targetTab && targetTab !== tutorTab) {
-      setTutorTab(targetTab);
+    const padding = 4;
+    const usableWidth = Math.max(rect.width - padding * 2, 1);
+    const pillWidth = usableWidth / 3;
+    const maxLeft = usableWidth - pillWidth;
+
+    const relativeX = clientX - rect.left - padding;
+    const currentLeft = Math.max(0, Math.min(relativeX - pillWidth / 2, maxLeft));
+    setTutorTabDragLeftPx(currentLeft);
+
+    if (isFinal) {
+      const targetIndex = Math.min(2, Math.max(0, Math.round(currentLeft / pillWidth)));
+      const targetTab = tutorTabsList[targetIndex];
+      if (targetTab && targetTab !== tutorTab) {
+        setTutorTab(targetTab);
+      }
     }
   };
 
@@ -94,18 +105,27 @@ export function Dashboard() {
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
-    updateTutorTabFromClientX(e.clientX);
+    updateTutorTabFromClientX(e.clientX, false);
   };
 
   const handleTutorTabPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isTutorTabDragging) return;
-    updateTutorTabFromClientX(e.clientX);
+    updateTutorTabFromClientX(e.clientX, false);
   };
 
   const handleTutorTabPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isTutorTabDragging) return;
+    updateTutorTabFromClientX(e.clientX, true);
     setIsTutorTabDragging(false);
-    setTutorTabDragIndex(null);
+    setTutorTabDragLeftPx(null);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handleTutorTabPointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsTutorTabDragging(false);
+    setTutorTabDragLeftPx(null);
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
@@ -366,23 +386,23 @@ export function Dashboard() {
                 </div>
 
                 {/* Ações Rápidas do Workspace do Tutor */}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
                   <button
                     type="button"
                     onClick={() => setIsManualAttendanceOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-[#C15F3D]/40 shadow-2xs hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer min-h-[38px]"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-[#C15F3D]/40 shadow-2xs hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer min-h-[40px] text-center"
                   >
-                    <UserPlus className="h-3.5 w-3.5 text-[#C15F3D] dark:text-amber-400" />
-                    <span>+ Presença Manual</span>
+                    <UserPlus className="h-3.5 w-3.5 text-[#C15F3D] dark:text-amber-400 shrink-0" />
+                    <span className="truncate">+ Presença Manual</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setIsTutorProfileOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-stone-400 shadow-2xs hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer min-h-[38px]"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-stone-400 shadow-2xs hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer min-h-[40px] text-center"
                   >
-                    <SlidersHorizontal className="h-3.5 w-3.5 text-stone-600 dark:text-slate-300" />
-                    <span>Acesso @ailab.com</span>
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-stone-600 dark:text-slate-300 shrink-0" />
+                    <span className="truncate">Acesso @ailab.com</span>
                   </button>
                 </div>
               </div>
@@ -393,14 +413,21 @@ export function Dashboard() {
                 onPointerDown={handleTutorTabPointerDown}
                 onPointerMove={handleTutorTabPointerMove}
                 onPointerUp={handleTutorTabPointerUp}
-                onPointerCancel={handleTutorTabPointerUp}
-                className="relative w-full sm:w-[560px] h-11 p-1 bg-[#FAF9F5] dark:bg-slate-800/80 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 backdrop-blur-md shadow-2xs select-none touch-none cursor-pointer"
+                onPointerCancel={handleTutorTabPointerCancel}
+                className="relative w-full sm:w-[560px] h-11 p-1 bg-[#FAF9F5] dark:bg-slate-800/80 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 backdrop-blur-md shadow-2xs select-none touch-none cursor-grab active:cursor-grabbing"
               >
                 {/* Pílula deslizante fluida iOS */}
                 <div
-                  className="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 shadow-2xs border border-[#E5E2DC]/80 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                  className={`absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 shadow-2xs border border-[#E5E2DC]/80 dark:border-slate-600 pointer-events-none ${
+                    isTutorTabDragging
+                      ? "transition-none shadow-md scale-[1.01]"
+                      : "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  }`}
                   style={{
-                    left: `calc(4px + ${(tutorTabDragIndex ?? (tutorTab === "overview" ? 0 : tutorTab === "audit" ? 1 : 2))} * ((100% - 8px) / 3))`,
+                    left:
+                      isTutorTabDragging && tutorTabDragLeftPx !== null
+                        ? `${4 + tutorTabDragLeftPx}px`
+                        : `calc(4px + ${tutorTabIndex} * ((100% - 8px) / 3))`,
                     width: "calc((100% - 8px) / 3)",
                   }}
                 />
@@ -409,27 +436,29 @@ export function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setTutorTab("overview")}
-                    className={`inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
+                    className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
                       tutorTab === "overview"
                         ? "text-[#171715] dark:text-white font-semibold"
                         : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
                     }`}
                   >
                     <LayoutDashboard className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">Visão Geral & Presença</span>
+                    <span className="hidden sm:inline truncate">Visão Geral & Presença</span>
+                    <span className="sm:hidden font-medium">Visão Geral</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setTutorTab("audit")}
-                    className={`inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
+                    className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
                       tutorTab === "audit"
                         ? "text-[#171715] dark:text-white font-semibold"
                         : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
                     }`}
                   >
                     <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">Auditoria da Tutoria</span>
+                    <span className="hidden sm:inline truncate">Auditoria da Tutoria</span>
+                    <span className="sm:hidden font-medium">Auditoria</span>
                     {studentsUnderFourHoursCount > 0 && (
                       <span className="inline-flex items-center justify-center bg-rose-500 text-white rounded-full h-4 min-w-[16px] px-1 text-[10px] font-bold shrink-0">
                         {studentsUnderFourHoursCount}
@@ -440,14 +469,15 @@ export function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setTutorTab("records")}
-                    className={`inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
+                    className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
                       tutorTab === "records"
                         ? "text-[#171715] dark:text-white font-semibold"
                         : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
                     }`}
                   >
                     <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">Histórico & Relatórios</span>
+                    <span className="hidden sm:inline truncate">Histórico & Relatórios</span>
+                    <span className="sm:hidden font-medium">Histórico</span>
                   </button>
                 </div>
               </div>

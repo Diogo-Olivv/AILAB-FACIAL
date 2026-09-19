@@ -2,9 +2,9 @@ import { useRef, useState, type PointerEvent } from "react";
 
 export type ViewKey = "totals" | "history";
 
-const VIEWS: { key: ViewKey; label: string }[] = [
-  { key: "totals", label: "Totais por Integrante" },
-  { key: "history", label: "Histórico Diário" },
+const VIEWS: { key: ViewKey; label: string; shortLabel: string }[] = [
+  { key: "totals", label: "Totais por Integrante", shortLabel: "Totais" },
+  { key: "history", label: "Histórico Diário", shortLabel: "Diário" },
 ];
 
 interface Props {
@@ -15,18 +15,27 @@ interface Props {
 export function ViewSelector({ view, onViewChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragLeftPx, setDragLeftPx] = useState<number | null>(null);
   const activeIndex = view === "totals" ? 0 : 1;
 
-  const updateSegmentFromClientX = (clientX: number) => {
+  const updateSegmentFromClientX = (clientX: number, isFinal = false) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const segmentIndex = x / rect.width < 0.5 ? 0 : 1;
-    setDragIndex(segmentIndex);
-    const targetKey = VIEWS[segmentIndex].key;
-    if (targetKey !== view) {
-      onViewChange(targetKey);
+    const padding = 4;
+    const usableWidth = Math.max(rect.width - padding * 2, 1);
+    const pillWidth = usableWidth / 2;
+    const maxLeft = usableWidth - pillWidth;
+
+    const relativeX = clientX - rect.left - padding;
+    const currentLeft = Math.max(0, Math.min(relativeX - pillWidth / 2, maxLeft));
+    setDragLeftPx(currentLeft);
+
+    if (isFinal) {
+      const segmentIndex = Math.min(1, Math.max(0, Math.round(currentLeft / pillWidth)));
+      const targetKey = VIEWS[segmentIndex].key;
+      if (targetKey !== view) {
+        onViewChange(targetKey);
+      }
     }
   };
 
@@ -37,24 +46,34 @@ export function ViewSelector({ view, onViewChange }: Props) {
     } catch {
       // Ignora caso o navegador não suporte pointer capture
     }
-    updateSegmentFromClientX(e.clientX);
+    updateSegmentFromClientX(e.clientX, false);
   };
 
   const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
     if (!isDragging) return;
-    updateSegmentFromClientX(e.clientX);
+    updateSegmentFromClientX(e.clientX, false);
   };
 
   const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
     if (isDragging) {
       setIsDragging(false);
-      updateSegmentFromClientX(e.clientX);
-      setDragIndex(null);
+      updateSegmentFromClientX(e.clientX, true);
+      setDragLeftPx(null);
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
         // Ignora
       }
+    }
+  };
+
+  const handlePointerCancel = (e: PointerEvent<HTMLDivElement>) => {
+    setIsDragging(false);
+    setDragLeftPx(null);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignora
     }
   };
 
@@ -64,19 +83,23 @@ export function ViewSelector({ view, onViewChange }: Props) {
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={() => {
-        setIsDragging(false);
-        setDragIndex(null);
-      }}
-      className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-pointer touch-none"
+      onPointerCancel={handlePointerCancel}
+      className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-grab active:cursor-grabbing touch-none"
       role="tablist"
       aria-label="Alternar entre totais e histórico"
     >
       {/* Pílula flutuante com alinhamento milimétrico idêntico ao Seletor de Período */}
       <div
-        className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs dark:bg-slate-900 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+        className={`absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs dark:bg-slate-900 dark:border-slate-600 pointer-events-none ${
+          isDragging
+            ? "transition-none shadow-md scale-[1.01]"
+            : "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        }`}
         style={{
-          left: `calc(4px + ${(dragIndex ?? activeIndex)} * ((100% - 8px) / 2))`,
+          left:
+            isDragging && dragLeftPx !== null
+              ? `${4 + dragLeftPx}px`
+              : `calc(4px + ${activeIndex} * ((100% - 8px) / 2))`,
           width: "calc((100% - 8px) / 2)",
         }}
       />
@@ -100,7 +123,8 @@ export function ViewSelector({ view, onViewChange }: Props) {
                   : "text-[#706E6A] dark:text-slate-400 font-medium hover:text-[#171715] dark:hover:text-slate-200"
               }`}
             >
-              <span>{v.label}</span>
+              <span className="hidden sm:inline">{v.label}</span>
+              <span className="sm:hidden font-medium">{v.shortLabel}</span>
             </button>
           );
         })}

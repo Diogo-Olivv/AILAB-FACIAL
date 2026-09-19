@@ -61,7 +61,7 @@ export function TutorWarningModal({
   const [isCompactView, setIsCompactView] = useState(false);
   const filterSelectorRef = useRef<HTMLDivElement>(null);
   const [isFilterDragging, setIsFilterDragging] = useState(false);
-  const [filterDragIndex, setFilterDragIndex] = useState<number | null>(null);
+  const [filterDragLeftPx, setFilterDragLeftPx] = useState<number | null>(null);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
@@ -387,14 +387,23 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
 
   const filterIndex = Math.max(0, FILTER_MODES.indexOf(filterMode));
 
-  const updateFilterFromClientX = (clientX: number) => {
+  const updateFilterFromClientX = (clientX: number, isFinal = false) => {
     if (!filterSelectorRef.current) return;
     const rect = filterSelectorRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const nextIndex = Math.min(FILTER_MODES.length - 1, Math.floor((x / rect.width) * FILTER_MODES.length));
-    setFilterDragIndex(nextIndex);
-    const nextMode = FILTER_MODES[nextIndex];
-    if (nextMode !== filterMode) setFilterMode(nextMode);
+    const padding = 4;
+    const usableWidth = Math.max(rect.width - padding * 2, 1);
+    const pillWidth = usableWidth / FILTER_MODES.length;
+    const maxLeft = usableWidth - pillWidth;
+
+    const relativeX = clientX - rect.left - padding;
+    const currentLeft = Math.max(0, Math.min(relativeX - pillWidth / 2, maxLeft));
+    setFilterDragLeftPx(currentLeft);
+
+    if (isFinal) {
+      const nextIndex = Math.min(FILTER_MODES.length - 1, Math.max(0, Math.round(currentLeft / pillWidth)));
+      const nextMode = FILTER_MODES[nextIndex];
+      if (nextMode && nextMode !== filterMode) setFilterMode(nextMode);
+    }
   };
 
   const handleFilterPointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -404,22 +413,32 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
     } catch {
       // Ignora navegadores sem suporte a captura de ponteiro.
     }
-    updateFilterFromClientX(event.clientX);
+    updateFilterFromClientX(event.clientX, false);
   };
 
   const handleFilterPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (isFilterDragging) updateFilterFromClientX(event.clientX);
+    if (isFilterDragging) updateFilterFromClientX(event.clientX, false);
   };
 
   const handleFilterPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     if (!isFilterDragging) return;
-    updateFilterFromClientX(event.clientX);
+    updateFilterFromClientX(event.clientX, true);
     setIsFilterDragging(false);
-    setFilterDragIndex(null);
+    setFilterDragLeftPx(null);
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
     } catch {
       // Ignora navegadores sem suporte a captura de ponteiro.
+    }
+  };
+
+  const handleFilterPointerCancel = (event: PointerEvent<HTMLDivElement>) => {
+    setIsFilterDragging(false);
+    setFilterDragLeftPx(null);
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Ignora
     }
   };
 
@@ -551,57 +570,66 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
               onPointerDown={handleFilterPointerDown}
               onPointerMove={handleFilterPointerMove}
               onPointerUp={handleFilterPointerUp}
-              onPointerCancel={() => {
-                setIsFilterDragging(false);
-                setFilterDragIndex(null);
-              }}
-              className="relative flex w-full max-w-full items-center overflow-hidden rounded-2xl bg-stone-200/60 dark:bg-slate-800 p-1 select-none touch-none sm:w-auto"
+              onPointerCancel={handleFilterPointerCancel}
+              className="relative flex w-full max-w-full items-center overflow-hidden rounded-2xl bg-stone-200/60 dark:bg-slate-800 p-1 select-none touch-none cursor-grab active:cursor-grabbing sm:w-auto"
             >
               <div
-                className="pointer-events-none absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-700 shadow-sm transition-[left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                className={`pointer-events-none absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-700 shadow-sm ${
+                  isFilterDragging
+                    ? "transition-none shadow-md scale-[1.01]"
+                    : "transition-[left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                }`}
                 style={{
-                  left: `calc(4px + ${(filterDragIndex ?? filterIndex)} * ((100% - 8px) / 3))`,
+                  left:
+                    isFilterDragging && filterDragLeftPx !== null
+                      ? `${4 + filterDragLeftPx}px`
+                      : `calc(4px + ${filterIndex} * ((100% - 8px) / 3))`,
                   width: "calc((100% - 8px) / 3)",
                 }}
               />
               <button
                 type="button"
                 onClick={() => setFilterMode("under")}
-                  className={`relative z-10 min-w-0 flex-1 rounded-xl px-2.5 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
+                className={`relative z-10 min-w-0 flex-1 rounded-xl px-2 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "under"
                     ? "relative z-10 text-amber-900 dark:text-amber-300 font-extrabold"
                     : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
                 <span className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden">
-                  <ClockAlert className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Em Débito ({underTargetStudents.length})</span>
+                  <ClockAlert className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span className="hidden sm:inline truncate">Em Débito ({underTargetStudents.length})</span>
+                  <span className="sm:hidden font-bold truncate">Débito ({underTargetStudents.length})</span>
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => setFilterMode("met")}
-                  className={`relative z-10 min-w-0 flex-1 rounded-xl px-2.5 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
+                className={`relative z-10 min-w-0 flex-1 rounded-xl px-2 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "met"
                     ? "relative z-10 text-emerald-900 dark:text-emerald-300 font-extrabold"
                     : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
                 <span className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Cumprida ({metTargetCount})</span>
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <span className="hidden sm:inline truncate">Cumprida ({metTargetCount})</span>
+                  <span className="sm:hidden font-bold truncate">Meta ({metTargetCount})</span>
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => setFilterMode("all")}
-                  className={`relative z-10 min-w-0 flex-1 rounded-xl px-2.5 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
+                className={`relative z-10 min-w-0 flex-1 rounded-xl px-2 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "all"
                     ? "relative z-10 text-slate-900 dark:text-slate-100 font-extrabold"
                     : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
-                <span className="block truncate">Todos ({totalStudents})</span>
+                <span className="block truncate">
+                  <span className="hidden sm:inline">Todos ({totalStudents})</span>
+                  <span className="sm:hidden font-bold">Todos ({totalStudents})</span>
+                </span>
               </button>
             </div>
 

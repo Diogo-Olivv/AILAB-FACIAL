@@ -49,11 +49,11 @@ export function TutorInsightsCard({ members, sessions, now, onSelectMember }: Pr
             <TrendingUp className="h-5 w-5 text-amber-500" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-editorial text-base sm:text-lg font-normal text-[#171715] dark:text-slate-100">
                 Insights Analíticos da Tutoria
               </h3>
-              <span className="rounded-md bg-[#FAF9F5] dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-2 py-0.5 text-2xs font-mono-data font-semibold text-[#706E6A] dark:text-slate-300">
+              <span className="rounded-md bg-[#FAF9F5] dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-2 py-0.5 text-2xs font-mono-data font-semibold text-[#706E6A] dark:text-slate-300 whitespace-nowrap shrink-0">
                 Dias Úteis (Seg–Sex)
               </span>
             </div>
