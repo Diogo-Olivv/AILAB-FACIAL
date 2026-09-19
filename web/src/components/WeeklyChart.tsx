@@ -41,7 +41,7 @@ function getDaysBetween(from: Date, to: Date): Date[] {
   current.setHours(0, 0, 0, 0);
   const end = new Date(to);
   end.setHours(23, 59, 59, 999);
-  while (current <= end && days.length < 31) {
+  while (current <= end && days.length <= 62) {
     days.push(new Date(current));
     current.setDate(current.getDate() + 1);
   }

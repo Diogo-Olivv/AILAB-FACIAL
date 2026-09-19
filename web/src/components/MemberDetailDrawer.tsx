@@ -26,7 +26,7 @@ import {
   updateMemberAvatar,
   compressImageToBase64,
 } from "../lib/reports";
-import { formatDuration, formatTime } from "../lib/aggregate";
+import { formatDuration, formatTime, sessionSeconds } from "../lib/aggregate";
 import { getAvatarStyle } from "./TotalsTable";
 import { useAuth } from "../auth/useAuth";
 
@@ -263,44 +263,48 @@ export function MemberDetailDrawer({
                 </div>
               )}
 
-              {/* Botão de upload sobreposto em hover */}
-              <label
-                className={`absolute inset-0 rounded-2xl bg-black/50 text-white flex flex-col items-center justify-center transition-opacity cursor-pointer ${
-                  isUploadingAvatar ? "opacity-100 bg-black/70" : "opacity-0 group-hover:opacity-100"
-                }`}
-                title="Alterar foto de perfil"
-              >
-                {isUploadingAvatar ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-white" />
-                ) : (
-                  <>
-                    <Camera className="h-4 w-4" />
-                    <span className="text-[9px] font-semibold mt-0.5">Editar</span>
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  disabled={isUploadingAvatar}
-                  className="hidden"
-                />
-              </label>
+              {/* Botão de upload sobreposto em hover (apenas para tutores autenticados) */}
+              {user && (
+                <>
+                  <label
+                    className={`absolute inset-0 rounded-2xl bg-black/50 text-white flex flex-col items-center justify-center transition-opacity cursor-pointer ${
+                      isUploadingAvatar ? "opacity-100 bg-black/70" : "opacity-0 group-hover:opacity-100"
+                    }`}
+                    title="Alterar foto de perfil"
+                  >
+                    {isUploadingAvatar ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    ) : (
+                      <>
+                        <Camera className="h-4 w-4" />
+                        <span className="text-[9px] font-semibold mt-0.5">Editar</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      disabled={isUploadingAvatar}
+                      className="hidden"
+                    />
+                  </label>
 
-              {/* Ícone de câmera de fácil toque no mobile */}
-              <label
-                className="sm:hidden absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 shadow-xs text-xs cursor-pointer text-slate-700 dark:text-slate-200"
-                title="Alterar foto"
-              >
-                <Camera className="h-3 w-3" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  disabled={isUploadingAvatar}
-                  className="hidden"
-                />
-              </label>
+                  {/* Ícone de câmera de fácil toque no mobile */}
+                  <label
+                    className="sm:hidden absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 shadow-xs text-xs cursor-pointer text-slate-700 dark:text-slate-200"
+                    title="Alterar foto"
+                  >
+                    <Camera className="h-3 w-3" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      disabled={isUploadingAvatar}
+                      className="hidden"
+                    />
+                  </label>
+                </>
+              )}
             </div>
 
             <div className="min-w-0">
@@ -493,9 +497,11 @@ export function MemberDetailDrawer({
                 });
                 const isOpenSession = s.checkOut === null;
                 const isVoided = Boolean(s.voidedAt);
+                const sessionDurationSec = sessionSeconds(s, new Date());
                 const isOver10h =
                   (s.durationS != null && s.durationS > 36000) ||
-                  (isOpenSession && (Date.now() - new Date(s.checkIn).getTime()) / 1000 > 36000);
+                  (isOpenSession && (Date.now() - new Date(s.checkIn).getTime()) / 1000 > 36000) ||
+                  (!isOpenSession && sessionDurationSec > 36000);
 
                 return (
                   <div
@@ -536,7 +542,7 @@ export function MemberDetailDrawer({
                         </span>
                       ) : (
                         <span className="font-mono-data font-semibold text-[#171715] dark:text-slate-200 text-xs sm:text-sm">
-                          {s.durationS ? formatDuration(s.durationS) : "0 min"}
+                          {formatDuration(sessionDurationSec)}
                         </span>
                       )}
                     </div>

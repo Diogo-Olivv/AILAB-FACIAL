@@ -216,30 +216,53 @@ export function PeriodSelector({
     }
   };
 
-  // Atalhos rápidos pré-configurados
+  // Atalhos rápidos pré-configurados com aplicação instantânea
+  const applyPresetAndClose = (fromStr: string, toStr: string) => {
+    setLocalFrom(fromStr);
+    setLocalTo(toStr);
+    const toDate = parseDateInput(toStr);
+    setViewYear(toDate.getFullYear());
+    setViewMonth(toDate.getMonth());
+    onCustomRange?.(fromStr, toStr);
+    onPeriod("custom");
+    setIsPickerOpen(false);
+  };
+
   const applyPreset = (days: number) => {
     const to = new Date();
     const from = new Date();
     from.setDate(from.getDate() - (days - 1));
-    const fromStr = toDateInputValue(from);
-    const toStr = toDateInputValue(to);
-
-    setLocalFrom(fromStr);
-    setLocalTo(toStr);
-    setViewYear(to.getFullYear());
-    setViewMonth(to.getMonth());
+    applyPresetAndClose(toDateInputValue(from), toDateInputValue(to));
   };
 
   const applyThisMonthPreset = () => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const fromStr = toDateInputValue(firstDay);
-    const toStr = toDateInputValue(now);
+    applyPresetAndClose(toDateInputValue(firstDay), toDateInputValue(now));
+  };
 
-    setLocalFrom(fromStr);
-    setLocalTo(toStr);
-    setViewYear(now.getFullYear());
-    setViewMonth(now.getMonth());
+  const applyLastWeekPreset = () => {
+    const now = new Date();
+    const mondayOffset = (now.getDay() + 6) % 7;
+    const thisMonday = new Date(now);
+    thisMonday.setDate(thisMonday.getDate() - mondayOffset);
+    thisMonday.setHours(0, 0, 0, 0);
+
+    const lastMonday = new Date(thisMonday);
+    lastMonday.setDate(lastMonday.getDate() - 7);
+
+    const lastFriday = new Date(lastMonday);
+    lastFriday.setDate(lastFriday.getDate() + 4);
+
+    applyPresetAndClose(toDateInputValue(lastMonday), toDateInputValue(lastFriday));
+  };
+
+  const applyLastMonthPreset = () => {
+    const now = new Date();
+    const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    applyPresetAndClose(toDateInputValue(firstOfLastMonth), toDateInputValue(lastOfLastMonth));
   };
 
   // Segmented control drag/click
@@ -485,6 +508,14 @@ export function PeriodSelector({
                 </button>
                 <button
                   type="button"
+                  onClick={applyLastWeekPreset}
+                  className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                  title="Segunda a Sexta da semana anterior"
+                >
+                  Semana Passada
+                </button>
+                <button
+                  type="button"
                   onClick={() => applyPreset(7)}
                   className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
                 >
@@ -510,6 +541,14 @@ export function PeriodSelector({
                   className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   Este Mês
+                </button>
+                <button
+                  type="button"
+                  onClick={applyLastMonthPreset}
+                  className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                  title="Mês anterior completo"
+                >
+                  Mês Passado
                 </button>
               </div>
 

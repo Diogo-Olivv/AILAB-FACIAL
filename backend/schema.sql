@@ -141,10 +141,10 @@ create policy "anon_select_active_profiles"
   on public.profiles for select to anon
   using (active = true and consent_revoked_at is null);
 
--- 'anon' pode ler apenas sessões atualmente abertas (quem está presente no laboratório)
-create policy "anon_select_open_sessions"
+-- 'anon' pode ler todas as sessões válidas (abertas ou fechadas) para o Painel do Aluno; sessões anuladas permanecem ocultas
+create policy "anon_select_sessions"
   on public.sessions for select to anon
-  using (check_out is null and voided_at is null);
+  using (voided_at is null);
 
 -- Bloqueio Total para 'anon': face_embeddings e face_logs não possuem NENHUMA policy para anon,
 -- garantindo que qualquer tentativa de select/insert/update/delete com a anon key resulte em erro/vazio.

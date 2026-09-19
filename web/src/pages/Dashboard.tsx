@@ -324,7 +324,6 @@ export function Dashboard() {
       <Header
         user={user}
         signOut={signOut}
-        isStudentView={isStudentView}
         onOpenTerms={() => setIsTermsOpen(true)}
         onRefresh={() => refreshData(false)}
         isRefreshing={isRefreshing}
@@ -977,7 +976,7 @@ export function Dashboard() {
       <MemberDetailDrawer
         isOpen={Boolean(selectedMemberTotal)}
         member={selectedMemberTotal?.member ?? null}
-        sessions={sessions}
+        sessions={weekdaySessions}
         isPresent={Boolean(selectedMemberTotal?.present)}
         totalSeconds={selectedMemberTotal?.totalSeconds ?? 0}
         onClose={() => setSelectedMemberId(null)}

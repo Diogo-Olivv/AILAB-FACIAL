@@ -8,7 +8,6 @@ interface HeaderProps {
   user: any;
   signOut: () => Promise<void>;
   onOpenTerms: () => void;
-  isStudentView?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
   presentCount?: number;
@@ -18,7 +17,6 @@ export function Header({
   user,
   signOut,
   onOpenTerms,
-  isStudentView = false,
 }: HeaderProps) {
   const { isDark, toggleTheme } = useTheme();
 
@@ -86,24 +84,15 @@ export function Header({
           </button>
 
           {user ? (
-            <div className="flex items-center gap-2">
-              <Link
-                to={isStudentView ? "/dashboard" : "/dashboard?mode=student"}
-                className="inline-flex items-center justify-center rounded-2xl border border-stone-300/80 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#C15F3D] hover:text-[#C15F3D] dark:hover:border-amber-400 dark:hover:text-amber-300 shadow-xs transition-all cursor-pointer min-h-[40px]"
-                aria-label={isStudentView ? "Voltar ao painel do tutor" : "Abrir painel do aluno"}
-              >
-                {isStudentView ? "Painel Tutor" : "Painel Aluno"}
-              </Link>
-              <button
-                type="button"
-                onClick={signOut}
-                className="inline-flex items-center justify-center rounded-2xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 shadow-xs transition-all cursor-pointer min-h-[40px]"
-                title="Encerrar sessão de tutor"
-                aria-label="Encerrar sessão de tutor"
-              >
-                Sair
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={signOut}
+              className="inline-flex items-center justify-center rounded-2xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 shadow-xs transition-all cursor-pointer min-h-[40px]"
+              title="Encerrar sessão de tutor"
+              aria-label="Encerrar sessão de tutor"
+            >
+              Sair
+            </button>
           ) : (
             <Link
               to="/login"
