@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   GraduationCap,
   UserPlus,
@@ -15,9 +14,10 @@ import {
   LayoutDashboard,
   ShieldCheck,
   FileSpreadsheet,
-  ArrowRight,
-  Users,
   Search,
+  Sparkles,
+  SunMedium,
+  Coffee,
 } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { supabase } from "../lib/supabase";
@@ -35,6 +35,7 @@ import {
   sessionSeconds,
   totalsByMember,
   filterWeekdaySessions,
+  calculateOccupancyInsights,
 } from "../lib/aggregate";
 import { Header } from "../components/Header";
 import { PeriodSelector } from "../components/PeriodSelector";
@@ -69,6 +70,7 @@ export function Dashboard() {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [view, setView] = useState<View>("totals");
   const [tutorTab, setTutorTab] = useState<TutorTab>("overview");
+  const [studentOnlyPresent, setStudentOnlyPresent] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -267,6 +269,44 @@ export function Dashboard() {
     return members.filter((m) => (map.get(m.id) ?? 0) < 4 * 3600).length;
   }, [members, weekdaySessions, now]);
 
+  // Insights analíticos de ocupação e horários de estudo
+  const occupancyInsights = useMemo(() => {
+    return calculateOccupancyInsights(sessions, presentCount, now);
+  }, [sessions, presentCount, now]);
+
+  // Mapa de última atividade registrada por integrante
+  const memberLastSeenMap = useMemo(() => {
+    const map = new Map<string, { checkIn: string; isPresent: boolean }>();
+    const presentSet = new Set(presentIds);
+    for (const s of sessions) {
+      if (s.voidedAt != null) continue;
+      const prev = map.get(s.profileId);
+      if (!prev || s.checkIn > prev.checkIn) {
+        map.set(s.profileId, {
+          checkIn: s.checkIn,
+          isPresent: presentSet.has(s.profileId),
+        });
+      }
+    }
+    return map;
+  }, [sessions, presentIds]);
+
+  // Lista filtrada de integrantes para a visualização do discente
+  const studentFilteredMembers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    let list = members;
+    if (studentOnlyPresent) {
+      const pSet = new Set(presentIds);
+      list = list.filter((m) => pSet.has(m.id));
+    }
+    if (!q) return list;
+    return list.filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        (m.matricula && m.matricula.toLowerCase().includes(q))
+    );
+  }, [members, presentIds, studentOnlyPresent, searchQuery]);
+
   return (
     <div className="min-h-screen bg-transparent flex flex-col justify-between selection:bg-[#C15F3D]/20 text-[#171715] transition-colors duration-300">
       {/* Linha sutil de carregamento superior em tempo real */}
@@ -287,7 +327,7 @@ export function Dashboard() {
       <main className="flex-1 px-3 py-5 sm:px-6 md:px-8 max-w-6xl mx-auto w-full relative">
         <div className={`space-y-6 transition-opacity duration-300 ${isRefreshing ? "opacity-75" : "opacity-100"}`}>
 
-          {/* ── 1. Área de Identidade: Modo Tutor vs Modo Visitante ── */}
+          {/* ── 1. Painel do Tutor (Quando autenticado) ── */}
           {user ? (
             <div className="space-y-4 animate-fade-in-up">
               {/* Card Unificado de Workspace do Tutor */}
@@ -318,12 +358,12 @@ export function Dashboard() {
                       </span>
                     </div>
                     <p className="text-xs text-[#57534E] dark:text-slate-400 font-sans mt-0.5">
-                      Auditoria de 4 horas obrigatórias, emissão de relatórios oficiais e gestão do laboratório.
+                      Auditoria semanal de 4 horas, relatórios de permanência e gestão do laboratório.
                     </p>
                   </div>
                 </div>
 
-                {/* Ações Administrativas do Tutor */}
+                {/* Ações Rápidas do Workspace do Tutor */}
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
@@ -342,290 +382,494 @@ export function Dashboard() {
                     <SlidersHorizontal className="h-3.5 w-3.5 text-stone-600 dark:text-slate-300" />
                     <span>Acesso @ailab.com</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Segmented Control Fluido Estilo iOS para as Abas do Tutor */}
+              <div className="relative w-full sm:w-[560px] h-11 p-1 bg-[#FAF9F5] dark:bg-slate-800/80 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 backdrop-blur-md shadow-2xs select-none">
+                {/* Pílula deslizante fluida iOS */}
+                <div
+                  className="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 shadow-2xs border border-[#E5E2DC]/80 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                  style={{
+                    left: `calc(4px + ${(tutorTab === "overview" ? 0 : tutorTab === "audit" ? 1 : 2)} * ((100% - 8px) / 3))`,
+                    width: "calc((100% - 8px) / 3)",
+                  }}
+                />
+
+                <div className="relative z-10 grid grid-cols-3 h-full">
+                  <button
+                    type="button"
+                    onClick={() => setTutorTab("overview")}
+                    className={`inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
+                      tutorTab === "overview"
+                        ? "text-[#171715] dark:text-white font-semibold"
+                        : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
+                    }`}
+                  >
+                    <LayoutDashboard className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Visão Geral & Presença</span>
+                  </button>
 
                   <button
                     type="button"
-                    onClick={() => setIsTutorWarningOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#171715] dark:bg-amber-500 hover:bg-[#2A2925] dark:hover:bg-amber-400 px-3.5 py-2 text-xs font-sans font-medium text-[#FAF9F5] dark:text-slate-950 shadow-sm hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer min-h-[38px]"
+                    onClick={() => setTutorTab("audit")}
+                    className={`inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
+                      tutorTab === "audit"
+                        ? "text-[#171715] dark:text-white font-semibold"
+                        : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
+                    }`}
                   >
-                    <ClipboardCheck className="h-3.5 w-3.5 text-amber-400 dark:text-slate-950" />
-                    <span>Auditoria Semanal</span>
+                    <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Auditoria da Tutoria</span>
                     {studentsUnderFourHoursCount > 0 && (
-                      <span className="inline-flex items-center justify-center bg-rose-500 text-white rounded-full h-4 min-w-[16px] px-1 text-[10px] font-bold">
+                      <span className="inline-flex items-center justify-center bg-rose-500 text-white rounded-full h-4 min-w-[16px] px-1 text-[10px] font-bold shrink-0">
                         {studentsUnderFourHoursCount}
                       </span>
                     )}
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTutorTab("records")}
+                    className={`inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
+                      tutorTab === "records"
+                        ? "text-[#171715] dark:text-white font-semibold"
+                        : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
+                    }`}
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Histórico & Relatórios</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Segmented Control / Abas Harmoniosas do Tutor */}
-              <div className="flex items-center justify-start gap-1.5 p-1 bg-stone-100/90 dark:bg-slate-800/80 rounded-2xl border border-stone-200/80 dark:border-slate-700/80 backdrop-blur-md max-w-fit shadow-2xs">
-                <button
-                  type="button"
-                  onClick={() => setTutorTab("overview")}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer ${
-                    tutorTab === "overview"
-                      ? "bg-white dark:bg-slate-900 text-[#171715] dark:text-white shadow-xs font-semibold scale-100"
-                      : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
-                  }`}
-                >
-                  <LayoutDashboard className="h-3.5 w-3.5" />
-                  <span>Visão Geral & Presença</span>
-                </button>
+              {/* ABA 1 DO TUTOR: Visão Geral & Presença */}
+              {tutorTab === "overview" && (
+                <div className="space-y-6 animate-fade-in-up">
+                  {/* KPI Cards do Tutor */}
+                  {loading && members.length === 0 ? (
+                    <KpiSkeleton />
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                      {/* Presentes Agora */}
+                      <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs hover:shadow-sm hover:border-emerald-300 dark:hover:border-emerald-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
+                            Presentes agora
+                          </span>
+                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                            <Radio className="h-4 w-4 text-emerald-500 animate-pulse" />
+                          </span>
+                        </div>
+                        <div className="mt-2.5 flex items-center gap-2">
+                          <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight leading-none">
+                            {presentCount}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/80 dark:bg-emerald-950/80 border border-emerald-300/80 dark:border-emerald-700/60 pl-2 pr-2.5 py-0.5 text-2xs font-semibold text-emerald-800 dark:text-emerald-300 font-sans shadow-2xs leading-none select-none">
+                            <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                              <span className="absolute h-1.5 w-1.5 rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                              <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+                            </span>
+                            <span className="leading-none">ao vivo</span>
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1.5 truncate">
+                          No laboratório agora
+                        </p>
+                      </div>
 
-                <button
-                  type="button"
-                  onClick={() => setTutorTab("audit")}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer ${
-                    tutorTab === "audit"
-                      ? "bg-white dark:bg-slate-900 text-[#171715] dark:text-white shadow-xs font-semibold scale-100"
-                      : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
-                  }`}
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>Auditoria da Tutoria (4h)</span>
-                  {studentsUnderFourHoursCount > 0 && (
-                    <span className="inline-flex items-center justify-center bg-amber-500/20 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 rounded-full h-4 min-w-[16px] px-1 text-[10px] font-bold">
-                      {studentsUnderFourHoursCount}
-                    </span>
+                      {/* Total de Horas */}
+                      <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs hover:shadow-sm hover:border-orange-300 dark:hover:border-orange-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#C15F3D] to-orange-500" />
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
+                            Total de horas
+                          </span>
+                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/60 border border-orange-200/80 dark:border-orange-800/60 text-[#C15F3D] dark:text-orange-400 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                            <Hourglass className="h-4 w-4 text-orange-500" />
+                          </span>
+                        </div>
+                        <div className="mt-2.5">
+                          <span className="text-xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
+                            {formatDuration(totalLabSeconds)}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 truncate">
+                          Acumuladas no período
+                        </p>
+                      </div>
+
+                      {/* Integrantes Ativos */}
+                      <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs hover:shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
+                            Integrantes ativos
+                          </span>
+                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/60 text-indigo-800 dark:text-indigo-400 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                            <UserCheck className="h-4 w-4 text-indigo-500" />
+                          </span>
+                        </div>
+                        <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                          <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
+                            {activeMembersCount}
+                          </span>
+                          <span className="text-2xs font-mono-data text-[#57534E] dark:text-slate-400">de {members.length}</span>
+                        </div>
+                        <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 truncate">
+                          Com presença no filtro
+                        </p>
+                      </div>
+
+                      {/* Total de Sessões */}
+                      <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs hover:shadow-sm hover:border-amber-300 dark:hover:border-amber-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-500" />
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
+                            Total de sessões
+                          </span>
+                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-400 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                            <Layers className="h-4 w-4 text-amber-500" />
+                          </span>
+                        </div>
+                        <div className="mt-2.5">
+                          <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
+                            {totalSessionsCount}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 truncate">
+                          Registros computados
+                        </p>
+                      </div>
+                    </div>
                   )}
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() => setTutorTab("records")}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer ${
-                    tutorTab === "records"
-                      ? "bg-white dark:bg-slate-900 text-[#171715] dark:text-white shadow-xs font-semibold scale-100"
-                      : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
-                  }`}
-                >
-                  <FileSpreadsheet className="h-3.5 w-3.5" />
-                  <span>Histórico & Relatórios</span>
-                </button>
-              </div>
+                  {/* Integrantes Presentes em Tempo Real */}
+                  {presentMembers.length > 0 && (
+                    <div className="rounded-3xl border border-emerald-200/70 dark:border-emerald-800/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 sm:p-5 animate-fade-in-up">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-900 dark:text-emerald-200 font-mono-data">
+                            Integrantes no Laboratório Agora ({presentMembers.length})
+                          </h3>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {presentMembers.map((t) => (
+                          <button
+                            key={t.member.id}
+                            type="button"
+                            onClick={() => setSelectedMemberId(t.member.id)}
+                            className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-900/60 shadow-2xs hover:shadow-xs hover:border-emerald-400 dark:hover:border-emerald-600 transition-all duration-200 text-left cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="relative">
+                                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 font-semibold text-xs">
+                                  {t.member.name.charAt(0).toUpperCase()}
+                                </span>
+                                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold text-[#171715] dark:text-slate-100 truncate">
+                                  {t.member.name}
+                                </p>
+                                <p className="text-[10px] font-mono-data text-stone-500 dark:text-slate-400">
+                                  {t.member.matricula ?? "Discente"}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="font-mono-data text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0 ml-2">
+                              {formatDuration(t.totalSeconds)}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Gráfico Semanal de Frequência (Dias Úteis) */}
+                  {!loading && totals.length > 0 && (
+                    <div className="transition-all duration-300">
+                      <WeeklyChart rows={filteredTotals} range={range} sessions={weekdaySessions} />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
-            /* Banner de Acesso Público para Visitantes / Alunos */
-            <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-gradient-to-br from-white via-[#FAF9F5] to-emerald-50/20 dark:from-slate-900/95 dark:via-slate-900/90 dark:to-slate-950 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xs animate-fade-in-up transition-all duration-300">
-              <div className="flex items-center gap-3.5">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 text-emerald-600 dark:text-emerald-400 shadow-2xs">
-                  <Users className="h-5 w-5" />
-                </span>
+            /* ── 2. Painel do Aluno / Discente (Sem login, com senha de presença makers) ── */
+            <div className="space-y-6 animate-fade-in-up">
+              {/* Cabeçalho Limpo e Acolhedor do Aluno */}
+              <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
                 <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-editorial text-lg sm:text-xl font-normal text-[#171715] dark:text-slate-100">
-                      Painel de Presença Pública
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="font-editorial text-2xl sm:text-3xl font-normal text-[#171715] dark:text-slate-100 tracking-tight">
+                      Painel do Aluno
                     </h2>
-                    <span className="inline-flex items-center gap-1 font-mono-data rounded-full bg-stone-100 dark:bg-slate-800 border border-stone-200 dark:border-slate-700 px-2.5 py-0.5 text-2xs font-semibold text-[#57534E] dark:text-slate-300">
-                      Modo Visitante
+                    <span className="inline-flex items-center gap-1 font-mono-data rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 text-2xs font-semibold text-emerald-800 dark:text-emerald-300">
+                      AiLab Makers
                     </span>
                   </div>
-                  <p className="text-xs text-[#57534E] dark:text-slate-400 font-sans mt-0.5">
-                    Acompanhe em tempo real quem está no laboratório e os índices de frequência acadêmica.
+                  <p className="text-xs sm:text-sm text-[#57534E] dark:text-slate-400 font-sans mt-1">
+                    Acompanhe em tempo real a lotação do laboratório, horários de pico e a melhor hora para estudar.
                   </p>
+                </div>
+
+                {/* Badge Vivo com Nível de Ocupação */}
+                <div className="inline-flex items-center gap-2.5 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800/90 px-4 py-2.5 shadow-2xs self-start sm:self-auto">
+                  <span className="relative flex h-2.5 w-2.5 items-center justify-center">
+                    <span className="absolute h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                    <span className="relative h-2 w-2 rounded-full bg-emerald-500" />
+                  </span>
+                  <div>
+                    <div className="text-xs font-mono-data font-bold text-[#171715] dark:text-slate-100">
+                      {presentCount} {presentCount === 1 ? "discente agora" : "discentes agora"}
+                    </div>
+                    <div className="text-[10px] font-sans font-medium text-[#706E6A] dark:text-slate-400">
+                      Lotação: <strong className="text-emerald-700 dark:text-emerald-400">{occupancyInsights.currentCrowdLevel}</strong>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#171715] hover:bg-[#2A2925] dark:bg-amber-500 dark:hover:bg-amber-400 text-[#FAF9F5] dark:text-slate-950 px-4 py-2 text-xs font-sans font-semibold shadow-xs hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 min-h-[38px]"
-              >
-                <span>Acesso de Tutor</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          )}
+              {/* Seletor de Período Integrado com Animação Fluida iOS */}
+              <PeriodSelector
+                period={period}
+                range={range}
+                onPeriod={(p) => {
+                  setPeriod(p);
+                  if (p !== "custom") {
+                    setCustomFrom("");
+                    setCustomTo("");
+                  }
+                }}
+                customFrom={customFrom}
+                customTo={customTo}
+                onCustomRange={(from, to) => {
+                  setCustomFrom(from);
+                  setCustomTo(to);
+                }}
+              />
 
-          {/* ── 2. Conteúdo Condicional de Acordo com o Modo e Aba ── */}
-
-          {/* ABA 1 DO TUTOR OU MODO VISITANTE: Visão Geral, KPIs e Gráfico Semanal */}
-          {(!user || tutorTab === "overview") && (
-            <div className="space-y-6 animate-fade-in-up">
-              {/* KPI Cards com micro-interações suaves */}
-              {loading && members.length === 0 ? (
-                <KpiSkeleton />
-              ) : (
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                  {/* Presentes Agora */}
-                  <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_24px_rgba(5,150,105,0.14)] hover:border-emerald-300 dark:hover:border-emerald-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
-                        Presentes agora
-                      </span>
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
-                        <Radio className="h-4 w-4 text-emerald-500 animate-pulse" />
-                      </span>
-                    </div>
-                    <div className="mt-2.5 flex items-center gap-2">
-                      <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight leading-none">
-                        {presentCount}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/80 dark:bg-emerald-950/80 border border-emerald-300/80 dark:border-emerald-700/60 pl-2 pr-2.5 py-0.5 text-2xs font-semibold text-emerald-800 dark:text-emerald-300 font-sans shadow-2xs leading-none select-none">
-                        <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
-                          <span className="absolute h-1.5 w-1.5 rounded-full bg-emerald-400 opacity-75 animate-live-ping" />
-                          <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
-                        </span>
-                        <span className="leading-none">ao vivo</span>
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1.5 truncate">
-                      No laboratório agora
-                    </p>
+              {/* Cards de Insights de Ocupação do Laboratório (Mais úteis para os alunos) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {/* 1. Status de Lotação Ao Vivo */}
+                <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[136px] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-sans font-semibold text-[#57534E] dark:text-slate-400">
+                      Lotação Atual
+                    </span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+                      <Radio className="h-4 w-4 animate-pulse" />
+                    </span>
                   </div>
-
-                  {/* Total de Horas */}
-                  <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_24px_rgba(193,95,61,0.14)] hover:border-orange-300 dark:hover:border-orange-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#C15F3D] to-orange-500" />
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
-                        Total de horas
-                      </span>
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/60 border border-orange-200/80 dark:border-orange-800/60 text-[#C15F3D] dark:text-orange-400 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
-                        <Hourglass className="h-4 w-4 text-orange-500" />
-                      </span>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold font-mono-data text-[#171715] dark:text-slate-100">
+                      {occupancyInsights.currentCrowdLevel}
                     </div>
-                    <div className="mt-2.5">
-                      <span className="text-xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
-                        {formatDuration(totalLabSeconds)}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 truncate">
-                      Acumuladas no período
-                    </p>
-                  </div>
-
-                  {/* Integrantes Ativos */}
-                  <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_24px_rgba(99,102,241,0.14)] hover:border-indigo-300 dark:hover:border-indigo-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
-                        Integrantes ativos
-                      </span>
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/60 text-indigo-800 dark:text-indigo-400 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
-                        <UserCheck className="h-4 w-4 text-indigo-500" />
-                      </span>
-                    </div>
-                    <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                      <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
-                        {activeMembersCount}
-                      </span>
-                      <span className="text-2xs font-mono-data text-[#57534E] dark:text-slate-400">de {members.length}</span>
-                    </div>
-                    <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 truncate">
-                      Com presença no filtro
-                    </p>
-                  </div>
-
-                  {/* Total de Sessões */}
-                  <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_24px_rgba(217,119,6,0.14)] hover:border-amber-300 dark:hover:border-amber-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-500" />
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
-                        Total de sessões
-                      </span>
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-400 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
-                        <Layers className="h-4 w-4 text-amber-500" />
-                      </span>
-                    </div>
-                    <div className="mt-2.5">
-                      <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
-                        {totalSessionsCount}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 truncate">
-                      Registros computados
+                    <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 leading-snug">
+                      {presentCount < 3
+                        ? "Espaço calmo · Ótimo para leitura e estudos individuais"
+                        : presentCount < 8
+                        ? "Movimento equilibrado · Bom para colaborar e focar"
+                        : "Laboratório movimentado com equipes ativas"}
                     </p>
                   </div>
                 </div>
-              )}
 
-              {/* Integrantes Presentes em Tempo Real (se houver alguém no laboratório) */}
-              {presentMembers.length > 0 && (
-                <div className="rounded-3xl border border-emerald-200/70 dark:border-emerald-800/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 sm:p-5 animate-fade-in-up">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-900 dark:text-emerald-200 font-mono-data">
-                        Integrantes no Laboratório ({presentMembers.length})
-                      </h3>
-                    </div>
+                {/* 2. Horário com Mais Discentes (Pico) */}
+                <div className="rounded-3xl border border-amber-200/80 dark:border-amber-800/50 bg-amber-50/40 dark:bg-amber-950/20 backdrop-blur-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[136px] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-sans font-semibold text-amber-900 dark:text-amber-300">
+                      Horário com Mais Discentes
+                    </span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100/80 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300">
+                      <SunMedium className="h-4 w-4" />
+                    </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                    {presentMembers.map((t) => (
-                      <button
-                        key={t.member.id}
-                        type="button"
-                        onClick={() => setSelectedMemberId(t.member.id)}
-                        className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-900/60 shadow-2xs hover:shadow-xs hover:border-emerald-400 dark:hover:border-emerald-600 transition-all duration-200 text-left cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="relative">
-                            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 font-semibold text-xs">
-                              {t.member.name.charAt(0).toUpperCase()}
-                            </span>
-                            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-[#171715] dark:text-slate-100 truncate">
-                              {t.member.name}
-                            </p>
-                            <p className="text-[10px] font-mono-data text-stone-500 dark:text-slate-400">
-                              {t.member.matricula ?? "Discente"}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="font-mono-data text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0 ml-2">
-                          {formatDuration(t.totalSeconds)}
-                        </span>
-                      </button>
-                    ))}
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold font-mono-data text-amber-900 dark:text-amber-200">
+                      {occupancyInsights.peakShift.name}
+                    </div>
+                    <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-1 leading-snug">
+                      {occupancyInsights.peakShift.hoursDescription} ({occupancyInsights.peakShift.sessionsCount} presenças)
+                    </p>
                   </div>
                 </div>
-              )}
 
-              {/* Gráfico de Distribuição e Análise de Frequência (Dias Úteis) */}
+                {/* 3. Horário Mais Tranquilo (Menos Discentes) */}
+                <div className="rounded-3xl border border-indigo-200/80 dark:border-indigo-800/50 bg-indigo-50/40 dark:bg-indigo-950/20 backdrop-blur-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[136px] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-sans font-semibold text-indigo-900 dark:text-indigo-300">
+                      Horário Mais Tranquilo
+                    </span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-100/80 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
+                      <Coffee className="h-4 w-4" />
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold font-mono-data text-indigo-900 dark:text-indigo-200">
+                      {occupancyInsights.quietShift.name}
+                    </div>
+                    <p className="text-[11px] text-indigo-800/80 dark:text-indigo-300/80 mt-1 leading-snug">
+                      {occupancyInsights.quietShift.hoursDescription} · Menor fluxo para foco
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4. Distribuição de Turnos */}
+                <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[136px] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-sans font-semibold text-[#57534E] dark:text-slate-400">
+                      Distribuição por Turnos
+                    </span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FAF5F0] dark:bg-slate-800 text-[#C15F3D] dark:text-amber-400">
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                  </div>
+                  <div className="space-y-1.5 pt-2">
+                    <div className="flex items-center justify-between text-2xs font-mono-data">
+                      <span className="text-[#57534E] dark:text-slate-400">Manhã:</span>
+                      <strong className="text-[#171715] dark:text-slate-100">{occupancyInsights.shiftsSummary.morning.percent}%</strong>
+                    </div>
+                    <div className="flex items-center justify-between text-2xs font-mono-data">
+                      <span className="text-[#57534E] dark:text-slate-400">Tarde:</span>
+                      <strong className="text-[#171715] dark:text-slate-100">{occupancyInsights.shiftsSummary.afternoon.percent}%</strong>
+                    </div>
+                    <div className="flex items-center justify-between text-2xs font-mono-data">
+                      <span className="text-[#57534E] dark:text-slate-400">Noite:</span>
+                      <strong className="text-[#171715] dark:text-slate-100">{occupancyInsights.shiftsSummary.evening.percent}%</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Gráfico de Dias Úteis com Dia de Pico Destacado (Segunda a Sexta) */}
               {!loading && totals.length > 0 && (
                 <div className="transition-all duration-300">
                   <WeeklyChart rows={filteredTotals} range={range} sessions={weekdaySessions} />
                 </div>
               )}
 
-              {/* Se for Visitante, exibe também a tabela diretamente abaixo da visão geral */}
-              {!user && (
-                <div className="space-y-4 pt-2">
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-3xl p-3 sm:p-3.5 border border-[#E5E2DC] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs transition-all duration-300">
-                    <div className="relative flex-1 group">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#57534E] dark:text-slate-400 group-focus-within:text-[#C15F3D] transition-colors">
-                        <Search className="h-4 w-4" />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="Filtrar por nome ou matrícula..."
-                        value={searchInput}
-                        onChange={(e) => handleSearchChange(e.target.value)}
-                        className="w-full h-10 rounded-2xl border border-stone-200 dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-950/60 py-2 pl-10 pr-9 text-xs sm:text-sm text-[#171715] dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 font-sans font-medium focus:border-[#C15F3D] focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-[#C15F3D]/20 transition-all"
-                      />
-                      {searchInput && (
-                        <button
-                          type="button"
-                          onClick={clearSearch}
-                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-700 dark:hover:text-white cursor-pointer"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
+              {/* Lista e Busca Harmoniosa de Discentes */}
+              <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-6 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="relative flex-1 group">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#57534E] dark:text-slate-400 group-focus-within:text-[#C15F3D] transition-colors">
+                      <Search className="h-4 w-4" />
                     </div>
+                    <input
+                      type="text"
+                      placeholder="Buscar discente por nome ou matrícula..."
+                      value={searchInput}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="w-full h-11 rounded-2xl border border-stone-200 dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-950/60 py-2 pl-10 pr-9 text-xs sm:text-sm text-[#171715] dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 font-sans font-medium focus:border-[#C15F3D] focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-[#C15F3D]/20 transition-all"
+                    />
+                    {searchInput && (
+                      <button
+                        type="button"
+                        onClick={clearSearch}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-700 dark:hover:text-white cursor-pointer"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
 
-                  <TotalsTable
-                    rows={filteredTotals}
-                    onSelectMember={(row) => setSelectedMemberId(row.member.id)}
-                  />
+                  {/* Toggle: Todos vs Apenas Presentes */}
+                  <div className="inline-flex rounded-xl bg-[#FAF9F5] dark:bg-slate-800 p-1 border border-[#E5E2DC] dark:border-slate-700 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => setStudentOnlyPresent(false)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-sans font-medium transition-all ${
+                        !studentOnlyPresent
+                          ? "bg-white dark:bg-slate-900 text-[#171715] dark:text-white shadow-2xs font-semibold"
+                          : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-slate-200"
+                      }`}
+                    >
+                      Todos ({members.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStudentOnlyPresent(true)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-sans font-medium transition-all flex items-center gap-1.5 ${
+                        studentOnlyPresent
+                          ? "bg-white dark:bg-slate-900 text-[#171715] dark:text-white shadow-2xs font-semibold"
+                          : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-slate-200"
+                      }`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Presentes Agora ({presentCount})</span>
+                    </button>
+                  </div>
                 </div>
-              )}
+
+                {/* Grade de Discentes */}
+                {studentFilteredMembers.length === 0 ? (
+                  <div className="py-10 text-center text-xs sm:text-sm text-[#706E6A] dark:text-slate-400">
+                    Nenhum discente encontrado para o filtro informado.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {studentFilteredMembers.map((m) => {
+                      const isPresent = presentIds.includes(m.id);
+                      const lastSeen = memberLastSeenMap.get(m.id);
+
+                      return (
+                        <div
+                          key={m.id}
+                          className={`p-3.5 rounded-2xl border transition-all duration-200 flex items-center justify-between gap-3 ${
+                            isPresent
+                              ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60 shadow-2xs"
+                              : "bg-[#FAF9F5]/70 dark:bg-slate-800/50 border-[#E5E2DC] dark:border-slate-800"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="relative shrink-0">
+                              <span
+                                className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold text-xs ${
+                                  isPresent
+                                    ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200"
+                                    : "bg-stone-200 dark:bg-slate-700 text-stone-700 dark:text-slate-300"
+                                }`}
+                              >
+                                {m.name.charAt(0).toUpperCase()}
+                              </span>
+                              {isPresent && (
+                                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-[#171715] dark:text-slate-100 truncate">
+                                {m.name}
+                              </p>
+                              <p className="text-[11px] font-mono-data text-stone-500 dark:text-slate-400">
+                                {m.matricula ?? "Discente"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            {isPresent ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 font-mono-data">
+                                Presente
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono-data text-[#706E6A] dark:text-slate-400">
+                                {lastSeen
+                                  ? `Última: ${new Date(lastSeen.checkIn).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
+                                  : "Sem registros"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

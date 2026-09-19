@@ -252,3 +252,138 @@ export function calculateTutorInsights(
   };
 }
 
+export interface OccupancyInsights {
+  peakShift: {
+    name: "Manhã" | "Tarde" | "Noite" | "Sem dados";
+    hoursDescription: string;
+    seconds: number;
+    sessionsCount: number;
+  };
+  quietShift: {
+    name: "Manhã" | "Tarde" | "Noite" | "Sem dados";
+    hoursDescription: string;
+    seconds: number;
+    sessionsCount: number;
+  };
+  peakWeekday: {
+    name: string;
+    shortName: string;
+    seconds: number;
+    sessionsCount: number;
+  } | null;
+  currentCrowdLevel: "Tranquilo" | "Moderado" | "Movimentado";
+  shiftsSummary: {
+    morning: { seconds: number; count: number; percent: number };
+    afternoon: { seconds: number; count: number; percent: number };
+    evening: { seconds: number; count: number; percent: number };
+  };
+}
+
+export function calculateOccupancyInsights(
+  sessions: SessionRecord[],
+  presentCount: number,
+  now: Date
+): OccupancyInsights {
+  const weekdaySessions = filterWeekdaySessions(sessions).filter((s) => s.voidedAt == null);
+
+  let morningSec = 0;
+  let morningCount = 0;
+  let afternoonSec = 0;
+  let afternoonCount = 0;
+  let eveningSec = 0;
+  let eveningCount = 0;
+
+  const weekdaySecMap = new Map<number, { seconds: number; count: number }>();
+  for (let d = 1; d <= 5; d++) {
+    weekdaySecMap.set(d, { seconds: 0, count: 0 });
+  }
+
+  for (const s of weekdaySessions) {
+    const sec = sessionSeconds(s, now);
+    const date = new Date(s.checkIn);
+    const h = date.getHours();
+    const day = date.getDay();
+
+    if (h < 12) {
+      morningSec += sec;
+      morningCount++;
+    } else if (h < 18) {
+      afternoonSec += sec;
+      afternoonCount++;
+    } else {
+      eveningSec += sec;
+      eveningCount++;
+    }
+
+    if (day >= 1 && day <= 5) {
+      const entry = weekdaySecMap.get(day);
+      if (entry) {
+        entry.seconds += sec;
+        entry.count++;
+      }
+    }
+  }
+
+  const shiftDefs = [
+    { name: "Manhã" as const, hoursDescription: "08h às 12h", seconds: morningSec, sessionsCount: morningCount },
+    { name: "Tarde" as const, hoursDescription: "12h às 18h", seconds: afternoonSec, sessionsCount: afternoonCount },
+    { name: "Noite" as const, hoursDescription: "18h às 22h", seconds: eveningSec, sessionsCount: eveningCount },
+  ];
+
+  const sortedByActivity = [...shiftDefs].sort((a, b) => b.seconds - a.seconds);
+  const totalShiftSec = morningSec + afternoonSec + eveningSec || 1;
+
+  const peakShift =
+    morningSec === 0 && afternoonSec === 0 && eveningSec === 0
+      ? { name: "Sem dados" as const, hoursDescription: "Sem registros", seconds: 0, sessionsCount: 0 }
+      : sortedByActivity[0];
+
+  const sortedAscending = [...shiftDefs].sort((a, b) => a.seconds - b.seconds);
+  const quietShift =
+    morningSec === 0 && afternoonSec === 0 && eveningSec === 0
+      ? { name: "Sem dados" as const, hoursDescription: "Sem registros", seconds: 0, sessionsCount: 0 }
+      : sortedAscending[0];
+
+  const WEEKDAY_NAMES = ["", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira"];
+  const WEEKDAY_SHORTS = ["", "Seg", "Ter", "Qua", "Qui", "Sex"];
+  let peakDayNum: number | null = null;
+  let maxDaySec = -1;
+
+  for (let d = 1; d <= 5; d++) {
+    const entry = weekdaySecMap.get(d);
+    if (entry && entry.seconds > maxDaySec && entry.seconds > 0) {
+      maxDaySec = entry.seconds;
+      peakDayNum = d;
+    }
+  }
+
+  const peakWeekday =
+    peakDayNum !== null
+      ? {
+          name: WEEKDAY_NAMES[peakDayNum],
+          shortName: WEEKDAY_SHORTS[peakDayNum],
+          seconds: maxDaySec,
+          sessionsCount: weekdaySecMap.get(peakDayNum)?.count ?? 0,
+        }
+      : null;
+
+  let currentCrowdLevel: "Tranquilo" | "Moderado" | "Movimentado" = "Tranquilo";
+  if (presentCount >= 8) {
+    currentCrowdLevel = "Movimentado";
+  } else if (presentCount >= 3) {
+    currentCrowdLevel = "Moderado";
+  }
+
+  return {
+    peakShift,
+    quietShift,
+    peakWeekday,
+    currentCrowdLevel,
+    shiftsSummary: {
+      morning: { seconds: morningSec, count: morningCount, percent: Math.round((morningSec / totalShiftSec) * 100) },
+      afternoon: { seconds: afternoonSec, count: afternoonCount, percent: Math.round((afternoonSec / totalShiftSec) * 100) },
+      evening: { seconds: eveningSec, count: eveningCount, percent: Math.round((eveningSec / totalShiftSec) * 100) },
+    },
+  };
+}
+

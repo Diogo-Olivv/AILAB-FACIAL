@@ -1,11 +1,12 @@
 import type { DateRange } from "./reports";
 
-export type PeriodKey = "day" | "week" | "month" | "custom";
+export type PeriodKey = "day" | "week" | "month" | "total" | "custom";
 
 export const PERIOD_LABELS: Record<PeriodKey, string> = {
   day: "Hoje",
   week: "Esta semana",
   month: "Este mês",
+  total: "Total",
   custom: "Período",
 };
 
@@ -46,12 +47,25 @@ export function rangeFor(key: PeriodKey, customFrom = "", customTo = ""): DateRa
     const mondayOffset = (now.getDay() + 6) % 7;
     const from = startOfDay(now);
     from.setDate(from.getDate() - mondayOffset);
+
+    // Se hoje for fim de semana (Sábado = 6, Domingo = 0), a semana útil encerrou na Sexta
+    if (now.getDay() === 6 || now.getDay() === 0) {
+      const friday = new Date(from);
+      friday.setDate(friday.getDate() + 4);
+      return { from, to: endOfDay(friday) };
+    }
     return { from, to: endOfDay(now) };
   }
 
   if (key === "month") {
     const from = startOfDay(now);
     from.setDate(1);
+    return { from, to: endOfDay(now) };
+  }
+
+  if (key === "total") {
+    // Todo o histórico: desde 01/01/2024 até o presente
+    const from = new Date(2024, 0, 1, 0, 0, 0, 0);
     return { from, to: endOfDay(now) };
   }
 

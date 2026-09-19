@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useMemo, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   CalendarDays,
   CalendarRange,
@@ -11,13 +12,14 @@ import {
 import type { DateRange } from "../lib/reports";
 import { formatRange } from "../lib/period";
 
-const PERIOD_LABELS: Record<"day" | "week" | "month", string> = {
+const PERIOD_LABELS: Record<"day" | "week" | "month" | "total", string> = {
   day: "Hoje",
   week: "Semana",
   month: "Mês",
+  total: "Total",
 };
 
-const KEYS: ("day" | "week" | "month")[] = ["day", "week", "month"];
+const KEYS: ("day" | "week" | "month" | "total")[] = ["day", "week", "month", "total"];
 
 const MONTH_NAMES = [
   "Janeiro",
@@ -37,9 +39,9 @@ const MONTH_NAMES = [
 const WEEKDAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 interface Props {
-  period: "day" | "week" | "month" | "custom";
+  period: "day" | "week" | "month" | "total" | "custom";
   range: DateRange;
-  onPeriod: (p: "day" | "week" | "month" | "custom") => void;
+  onPeriod: (p: "day" | "week" | "month" | "total" | "custom") => void;
   customFrom?: string;
   customTo?: string;
   onCustomRange?: (from: string, to: string) => void;
@@ -90,7 +92,19 @@ export function PeriodSelector({
   const displayIndex =
     period === "custom"
       ? -1
-      : Math.max(0, KEYS.indexOf(period as "day" | "week" | "month"));
+      : Math.max(0, KEYS.indexOf(period as "day" | "week" | "month" | "total"));
+
+  const [popoverPos, setPopoverPos] = useState({ top: 0, right: 0 });
+
+  const updatePopoverPos = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPopoverPos({
+        top: rect.bottom + 8,
+        right: Math.max(16, window.innerWidth - rect.right),
+      });
+    }
+  };
 
   // Sincroniza valores quando customFrom / customTo externos mudarem
   useEffect(() => {
@@ -98,14 +112,21 @@ export function PeriodSelector({
     if (customTo) setLocalTo(customTo);
   }, [customFrom, customTo]);
 
-  // Fechamento seguro ao clicar fora ou pressionar Escape
+  // Fechamento seguro ao clicar fora ou pressionar Escape e reposicionamento no scroll/resize
   useEffect(() => {
     if (!isPickerOpen) return;
 
+    const handleScrollOrResize = () => {
+      updatePopoverPos();
+    };
+
     const handlePointerDownOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
       if (
-        pickerContainerRef.current &&
-        !pickerContainerRef.current.contains(event.target as Node)
+        pickerRef.current &&
+        !pickerRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
       ) {
         setIsPickerOpen(false);
       }
@@ -117,11 +138,15 @@ export function PeriodSelector({
       }
     };
 
+    window.addEventListener("scroll", handleScrollOrResize, { passive: true, capture: true });
+    window.addEventListener("resize", handleScrollOrResize, { passive: true });
     document.addEventListener("mousedown", handlePointerDownOutside);
     document.addEventListener("touchstart", handlePointerDownOutside);
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      window.removeEventListener("scroll", handleScrollOrResize, { capture: true });
+      window.removeEventListener("resize", handleScrollOrResize);
       document.removeEventListener("mousedown", handlePointerDownOutside);
       document.removeEventListener("touchstart", handlePointerDownOutside);
       document.removeEventListener("keydown", handleKeyDown);
@@ -130,6 +155,7 @@ export function PeriodSelector({
 
   const handleDateDisplayClick = () => {
     if (!isPickerOpen) {
+      updatePopoverPos();
       const initialFrom = customFrom || toDateInputValue(range.from);
       const initialTo = customTo || toDateInputValue(range.to);
       setLocalFrom(initialFrom);
@@ -221,7 +247,7 @@ export function PeriodSelector({
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const segmentIndex = Math.min(2, Math.floor((x / rect.width) * 3));
+    const segmentIndex = Math.min(3, Math.floor((x / rect.width) * 4));
     const targetKey = KEYS[segmentIndex];
     if (targetKey && targetKey !== period) {
       onPeriod(targetKey);
@@ -330,22 +356,22 @@ export function PeriodSelector({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={() => setIsDragging(false)}
-          className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-pointer touch-none"
+          className="relative w-full sm:w-[420px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-pointer touch-none shadow-2xs"
           role="tablist"
           aria-label="Seletor de período"
         >
-          {/* Pílula flutuante — só visível quando não está no modo custom */}
+          {/* Pílula flutuante fluida estilo iOS — só visível quando não está no modo custom */}
           {period !== "custom" && (
             <div
               className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs dark:bg-slate-900 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
               style={{
-                left: `calc(4px + ${displayIndex} * ((100% - 8px) / 3))`,
-                width: "calc((100% - 8px) / 3)",
+                left: `calc(4px + ${displayIndex} * ((100% - 8px) / 4))`,
+                width: "calc((100% - 8px) / 4)",
               }}
             />
           )}
 
-          <div className="relative z-10 grid grid-cols-3 h-full">
+          <div className="relative z-10 grid grid-cols-4 h-full">
             {KEYS.map((key) => {
               const isActive = safePeriod === key;
               return (
@@ -403,11 +429,17 @@ export function PeriodSelector({
             />
           </button>
 
-          {/* Popover com Calendário Ancorado Logo Abaixo do Botão */}
-          {isPickerOpen && (
+          {/* Popover com Calendário Ancorado Renderizado no Topo via createPortal */}
+          {isPickerOpen && typeof document !== "undefined" && createPortal(
             <div
               ref={pickerRef}
-              className="absolute right-0 top-full mt-2 z-50 w-[340px] max-w-[calc(100vw-24px)] max-h-[calc(100vh-140px)] overflow-y-auto rounded-3xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-900 shadow-[0_12px_48px_rgba(23,23,21,0.18)] dark:shadow-[0_12px_48px_rgba(0,0,0,0.65)] p-4 sm:p-5 animate-scale-up text-[#171715] dark:text-slate-100"
+              style={{
+                position: "fixed",
+                top: `${popoverPos.top}px`,
+                right: `${popoverPos.right}px`,
+                zIndex: 99999,
+              }}
+              className="w-[340px] max-w-[calc(100vw-24px)] max-h-[calc(100vh-140px)] overflow-y-auto rounded-3xl border border-[#E5E2DC] dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-[0_20px_60px_rgba(23,23,21,0.25)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.8)] p-4 sm:p-5 animate-scale-up text-[#171715] dark:text-slate-100"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Cabeçalho do Calendário */}
@@ -579,7 +611,8 @@ export function PeriodSelector({
                   </button>
                 </div>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       </div>
