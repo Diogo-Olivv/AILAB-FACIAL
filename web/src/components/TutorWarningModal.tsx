@@ -555,7 +555,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                 setIsFilterDragging(false);
                 setFilterDragIndex(null);
               }}
-              className="relative flex items-center rounded-2xl bg-stone-200/60 dark:bg-slate-800 p-1 gap-1 select-none touch-none"
+              className="relative flex w-full max-w-full items-center overflow-hidden rounded-2xl bg-stone-200/60 dark:bg-slate-800 p-1 select-none touch-none sm:w-auto"
             >
               <div
                 className="pointer-events-none absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-700 shadow-sm transition-[left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
@@ -567,41 +567,41 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
               <button
                 type="button"
                 onClick={() => setFilterMode("under")}
-                className={`flex-1 sm:flex-none rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] ${
+                  className={`relative z-10 min-w-0 flex-1 rounded-xl px-2.5 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "under"
                     ? "relative z-10 text-amber-900 dark:text-amber-300 font-extrabold"
                     : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
-                <span className="inline-flex items-center gap-1.5">
+                <span className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden">
                   <ClockAlert className="h-4 w-4 shrink-0" />
-                  <span>Em Débito ({underTargetStudents.length})</span>
+                  <span className="truncate">Em Débito ({underTargetStudents.length})</span>
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => setFilterMode("met")}
-                className={`flex-1 sm:flex-none rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] ${
+                  className={`relative z-10 min-w-0 flex-1 rounded-xl px-2.5 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "met"
                     ? "relative z-10 text-emerald-900 dark:text-emerald-300 font-extrabold"
                     : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
-                <span className="inline-flex items-center gap-1.5">
+                <span className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden">
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>Cumprida ({metTargetCount})</span>
+                  <span className="truncate">Cumprida ({metTargetCount})</span>
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => setFilterMode("all")}
-                className={`flex-1 sm:flex-none rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] ${
+                  className={`relative z-10 min-w-0 flex-1 rounded-xl px-2.5 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "all"
                     ? "relative z-10 text-slate-900 dark:text-slate-100 font-extrabold"
                     : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
-                Todos ({totalStudents})
+                <span className="block truncate">Todos ({totalStudents})</span>
               </button>
             </div>
 
