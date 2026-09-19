@@ -15,6 +15,7 @@ interface Props {
 export function ViewSelector({ view, onViewChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const activeIndex = view === "totals" ? 0 : 1;
 
   const updateSegmentFromClientX = (clientX: number) => {
@@ -22,6 +23,7 @@ export function ViewSelector({ view, onViewChange }: Props) {
     const rect = containerRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
     const segmentIndex = x / rect.width < 0.5 ? 0 : 1;
+    setDragIndex(segmentIndex);
     const targetKey = VIEWS[segmentIndex].key;
     if (targetKey !== view) {
       onViewChange(targetKey);
@@ -47,6 +49,7 @@ export function ViewSelector({ view, onViewChange }: Props) {
     if (isDragging) {
       setIsDragging(false);
       updateSegmentFromClientX(e.clientX);
+      setDragIndex(null);
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
@@ -61,7 +64,10 @@ export function ViewSelector({ view, onViewChange }: Props) {
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={() => setIsDragging(false)}
+      onPointerCancel={() => {
+        setIsDragging(false);
+        setDragIndex(null);
+      }}
       className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-pointer touch-none"
       role="tablist"
       aria-label="Alternar entre totais e histórico"
@@ -70,7 +76,7 @@ export function ViewSelector({ view, onViewChange }: Props) {
       <div
         className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs dark:bg-slate-900 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
         style={{
-          left: `calc(4px + ${activeIndex} * ((100% - 8px) / 2))`,
+          left: `calc(4px + ${(dragIndex ?? activeIndex)} * ((100% - 8px) / 2))`,
           width: "calc((100% - 8px) / 2)",
         }}
       />

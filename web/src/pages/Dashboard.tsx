@@ -71,6 +71,7 @@ export function Dashboard() {
   const [tutorTab, setTutorTab] = useState<TutorTab>("overview");
   const tutorTabContainerRef = useRef<HTMLDivElement>(null);
   const [isTutorTabDragging, setIsTutorTabDragging] = useState(false);
+  const [tutorTabDragIndex, setTutorTabDragIndex] = useState<number | null>(null);
 
   const updateTutorTabFromClientX = (clientX: number) => {
     if (!tutorTabContainerRef.current) return;
@@ -79,6 +80,7 @@ export function Dashboard() {
     const tabIndex = Math.min(2, Math.floor((x / rect.width) * 3));
     const tabs: TutorTab[] = ["overview", "audit", "records"];
     const targetTab = tabs[tabIndex];
+    setTutorTabDragIndex(tabIndex);
     if (targetTab && targetTab !== tutorTab) {
       setTutorTab(targetTab);
     }
@@ -100,6 +102,7 @@ export function Dashboard() {
   const handleTutorTabPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isTutorTabDragging) return;
     setIsTutorTabDragging(false);
+    setTutorTabDragIndex(null);
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
@@ -394,7 +397,7 @@ export function Dashboard() {
                 <div
                   className="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 shadow-2xs border border-[#E5E2DC]/80 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
                   style={{
-                    left: `calc(4px + ${(tutorTab === "overview" ? 0 : tutorTab === "audit" ? 1 : 2)} * ((100% - 8px) / 3))`,
+                    left: `calc(4px + ${(tutorTabDragIndex ?? (tutorTab === "overview" ? 0 : tutorTab === "audit" ? 1 : 2))} * ((100% - 8px) / 3))`,
                     width: "calc((100% - 8px) / 3)",
                   }}
                 />

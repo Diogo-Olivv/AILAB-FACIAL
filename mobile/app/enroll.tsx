@@ -33,6 +33,16 @@ export default function Enroll() {
   const animatedValue = useRef(
     new Animated.Value((initialMode || mode) === "refresh" ? 1 : 0)
   ).current;
+  const contentFadeAnim = useRef(new Animated.Value(1)).current;
+  const dragStart = useRef((initialMode || mode) === "refresh" ? 1 : 0);
+  const isWebDragging = useRef(false);
+  const webDragStartX = useRef(0);
+  const webDragStartValue = useRef((initialMode || mode) === "refresh" ? 1 : 0);
+  const activeTabRef = useRef<TabMode>((initialMode || mode) === "refresh" ? "refresh" : "enroll");
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   useEffect(() => {
     if (!tutorToken) {
@@ -40,42 +50,95 @@ export default function Enroll() {
     }
   }, [tutorToken, router]);
 
-  const switchTab = (target: TabMode) => {
-    if (target === activeTab) return;
-    triggerHaptic("tap");
-    setActiveTab(target);
-    Animated.spring(animatedValue, {
-      toValue: target === "refresh" ? 1 : 0,
-      tension: 65,
-      friction: 9,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  // PanResponder para permitir arrasto (drag) fluido entre as abas estilo iOS
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 10,
-      onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > 30) {
-          switchTab("refresh");
-        } else if (gesture.dx < -30) {
-          switchTab("enroll");
-        }
-      },
-    })
-  ).current;
-
-  if (!tutorToken) {
-    return null;
-  }
-
   const pillWidth = Math.max(0, (containerWidth - 8) / 2);
   const pillTranslateX = animatedValue.interpolate({
     inputRange: [0, 1],
     outputRange: [0, pillWidth],
   });
+
+  const switchTab = (target: TabMode) => {
+    triggerHaptic("tap");
+    const isChange = target !== activeTabRef.current;
+    activeTabRef.current = target;
+    setActiveTab(target);
+
+    Animated.spring(animatedValue, {
+      toValue: target === "refresh" ? 1 : 0,
+      stiffness: 350,
+      damping: 28,
+      mass: 0.8,
+      useNativeDriver: true,
+    }).start();
+
+    if (isChange) {
+      contentFadeAnim.setValue(0);
+      Animated.timing(contentFadeAnim, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
+
+  // PanResponder fluido para touch com arrasto em tempo real estilo iOS
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 6,
+      onPanResponderGrant: () => {
+        dragStart.current = activeTabRef.current === "refresh" ? 1 : 0;
+      },
+      onPanResponderMove: (_, gesture) => {
+        if (pillWidth > 0) {
+          const delta = gesture.dx / pillWidth;
+          const newVal = Math.max(0, Math.min(1, dragStart.current + delta));
+          animatedValue.setValue(newVal);
+        }
+      },
+      onPanResponderRelease: (_, gesture) => {
+        const delta = pillWidth > 0 ? gesture.dx / pillWidth : 0;
+        const currentPos = dragStart.current + delta;
+        const target: TabMode = currentPos > 0.5 ? "refresh" : "enroll";
+        switchTab(target);
+      },
+      onPanResponderTerminate: () => {
+        switchTab(activeTabRef.current);
+      },
+    })
+  ).current;
+
+  // Suporte a arrasto de ponteiro/mouse na web
+  const handlePointerDown = (e: any) => {
+    if (e.pointerType === "mouse") {
+      isWebDragging.current = true;
+      dragStart.current = activeTabRef.current === "refresh" ? 1 : 0;
+      webDragStartValue.current = dragStart.current;
+      webDragStartX.current = e.clientX;
+      e.currentTarget?.setPointerCapture?.(e.pointerId);
+    }
+  };
+
+  const handlePointerMove = (e: any) => {
+    if (isWebDragging.current && pillWidth > 0) {
+      const delta = (e.clientX - webDragStartX.current) / pillWidth;
+      const progress = Math.max(0, Math.min(1, webDragStartValue.current + delta));
+      animatedValue.setValue(progress);
+    }
+  };
+
+  const handlePointerUp = (e: any) => {
+    if (isWebDragging.current) {
+      isWebDragging.current = false;
+      e.currentTarget?.releasePointerCapture?.(e.pointerId);
+      const delta = pillWidth > 0 ? (e.clientX - webDragStartX.current) / pillWidth : 0;
+      const currentPos = Math.max(0, Math.min(1, webDragStartValue.current + delta));
+      switchTab(currentPos > 0.5 ? "refresh" : "enroll");
+    }
+  };
+
+  if (!tutorToken) {
+    return null;
+  }
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
@@ -96,7 +159,7 @@ export default function Enroll() {
               style={[styles.themeToggleBtn, isDark && styles.themeToggleBtnDark]}
               accessibilityRole="button"
               accessibilityLabel={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
-              activeOpacity={0.75}
+              activeOpacity={0.7}
             >
               <Feather
                 name={isDark ? "sun" : "moon"}
@@ -117,6 +180,14 @@ export default function Enroll() {
             if (w > 0) setContainerWidth(w);
           }}
           {...panResponder.panHandlers}
+          // @ts-ignore - props compatíveis com react-native-web
+          onPointerDown={handlePointerDown}
+          // @ts-ignore
+          onPointerMove={handlePointerMove}
+          // @ts-ignore
+          onPointerUp={handlePointerUp}
+          // @ts-ignore
+          onPointerCancel={handlePointerUp}
         >
           {/* Pílula Deslizante com Física de Mola iOS */}
           {pillWidth > 0 && (
@@ -135,7 +206,7 @@ export default function Enroll() {
           <TouchableOpacity
             style={styles.tab}
             onPress={() => switchTab("enroll")}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
             accessibilityRole="tab"
             aria-selected={activeTab === "enroll"}
           >
@@ -153,7 +224,7 @@ export default function Enroll() {
           <TouchableOpacity
             style={styles.tab}
             onPress={() => switchTab("refresh")}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
             accessibilityRole="tab"
             aria-selected={activeTab === "refresh"}
           >
@@ -169,13 +240,29 @@ export default function Enroll() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.contentContainer}>
+        {/* Conteúdo com transição animada de fade e slide suave */}
+        <Animated.View
+          style={[
+            styles.contentContainer,
+            {
+              opacity: contentFadeAnim,
+              transform: [
+                {
+                  translateY: contentFadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [8, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
           {activeTab === "enroll" ? (
             <EnrollCapture tutorToken={tutorToken} isDark={isDark} />
           ) : (
             <RefreshCapture tutorToken={tutorToken} isDark={isDark} />
           )}
-        </View>
+        </Animated.View>
       </View>
     </View>
   );

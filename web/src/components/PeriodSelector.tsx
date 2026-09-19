@@ -72,6 +72,7 @@ export function PeriodSelector({
   const pickerRef = useRef<HTMLDivElement>(null);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   // Intervalo em edição no calendário
@@ -247,6 +248,7 @@ export function PeriodSelector({
     const rect = containerRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
     const segmentIndex = Math.min(2, Math.floor((x / rect.width) * 3));
+    setDragIndex(segmentIndex);
     const targetKey = KEYS[segmentIndex];
     if (targetKey && targetKey !== period) {
       onPeriod(targetKey);
@@ -273,6 +275,7 @@ export function PeriodSelector({
     if (isDragging) {
       setIsDragging(false);
       updateSegmentFromClientX(e.clientX);
+      setDragIndex(null);
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
@@ -354,7 +357,10 @@ export function PeriodSelector({
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={() => setIsDragging(false)}
+          onPointerCancel={() => {
+            setIsDragging(false);
+            setDragIndex(null);
+          }}
           className="relative w-full sm:w-[350px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-pointer touch-none shadow-2xs"
           role="tablist"
           aria-label="Seletor de período"
@@ -364,7 +370,7 @@ export function PeriodSelector({
             <div
               className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs dark:bg-slate-900 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
               style={{
-                left: `calc(4px + ${displayIndex} * ((100% - 8px) / 3))`,
+                left: `calc(4px + ${(dragIndex ?? displayIndex)} * ((100% - 8px) / 3))`,
                 width: "calc((100% - 8px) / 3)",
               }}
             />

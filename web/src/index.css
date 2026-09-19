@@ -245,6 +245,28 @@ html.dark .glass-table-header {
     border-color: var(--focus-ring, #2563EB) !important;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22) !important;
   }
+
+  button,
+  a,
+  [role="button"],
+  [role="tab"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:not(:disabled),
+  a,
+  [role="button"],
+  [role="tab"] {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  button:not(:disabled):active,
+  [role="button"]:active,
+  [role="tab"]:active {
+    transform: scale(0.985);
+  }
 }
 
 /* ── Tipografia Editorial Claude & Modernismo Perplexity ─────────────────────── */

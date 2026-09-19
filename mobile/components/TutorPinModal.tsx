@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Modal,
   StyleSheet,
   Text,
@@ -8,22 +9,51 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
+import { triggerHaptic } from "@/lib/sound";
 
 interface Props {
   visible: boolean;
   onSuccess: (token: string) => void;
   onCancel: () => void;
+  isDark?: boolean;
 }
 
-export function TutorPinModal({ visible, onSuccess, onCancel }: Props) {
+export function TutorPinModal({ visible, onSuccess, onCancel, isDark = false }: Props) {
   const TUTOR_STATIC_EMAIL = "tutor@ailab.com";
   const TUTOR_STATIC_PASSWORD = "apenasParaTutores@42";
 
   const [email, setEmail] = useState(TUTOR_STATIC_EMAIL);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const scaleAnim = useRef(new Animated.Value(0.92)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          stiffness: 350,
+          damping: 26,
+          mass: 0.8,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      scaleAnim.setValue(0.92);
+      opacityAnim.setValue(0);
+    }
+  }, [visible, scaleAnim, opacityAnim]);
 
   async function handleLogin() {
     const cleanEmail = (email.trim() || TUTOR_STATIC_EMAIL).toLowerCase();
