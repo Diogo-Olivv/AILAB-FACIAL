@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type PointerEvent } from "react";
 import { BarChart3, TrendingUp, Clock3, Flame, CalendarDays, X } from "lucide-react";
 import type { MemberTotal } from "../lib/aggregate";
 import { formatDuration, sessionSeconds, isWeekday } from "../lib/aggregate";
@@ -61,6 +61,9 @@ const WEEKDAY_FULL = [
 
 export function WeeklyChart({ rows, range, sessions = [] }: Props) {
   const [mode, setMode] = useState<ChartMode>("bar");
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const modeSelectorRef = useRef<HTMLDivElement>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
   // Considera exclusivamente dias úteis (Segunda a Sexta-feira)
@@ -245,6 +248,45 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
   // Índice da pílula deslizante do Segmented Control iOS
   const modeIndex = Math.max(0, MODES.findIndex((m) => m.id === mode));
 
+  const updateModeFromClientX = (clientX: number) => {
+    if (!modeSelectorRef.current) return;
+    const rect = modeSelectorRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const nextIndex = Math.min(2, Math.floor((x / rect.width) * 3));
+    setDragIndex(nextIndex);
+    const nextMode = MODES[nextIndex]?.id;
+    if (nextMode && nextMode !== mode) {
+      setMode(nextMode);
+      setSelectedDayIndex(null);
+    }
+  };
+
+  const handleModePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignora navegadores sem suporte a captura de ponteiro.
+    }
+    updateModeFromClientX(event.clientX);
+  };
+
+  const handleModePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (isDragging) updateModeFromClientX(event.clientX);
+  };
+
+  const handleModePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    updateModeFromClientX(event.clientX);
+    setIsDragging(false);
+    setDragIndex(null);
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Ignora navegadores sem suporte a captura de ponteiro.
+    }
+  };
+
   if (dailyData.length === 0) {
     return (
       <div className="rounded-3xl border border-[#E5E2DC]/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-6 text-center shadow-xs transition-all duration-300">
@@ -285,6 +327,14 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
         <div className="flex items-center gap-2">
           {/* Seletor de visualização estilo Apple iOS com Pílula Deslizante Fluida */}
           <div
+            ref={modeSelectorRef}
+            onPointerDown={handleModePointerDown}
+            onPointerMove={handleModePointerMove}
+            onPointerUp={handleModePointerUp}
+            onPointerCancel={() => {
+              setIsDragging(false);
+              setDragIndex(null);
+            }}
             className="relative inline-flex h-9 rounded-2xl bg-[#FAF9F5] dark:bg-slate-800/90 p-1 border border-[#E5E2DC] dark:border-slate-700 shadow-2xs select-none"
             role="tablist"
             aria-label="Modo de visualização do gráfico"
@@ -293,7 +343,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
             <div
               className="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 border border-[#E5E2DC]/80 dark:border-slate-600 shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
               style={{
-                left: `calc(4px + ${modeIndex} * ((100% - 8px) / 3))`,
+                left: `calc(4px + ${(dragIndex ?? modeIndex)} * ((100% - 8px) / 3))`,
                 width: "calc((100% - 8px) / 3)",
               }}
             />
