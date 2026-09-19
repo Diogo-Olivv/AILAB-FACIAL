@@ -4,8 +4,6 @@ import { supabase } from "../lib/supabase";
 import { VIEWER_EMAIL } from "../lib/config";
 import { AuthContext, type AuthState } from "./auth-context";
 
-const TUTOR_STATIC_EMAIL = "tutor@ailab.com";
-const TUTOR_STATIC_PASSWORD = "apenasParaTutores@42";
 const TUTOR_STORAGE_KEY = "ailab_tutor_session";
 const TUTOR_CUSTOM_CREDENTIALS_KEY = "ailab_custom_tutor_credentials";
 
@@ -19,9 +17,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const localTutor = localStorage.getItem(TUTOR_STORAGE_KEY);
       if (localTutor) {
         const parsed = JSON.parse(localTutor);
-        setSession(parsed);
-        setLoading(false);
-        return;
+        if (parsed?.access_token && parsed.access_token !== "tutor-static-session-token") {
+          setSession(parsed);
+          setLoading(false);
+          return;
+        }
+        localStorage.removeItem(TUTOR_STORAGE_KEY);
       }
     } catch {
       // Ignora erro
@@ -96,87 +97,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
 
           if (!rpcErr && rpcRes && rpcRes.valid) {
-            const tutorUser: User = {
-              id: rpcRes.user_id || "tutor-master-id",
-              aud: "authenticated",
-              role: "authenticated",
-              email: rpcRes.email || cleanEmail,
-              app_metadata: { role: "tutor", provider: "email" },
-              user_metadata: {
-                role: "tutor",
-                name: rpcRes.name || cleanEmail.split("@")[0],
-              },
-              created_at: new Date().toISOString(),
-            } as User;
-
-            const tutorSession: Session = {
-              access_token: "tutor-static-session-token",
-              token_type: "bearer",
-              user: tutorUser,
-              expires_in: 3600 * 24 * 7,
-              expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 7,
-              refresh_token: "tutor-refresh-token",
-            };
-
-            setSession(tutorSession);
-            localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(tutorSession));
-            localStorage.setItem("ailab_site_access_granted", "true");
-            return;
+            throw new Error(
+              "As credenciais foram reconhecidas, mas não existe uma sessão Supabase válida para carregar o painel. Entre com uma conta de tutor confirmada."
+            );
           }
         } catch {
           // Prossegue para contingência local
-        }
-
-        // 3. Verificação de credenciais personalizadas salvas localmente
-        let isCustomMatch = false;
-        try {
-          const rawCustom = localStorage.getItem(TUTOR_CUSTOM_CREDENTIALS_KEY);
-          if (rawCustom) {
-            const custom = JSON.parse(rawCustom);
-            if (
-              custom.email &&
-              custom.password &&
-              custom.email.toLowerCase() === cleanEmail &&
-              custom.password === password
-            ) {
-              isCustomMatch = true;
-            }
-          }
-        } catch {
-          // Ignora erro de parse
-        }
-
-        // 4. Verificação estática master (tutor@ailab.com / apenasParaTutores@42)
-        const isStaticMatch =
-          cleanEmail === TUTOR_STATIC_EMAIL && password === TUTOR_STATIC_PASSWORD;
-
-        if (isStaticMatch || isCustomMatch) {
-          const tutorEmail = isCustomMatch ? cleanEmail : TUTOR_STATIC_EMAIL;
-          const tutorName = tutorEmail.split("@")[0] || "Tutor";
-
-          const tutorUser: User = {
-            id: "tutor-master-id",
-            aud: "authenticated",
-            role: "authenticated",
-            email: tutorEmail,
-            app_metadata: { role: "tutor", provider: "email" },
-            user_metadata: { role: "tutor", name: tutorName },
-            created_at: new Date().toISOString(),
-          } as User;
-
-          const tutorSession: Session = {
-            access_token: "tutor-static-session-token",
-            token_type: "bearer",
-            user: tutorUser,
-            expires_in: 3600 * 24 * 7,
-            expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 7,
-            refresh_token: "tutor-refresh-token",
-          };
-
-          setSession(tutorSession);
-          localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(tutorSession));
-          localStorage.setItem("ailab_site_access_granted", "true");
-          return;
         }
 
         throw new Error("E-mail ou senha de tutor incorretos.");
