@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type KeyboardEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { SunMedium, MoonStar, KeyRound, Sparkles, Eye, EyeOff, AlertCircle, ArrowLeft, Users } from "lucide-react";
+import { SunMedium, MoonStar, KeyRound, Sparkles, Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { useTheme } from "../lib/useTheme";
 import { InstallPwaButton } from "../components/InstallPwaButton";
@@ -236,22 +236,6 @@ export function Login() {
           >
             {busy ? "Validando credenciais..." : "Entrar como Tutor"}
           </button>
-
-          <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-[#E5E2DC] dark:border-slate-800"></div>
-            <span className="flex-shrink mx-3 text-2xs font-mono-data text-[#57534E] dark:text-slate-400 uppercase tracking-wider">
-              Acesso Público
-            </span>
-            <div className="flex-grow border-t border-[#E5E2DC] dark:border-slate-800"></div>
-          </div>
-
-          <Link
-            to="/dashboard"
-            className="w-full rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800/80 hover:bg-[#F0EEE6] dark:hover:bg-slate-800 py-3 font-sans font-medium text-xs sm:text-sm text-[#171715] dark:text-slate-100 shadow-2xs hover:shadow-xs active:scale-[0.98] transition-all duration-200 min-h-[46px] flex items-center justify-center gap-2"
-          >
-            <Users className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Entrar no Painel de Visitante (Sem Senha)</span>
-          </Link>
         </form>
       </main>
 

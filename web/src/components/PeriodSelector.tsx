@@ -12,14 +12,13 @@ import {
 import type { DateRange } from "../lib/reports";
 import { formatRange } from "../lib/period";
 
-const PERIOD_LABELS: Record<"day" | "week" | "month" | "total", string> = {
+const PERIOD_LABELS: Record<"day" | "week" | "month", string> = {
   day: "Hoje",
   week: "Semana",
   month: "Mês",
-  total: "Total",
 };
 
-const KEYS: ("day" | "week" | "month" | "total")[] = ["day", "week", "month", "total"];
+const KEYS: ("day" | "week" | "month")[] = ["day", "week", "month"];
 
 const MONTH_NAMES = [
   "Janeiro",
@@ -92,7 +91,7 @@ export function PeriodSelector({
   const displayIndex =
     period === "custom"
       ? -1
-      : Math.max(0, KEYS.indexOf(period as "day" | "week" | "month" | "total"));
+      : Math.max(0, KEYS.indexOf(period as "day" | "week" | "month"));
 
   const [popoverPos, setPopoverPos] = useState({ top: 0, right: 0 });
 
@@ -247,7 +246,7 @@ export function PeriodSelector({
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const segmentIndex = Math.min(3, Math.floor((x / rect.width) * 4));
+    const segmentIndex = Math.min(2, Math.floor((x / rect.width) * 3));
     const targetKey = KEYS[segmentIndex];
     if (targetKey && targetKey !== period) {
       onPeriod(targetKey);
@@ -356,7 +355,7 @@ export function PeriodSelector({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={() => setIsDragging(false)}
-          className="relative w-full sm:w-[420px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-pointer touch-none shadow-2xs"
+          className="relative w-full sm:w-[350px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-pointer touch-none shadow-2xs"
           role="tablist"
           aria-label="Seletor de período"
         >
@@ -365,13 +364,13 @@ export function PeriodSelector({
             <div
               className="absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs dark:bg-slate-900 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
               style={{
-                left: `calc(4px + ${displayIndex} * ((100% - 8px) / 4))`,
-                width: "calc((100% - 8px) / 4)",
+                left: `calc(4px + ${displayIndex} * ((100% - 8px) / 3))`,
+                width: "calc((100% - 8px) / 3)",
               }}
             />
           )}
 
-          <div className="relative z-10 grid grid-cols-4 h-full">
+          <div className="relative z-10 grid grid-cols-3 h-full">
             {KEYS.map((key) => {
               const isActive = safePeriod === key;
               return (

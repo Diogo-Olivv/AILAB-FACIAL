@@ -6,6 +6,12 @@ import type { DateRange, SessionRecord } from "../lib/reports";
 
 type ChartMode = "bar" | "trend" | "shifts";
 
+const MODES: { id: ChartMode; label: string; icon: typeof BarChart3 }[] = [
+  { id: "bar", label: "Barras", icon: BarChart3 },
+  { id: "trend", label: "Tendência", icon: TrendingUp },
+  { id: "shifts", label: "Turnos", icon: Clock3 },
+];
+
 interface Props {
   rows: MemberTotal[];
   range: DateRange;
@@ -191,15 +197,13 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
     return [...dailyData].sort((a, b) => b.totalSeconds - a.totalSeconds)[0];
   }, [dailyData]);
 
-  if (dailyData.length === 0) return null;
-
   // Parâmetros do gráfico SVG
   const chartHeight = 110;
   const yAxisWidth = 36;
   const graphWidth = Math.max(dailyData.length * 36, 320);
   const totalSvgWidth = graphWidth + yAxisWidth + 16;
 
-  // Curva de tendência SVG Bezier
+  // Curva de tendência SVG Bezier (Hooks chamados incondicionalmente no topo)
   const trendPath = useMemo(() => {
     if (dailyData.length < 2) return "";
     const points = dailyData.map((d, i) => {
@@ -226,6 +230,25 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
     return `${trendPath} L ${lastX} ${chartHeight} L ${firstX} ${chartHeight} Z`;
   }, [trendPath, dailyData.length, yAxisWidth, graphWidth, chartHeight]);
 
+  // Índice da pílula deslizante do Segmented Control iOS
+  const modeIndex = Math.max(0, MODES.findIndex((m) => m.id === mode));
+
+  if (dailyData.length === 0) {
+    return (
+      <div className="rounded-3xl border border-[#E5E2DC]/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-6 text-center shadow-xs transition-all duration-300">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-amber-600 dark:text-amber-400 mb-3 shadow-2xs">
+          <Clock3 className="h-6 w-6" />
+        </div>
+        <h3 className="text-sm font-semibold text-[#171715] dark:text-slate-100 font-sans">
+          Sem registros de atividades em dias úteis para este período
+        </h3>
+        <p className="text-xs text-[#706E6A] dark:text-slate-400 font-sans mt-1 max-w-md mx-auto">
+          O laboratório opera regularmente de <strong>Segunda a Sexta-feira</strong>. Selecione <em>Semana</em> ou <em>Mês</em> para analisar o histórico de presença.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-4 sm:p-5 shadow-[0_4px_20px_rgba(23,23,21,0.02)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-300">
       {/* Cabeçalho com Título, Seletor de Modo e Total */}
@@ -248,49 +271,43 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Seletor de visualização com 3 modos */}
-          <div className="inline-flex rounded-xl bg-[#FAF9F5] dark:bg-slate-800 p-1 border border-[#E5E2DC] dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => setMode("bar")}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-sans font-medium transition-all ${
-                mode === "bar"
-                  ? "bg-white dark:bg-slate-900 text-[#171715] dark:text-white shadow-2xs font-semibold"
-                  : "text-[#706E6A] dark:text-slate-400 hover:text-[#171715] dark:hover:text-slate-200"
-              }`}
-              title="Visualização em Barras com Indicadores Diários"
-            >
-              <BarChart3 className="h-3.5 w-3.5" />
-              <span>Barras</span>
-            </button>
+          {/* Seletor de visualização estilo Apple iOS com Pílula Deslizante Fluida */}
+          <div
+            className="relative inline-flex h-9 rounded-2xl bg-[#FAF9F5] dark:bg-slate-800/90 p-1 border border-[#E5E2DC] dark:border-slate-700 shadow-2xs select-none"
+            role="tablist"
+            aria-label="Modo de visualização do gráfico"
+          >
+            {/* Pílula Deslizante Fluida iOS */}
+            <div
+              className="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 border border-[#E5E2DC]/80 dark:border-slate-600 shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+              style={{
+                left: `calc(4px + ${modeIndex} * ((100% - 8px) / 3))`,
+                width: "calc((100% - 8px) / 3)",
+              }}
+            />
 
-            <button
-              type="button"
-              onClick={() => setMode("trend")}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-sans font-medium transition-all ${
-                mode === "trend"
-                  ? "bg-white dark:bg-slate-900 text-[#171715] dark:text-white shadow-2xs font-semibold"
-                  : "text-[#706E6A] dark:text-slate-400 hover:text-[#171715] dark:hover:text-slate-200"
-              }`}
-              title="Curva Suave de Tendência de Frequência"
-            >
-              <TrendingUp className="h-3.5 w-3.5" />
-              <span>Tendência</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setMode("shifts")}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-sans font-medium transition-all ${
-                mode === "shifts"
-                  ? "bg-white dark:bg-slate-900 text-[#171715] dark:text-white shadow-2xs font-semibold"
-                  : "text-[#706E6A] dark:text-slate-400 hover:text-[#171715] dark:hover:text-slate-200"
-              }`}
-              title="Distribuição por Turnos (Manhã, Tarde, Noite)"
-            >
-              <Clock3 className="h-3.5 w-3.5" />
-              <span>Turnos</span>
-            </button>
+            {MODES.map((m) => {
+              const Icon = m.icon;
+              const isActive = mode === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setMode(m.id)}
+                  role="tab"
+                  aria-selected={isActive}
+                  className={`relative z-10 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-sans font-medium transition-colors duration-200 cursor-pointer h-full ${
+                    isActive
+                      ? "text-[#171715] dark:text-white font-semibold"
+                      : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
+                  }`}
+                  title={m.label}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span>{m.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           <span className="hidden sm:inline-block text-2xs font-mono-data font-semibold text-[#171715] dark:text-slate-200 bg-[#FAF9F5] dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 rounded-lg px-2.5 py-1.5">
@@ -746,16 +763,12 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
         </div>
       )}
 
-      {/* Legenda de apoio */}
+      {/* Legenda de apoio (Apenas dias úteis e hoje) */}
       {mode !== "shifts" && (
         <div className="flex flex-wrap items-center gap-4 mt-3 pt-2.5 border-t border-[#E5E2DC]/60 dark:border-slate-800 text-2xs font-sans text-[#706E6A] dark:text-slate-400">
           <div className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full bg-[#C15F3D]" />
-            <span>Dias úteis</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-slate-400" />
-            <span>Fim de semana</span>
+            <span>Dias úteis (Seg–Sex)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full bg-orange-500 ring-2 ring-orange-200 dark:ring-orange-950" />

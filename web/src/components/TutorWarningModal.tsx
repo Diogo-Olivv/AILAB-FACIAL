@@ -28,6 +28,7 @@ interface Props {
   members: Member[];
   sessions: SessionRecord[];
   tutorEmail: string;
+  isInline?: boolean;
 }
 
 interface WarningRecord {
@@ -47,6 +48,7 @@ export function TutorWarningModal({
   members,
   sessions,
   tutorEmail,
+  isInline = false,
 }: Props) {
   const [filterMode, setFilterMode] = useState<"under" | "met" | "all">("under");
   const [search, setSearch] = useState("");
@@ -93,7 +95,7 @@ export function TutorWarningModal({
   };
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isInline) return;
 
     previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
     document.body.classList.add("modal-open");
@@ -374,45 +376,43 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !isInline) return null;
 
-  return (
+  const content = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm overflow-hidden animate-fade-in"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tutor-modal-title"
+      ref={modalRef}
+      className={
+        isInline
+          ? "relative w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl border border-[#E5E2DC] dark:border-slate-800 shadow-xs flex flex-col overflow-hidden text-slate-900 dark:text-slate-100 animate-fade-in-up"
+          : "relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-4xl bg-background sm:bg-background/98 sm:backdrop-blur-2xl sm:rounded-3xl border-0 sm:border sm:border-stone-200/80 dark:bg-slate-900 dark:sm:bg-slate-900/98 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-scale-up text-slate-900 dark:text-slate-100"
+      }
+      onClick={(e) => e.stopPropagation()}
     >
-      <div
-        ref={modalRef}
-        className="relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-4xl bg-background sm:bg-background/98 sm:backdrop-blur-2xl sm:rounded-3xl border-0 sm:border sm:border-stone-200/80 dark:bg-slate-900 dark:sm:bg-slate-900/98 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-scale-up text-slate-900 dark:text-slate-100"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header estilo Editorial Claude com Safe-Area para Celular */}
-        <div className="shrink-0 flex items-center justify-between border-b border-stone-200/70 dark:border-slate-800 bg-background/90 dark:bg-slate-900/90 pt-[max(env(safe-area-inset-top),16px)] pb-4 px-4 sm:px-6 gap-3">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-serif text-2xl shadow-md shadow-amber-500/20">
-              §
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-editorial-italic text-xs sm:text-sm text-stone-500 dark:text-stone-400 hidden xs:inline">
-                  Governança &bull;
-                </span>
-                <h2
-                  id="tutor-modal-title"
-                  className="font-editorial text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate"
-                >
-                  Auditoria Semanal de Permanência
-                </h2>
-              </div>
-              <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 font-medium truncate mt-0.5">
-                Tutor: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">{tutorEmail}</strong> · Meta: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">4h 00m / sem</strong>
-              </p>
-            </div>
+      {/* Header estilo Editorial Claude */}
+      <div className="shrink-0 flex items-center justify-between border-b border-stone-200/70 dark:border-slate-800 bg-background/90 dark:bg-slate-900/90 py-4 px-4 sm:px-6 gap-3">
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-serif text-2xl shadow-md shadow-amber-500/20">
+            §
           </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-editorial-italic text-xs sm:text-sm text-stone-500 dark:text-stone-400 hidden xs:inline">
+                Governança &bull;
+              </span>
+              <h2
+                id="tutor-modal-title"
+                className="font-editorial text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate"
+              >
+                Auditoria Semanal de Permanência
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 font-medium truncate mt-0.5">
+              Tutor: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">{tutorEmail}</strong> · Meta: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">4h 00m / sem</strong>
+            </p>
+          </div>
+        </div>
 
+        {!isInline && (
           <button
             onClick={onClose}
             aria-label="Fechar modal de auditoria"
@@ -420,7 +420,8 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
           >
             <X className="h-5 w-5" />
           </button>
-        </div>
+        )}
+      </div>
 
         {/* Resumo de Indicadores Ampliado para Celular com Estilo Claude / Perplexity */}
         <div className="shrink-0 p-3 sm:p-5 border-b border-stone-200/70 dark:border-slate-800 bg-stone-100/50 dark:bg-slate-800/60 grid grid-cols-3 gap-2.5 sm:gap-4">
@@ -1074,18 +1075,56 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
         )}
 
         {/* Footer com Safe-Area para Celular */}
-        <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-stone-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 pt-3 pb-[max(env(safe-area-inset-top),14px)] px-4 sm:px-6 text-xs text-stone-500 dark:text-slate-400">
-          <span className="hidden sm:inline font-medium">
-            * O comunicado formal é formatado automaticamente para notificação direta via WhatsApp ou e-mail.
-          </span>
-          <button
-            onClick={onClose}
-            className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-100 dark:to-slate-200 dark:text-slate-950 px-7 py-3 min-h-[46px] text-sm font-bold text-white shadow-sm hover:from-black hover:to-slate-900 active:scale-98 transition-all cursor-pointer shrink-0 flex items-center justify-center"
-          >
-            Concluir Auditoria
-          </button>
-        </div>
+        {!isInline && (
+          <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-stone-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 pt-3 pb-[max(env(safe-area-inset-top),14px)] px-4 sm:px-6 text-xs text-stone-500 dark:text-slate-400">
+            <span className="hidden sm:inline font-medium">
+              * O comunicado formal é formatado automaticamente para notificação direta via WhatsApp ou e-mail.
+            </span>
+            <button
+              onClick={onClose}
+              className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-100 dark:to-slate-200 dark:text-slate-950 px-7 py-3 min-h-[46px] text-sm font-bold text-white shadow-sm hover:from-black hover:to-slate-900 active:scale-98 transition-all cursor-pointer shrink-0 flex items-center justify-center"
+            >
+              Concluir Auditoria
+            </button>
+          </div>
+        )}
       </div>
+  );
+
+  if (isInline) {
+    return content;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm overflow-hidden animate-fade-in"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tutor-modal-title"
+    >
+      {content}
     </div>
+  );
+}
+
+export function TutorWarningPanel({
+  members,
+  sessions,
+  tutorEmail,
+}: {
+  members: Member[];
+  sessions: SessionRecord[];
+  tutorEmail: string;
+}) {
+  return (
+    <TutorWarningModal
+      isOpen={true}
+      onClose={() => {}}
+      members={members}
+      sessions={sessions}
+      tutorEmail={tutorEmail}
+      isInline={true}
+    />
   );
 }

@@ -3,7 +3,6 @@ import {
   GraduationCap,
   UserPlus,
   SlidersHorizontal,
-  ClipboardCheck,
   Hourglass,
   Radio,
   UserCheck,
@@ -41,11 +40,11 @@ import { Header } from "../components/Header";
 import { PeriodSelector } from "../components/PeriodSelector";
 import { TotalsTable } from "../components/TotalsTable";
 import { DailyHistory } from "../components/DailyHistory";
-import { PrivacyTermsModal } from "../components/PrivacyTermsModal";
 import { MemberDetailDrawer } from "../components/MemberDetailDrawer";
-import { TutorWarningModal } from "../components/TutorWarningModal";
-import { TutorProfileModal } from "../components/TutorProfileModal";
+import { PrivacyTermsModal } from "../components/PrivacyTermsModal";
 import { ManualAttendanceModal } from "../components/ManualAttendanceModal";
+import { TutorWarningModal, TutorWarningPanel } from "../components/TutorWarningModal";
+import { TutorProfileModal } from "../components/TutorProfileModal";
 import { Footer } from "../components/Footer";
 import { ViewSelector } from "../components/ViewSelector";
 import { KpiSkeleton, TableSkeleton } from "../components/TableSkeleton";
@@ -70,7 +69,6 @@ export function Dashboard() {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [view, setView] = useState<View>("totals");
   const [tutorTab, setTutorTab] = useState<TutorTab>("overview");
-  const [studentOnlyPresent, setStudentOnlyPresent] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -273,39 +271,6 @@ export function Dashboard() {
   const occupancyInsights = useMemo(() => {
     return calculateOccupancyInsights(sessions, presentCount, now);
   }, [sessions, presentCount, now]);
-
-  // Mapa de última atividade registrada por integrante
-  const memberLastSeenMap = useMemo(() => {
-    const map = new Map<string, { checkIn: string; isPresent: boolean }>();
-    const presentSet = new Set(presentIds);
-    for (const s of sessions) {
-      if (s.voidedAt != null) continue;
-      const prev = map.get(s.profileId);
-      if (!prev || s.checkIn > prev.checkIn) {
-        map.set(s.profileId, {
-          checkIn: s.checkIn,
-          isPresent: presentSet.has(s.profileId),
-        });
-      }
-    }
-    return map;
-  }, [sessions, presentIds]);
-
-  // Lista filtrada de integrantes para a visualização do discente
-  const studentFilteredMembers = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    let list = members;
-    if (studentOnlyPresent) {
-      const pSet = new Set(presentIds);
-      list = list.filter((m) => pSet.has(m.id));
-    }
-    if (!q) return list;
-    return list.filter(
-      (m) =>
-        m.name.toLowerCase().includes(q) ||
-        (m.matricula && m.matricula.toLowerCase().includes(q))
-    );
-  }, [members, presentIds, studentOnlyPresent, searchQuery]);
 
   return (
     <div className="min-h-screen bg-transparent flex flex-col justify-between selection:bg-[#C15F3D]/20 text-[#171715] transition-colors duration-300">
@@ -753,122 +718,34 @@ export function Dashboard() {
                 </div>
               )}
 
-              {/* Lista e Busca Harmoniosa de Discentes */}
-              <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-6 shadow-xs space-y-4">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                  <div className="relative flex-1 group">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#57534E] dark:text-slate-400 group-focus-within:text-[#C15F3D] transition-colors">
-                      <Search className="h-4 w-4" />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Buscar discente por nome ou matrícula..."
-                      value={searchInput}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      className="w-full h-11 rounded-2xl border border-stone-200 dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-950/60 py-2 pl-10 pr-9 text-xs sm:text-sm text-[#171715] dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 font-sans font-medium focus:border-[#C15F3D] focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-[#C15F3D]/20 transition-all"
-                    />
-                    {searchInput && (
-                      <button
-                        type="button"
-                        onClick={clearSearch}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-700 dark:hover:text-white cursor-pointer"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
+              {/* Tabela de Discentes com Busca Reativa (Visual original refinado estilo Apple) */}
+              <div className="space-y-4">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#57534E] dark:text-slate-400 group-focus-within:text-[#C15F3D] transition-colors">
+                    <Search className="h-4 w-4" />
                   </div>
-
-                  {/* Toggle: Todos vs Apenas Presentes */}
-                  <div className="inline-flex rounded-xl bg-[#FAF9F5] dark:bg-slate-800 p-1 border border-[#E5E2DC] dark:border-slate-700 self-start sm:self-auto">
+                  <input
+                    type="text"
+                    placeholder="Filtrar por seu nome ou matrícula..."
+                    value={searchInput}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="w-full h-11 rounded-2xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl py-2 pl-10 pr-9 text-xs sm:text-sm text-[#171715] dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 font-sans font-medium shadow-xs focus:border-[#C15F3D] focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-[#C15F3D]/20 transition-all"
+                  />
+                  {searchInput && (
                     <button
                       type="button"
-                      onClick={() => setStudentOnlyPresent(false)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-sans font-medium transition-all ${
-                        !studentOnlyPresent
-                          ? "bg-white dark:bg-slate-900 text-[#171715] dark:text-white shadow-2xs font-semibold"
-                          : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-slate-200"
-                      }`}
+                      onClick={clearSearch}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-700 dark:hover:text-white cursor-pointer"
                     >
-                      Todos ({members.length})
+                      <X className="h-4 w-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setStudentOnlyPresent(true)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-sans font-medium transition-all flex items-center gap-1.5 ${
-                        studentOnlyPresent
-                          ? "bg-white dark:bg-slate-900 text-[#171715] dark:text-white shadow-2xs font-semibold"
-                          : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-slate-200"
-                      }`}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>Presentes Agora ({presentCount})</span>
-                    </button>
-                  </div>
+                  )}
                 </div>
 
-                {/* Grade de Discentes */}
-                {studentFilteredMembers.length === 0 ? (
-                  <div className="py-10 text-center text-xs sm:text-sm text-[#706E6A] dark:text-slate-400">
-                    Nenhum discente encontrado para o filtro informado.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {studentFilteredMembers.map((m) => {
-                      const isPresent = presentIds.includes(m.id);
-                      const lastSeen = memberLastSeenMap.get(m.id);
-
-                      return (
-                        <div
-                          key={m.id}
-                          className={`p-3.5 rounded-2xl border transition-all duration-200 flex items-center justify-between gap-3 ${
-                            isPresent
-                              ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60 shadow-2xs"
-                              : "bg-[#FAF9F5]/70 dark:bg-slate-800/50 border-[#E5E2DC] dark:border-slate-800"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="relative shrink-0">
-                              <span
-                                className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold text-xs ${
-                                  isPresent
-                                    ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200"
-                                    : "bg-stone-200 dark:bg-slate-700 text-stone-700 dark:text-slate-300"
-                                }`}
-                              >
-                                {m.name.charAt(0).toUpperCase()}
-                              </span>
-                              {isPresent && (
-                                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold text-[#171715] dark:text-slate-100 truncate">
-                                {m.name}
-                              </p>
-                              <p className="text-[11px] font-mono-data text-stone-500 dark:text-slate-400">
-                                {m.matricula ?? "Discente"}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0">
-                            {isPresent ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 font-mono-data">
-                                Presente
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-mono-data text-[#706E6A] dark:text-slate-400">
-                                {lastSeen
-                                  ? `Última: ${new Date(lastSeen.checkIn).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
-                                  : "Sem registros"}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <TotalsTable
+                  rows={filteredTotals}
+                  onSelectMember={(row) => setSelectedMemberId(row.member.id)}
+                />
               </div>
             </div>
           )}
@@ -885,25 +762,14 @@ export function Dashboard() {
                 />
               )}
 
-              {/* Callout de Ações de Cumprimento Acadêmico */}
-              <div className="rounded-3xl border border-amber-200 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-950/20 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <h3 className="font-semibold text-sm text-amber-900 dark:text-amber-200 font-sans">
-                    Emissão de Notificações e Advertências Acadêmicas
-                  </h3>
-                  <p className="text-xs text-amber-800/80 dark:text-amber-300/80 leading-relaxed max-w-xl">
-                    Gere minutas formais para discentes em débito de permanência semanal (&lt; 4h) com modelo pré-formatado em conformidade com as regras do laboratório.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsTutorWarningOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 text-xs font-semibold shadow-xs hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer shrink-0 min-h-[40px]"
-                >
-                  <ClipboardCheck className="h-4 w-4" />
-                  <span>Abrir Painel de Advertências</span>
-                </button>
-              </div>
+              {/* Painel Completo de Notificações e Advertências Acadêmicas (Direto na Página, Sem Modal) */}
+              {!loading && (
+                <TutorWarningPanel
+                  members={members}
+                  sessions={weekdaySessions}
+                  tutorEmail={user.email ?? "tutor@ailab.com"}
+                />
+              )}
             </div>
           )}
 
