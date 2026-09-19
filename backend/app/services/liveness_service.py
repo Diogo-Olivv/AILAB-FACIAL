@@ -13,7 +13,6 @@ from __future__ import annotations
 import logging
 import os
 import threading
-from typing import Tuple
 
 import numpy as np
 from PIL import Image
@@ -83,7 +82,7 @@ def compute_laplacian_variance(gray: np.ndarray) -> float:
         return float(np.var(kernel_val))
 
 
-def check_image_quality(face_bgr: np.ndarray) -> Tuple[bool, float, str]:
+def check_image_quality(face_bgr: np.ndarray) -> tuple[bool, float, str]:
     """Avalia se o recorte da face atende aos critérios mínimos de qualidade (FIQA).
 
     Retorna: (aprovado, score_laplaciano, motivo)
@@ -235,7 +234,7 @@ def verify_liveness(
     face_bgr: np.ndarray,
     full_bgr: np.ndarray | None = None,
     bbox: list | np.ndarray | None = None,
-) -> Tuple[bool, float, str]:
+) -> tuple[bool, float, str]:
     """Verifica a vivacidade do rosto contra ataques de apresentação (PAD).
 
     Retorna: (is_live, score, status_message)
@@ -310,7 +309,7 @@ def verify_liveness(
 def verify_flash_reflection(
     ambient_bgr: np.ndarray,
     flash_bgr: np.ndarray,
-) -> Tuple[bool, float, str]:
+) -> tuple[bool, float, str]:
     """Verifica vivacidade ativa via reflexo fotométrico na sequência multi-frame (3D Flash Liveness).
 
     Implementa critérios da norma ISO/IEC 30107-3 para combate a ataques de apresentação 2D:

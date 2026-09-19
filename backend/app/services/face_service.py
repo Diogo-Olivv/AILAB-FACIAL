@@ -16,7 +16,7 @@ import logging
 import os
 import threading
 import time
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 from PIL import Image
@@ -159,7 +159,7 @@ def warmup() -> None:
         log.warning("Warmup falhou (continuando sem warmup prévio): %s", exc)
 
 
-def select_primary_face(faces: list, img_w: int, img_h: int) -> Tuple[Any | None, str]:
+def select_primary_face(faces: list, img_w: int, img_h: int) -> tuple[Any | None, str]:
     """Seleciona a face mais proeminente e central, descartando transeuntes e faces minúsculas.
 
     Retorna: (best_face, status_code)
@@ -230,7 +230,7 @@ def extract_primary_face_data(
     image_bytes: bytes,
     check_quality: bool = True,
     check_pad: bool = True,
-) -> Tuple[np.ndarray | None, np.ndarray | None, str, str]:
+) -> tuple[np.ndarray | None, np.ndarray | None, str, str]:
     """Processa a imagem e retorna (face_crop, embedding, status, message)."""
     try:
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")

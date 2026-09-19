@@ -1,7 +1,7 @@
 """Modelos de contrato Pydantic para validação formal de esquemas entre Backend, Web e Tablet."""
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 from pydantic import BaseModel, Field
 
 
@@ -21,11 +21,11 @@ class EventDetail(BaseModel):
     action: Literal["check_in", "check_out", "already_in", "not_in", "debounced"] = Field(
         ..., description="Ação biométrica resultante da leitura"
     )
-    profile_id: Optional[str] = Field(None, description="UUID do integrante relacionado")
-    session_id: Optional[int] = Field(None, description="ID numérico da sessão persistida")
-    timestamp: Optional[str] = Field(None, description="Horário ISO UTC do evento")
-    duration_minutes: Optional[float] = Field(None, description="Duração calculada da sessão em minutos no checkout")
-    wait_seconds: Optional[int] = Field(None, description="Segundos restantes para nova tentativa em caso de debounce")
+    profile_id: str | None = Field(None, description="UUID do integrante relacionado")
+    session_id: int | None = Field(None, description="ID numérico da sessão persistida")
+    timestamp: str | None = Field(None, description="Horário ISO UTC do evento")
+    duration_minutes: float | None = Field(None, description="Duração calculada da sessão em minutos no checkout")
+    wait_seconds: int | None = Field(None, description="Segundos restantes para nova tentativa em caso de debounce")
 
 
 class RecognizeResponse(BaseModel):
@@ -33,14 +33,14 @@ class RecognizeResponse(BaseModel):
     model_config = {"extra": "ignore"}
 
     recognized: bool = Field(..., description="Indica se um rosto cadastrado foi identificado com sucesso")
-    status: Optional[str] = Field(None, description="Código de status semântico (ex: no_face, not_recognized, ok)")
-    message: Optional[str] = Field(None, description="Mensagem legível para o usuário final")
-    profile_id: Optional[str] = Field(None, description="UUID do integrante identificado")
-    name: Optional[str] = Field(None, description="Nome completo do integrante")
-    confidence: Optional[float] = Field(None, description="Grau de confiança estatística da correspondência")
-    distance: Optional[float] = Field(None, description="Distância euclidiana ou cosseno calculada")
-    cosine_similarity: Optional[float] = Field(None, description="Similaridade de cosseno normalizada")
-    event: Optional[EventDetail] = Field(None, description="Detalhes do registro de presença gerado")
+    status: str | None = Field(None, description="Código de status semântico (ex: no_face, not_recognized, ok)")
+    message: str | None = Field(None, description="Mensagem legível para o usuário final")
+    profile_id: str | None = Field(None, description="UUID do integrante identificado")
+    name: str | None = Field(None, description="Nome completo do integrante")
+    confidence: float | None = Field(None, description="Grau de confiança estatística da correspondência")
+    distance: float | None = Field(None, description="Distância euclidiana ou cosseno calculada")
+    cosine_similarity: float | None = Field(None, description="Similaridade de cosseno normalizada")
+    event: EventDetail | None = Field(None, description="Detalhes do registro de presença gerado")
 
 
 class EnrollResponse(BaseModel):
@@ -58,6 +58,6 @@ class RevokeConsentResponse(BaseModel):
 
     revoked: bool = Field(..., description="Confirmação de revogação de consentimento")
     profile_id: str = Field(..., description="UUID do perfil revogado")
-    name: Optional[str] = Field(None, description="Nome do perfil")
-    revoked_at: Optional[str] = Field(None, description="Timestamp ISO do momento do expurgo")
+    name: str | None = Field(None, description="Nome do perfil")
+    revoked_at: str | None = Field(None, description="Timestamp ISO do momento do expurgo")
     message: str = Field(..., description="Mensagem de confirmação de expurgo")
