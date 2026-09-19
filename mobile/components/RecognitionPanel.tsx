@@ -27,7 +27,7 @@ export function RecognitionPanel() {
   const { active, cameraKey } = useCameraFocus();
 
   // Estados Hands-Free e Resiliência Offline
-  const [isHandsFree, setIsHandsFree] = useState(true);
+  const [isHandsFree, setIsHandsFree] = useState(false);
   const [pendingOfflineCount, setPendingOfflineCount] = useState(0);
   const [flashPulseActive, setFlashPulseActive] = useState(false);
   const lastSuccessTimeRef = useRef<number>(0);
@@ -445,7 +445,7 @@ export function RecognitionPanel() {
 
           {pendingOfflineCount > 0 && (
             <View style={[styles.offlineBadge, { flexDirection: "row", alignItems: "center", gap: 4 }]}>
-              <Feather name="zap" size={11} color="#D97706" />
+              <Feather name="zap" size={11} color="#FFFFFF" />
               <Text style={styles.offlineBadgeText}>
                 {pendingOfflineCount} offline
               </Text>

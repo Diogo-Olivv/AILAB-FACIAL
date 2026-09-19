@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Animated,
   Image,
   Modal,
   StyleSheet,
@@ -26,6 +27,8 @@ export default function Home() {
   const isCompact = width < 768;
 
   const [isDark, setIsDark] = useState(false);
+  const [themeTransitionColor, setThemeTransitionColor] = useState("#0B0F19");
+  const themeFadeAnim = React.useRef(new Animated.Value(0)).current;
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [termsVisible, setTermsVisible] = useState(false);
   const [presenceModalVisible, setPresenceModalVisible] = useState(false);
@@ -33,7 +36,20 @@ export default function Home() {
 
   const toggleTheme = () => {
     triggerHaptic("tap");
-    setIsDark((prev) => !prev);
+    const nextIsDark = !isDark;
+    setThemeTransitionColor(nextIsDark ? "#0B0F19" : "#FAF9F5");
+    Animated.timing(themeFadeAnim, {
+      toValue: 1,
+      duration: 120,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsDark(nextIsDark);
+      Animated.timing(themeFadeAnim, {
+        toValue: 0,
+        duration: 260,
+        useNativeDriver: true,
+      }).start();
+    });
   };
 
   const openTutorAuth = (mode: "enroll" | "refresh") => {
@@ -44,6 +60,10 @@ export default function Home() {
 
   return (
     <View style={[styles.safe, isDark && styles.safeDark]}>
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.themeTransitionOverlay, { opacity: themeFadeAnim, backgroundColor: themeTransitionColor }]}
+      />
       {/* Faixa Superior de Identidade AILAB Makers (Terracota, Azul Petróleo e Verde Esmeralda) */}
       <View style={styles.brandStripeContainer}>
         <View style={[styles.brandStripeSegment, { backgroundColor: "#C15F3D" }]} />
@@ -201,6 +221,10 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#FAF9F5" },
+  themeTransitionOverlay: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 100,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",

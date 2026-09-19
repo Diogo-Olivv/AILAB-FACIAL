@@ -76,7 +76,7 @@ export function TutorPinModal({ visible, onSuccess, onCancel, isDark = false }: 
 
       if (data?.session) {
         const role = data.session.user?.app_metadata?.role;
-        if (role === "tutor" || cleanEmail.endsWith("@ailab.com")) {
+        if (role === "tutor") {
           const token = data.session.access_token;
           setEmail("");
           setPassword("");
@@ -188,6 +188,7 @@ export function TutorPinModal({ visible, onSuccess, onCancel, isDark = false }: 
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              returnKeyType="next"
             />
           </View>
 
@@ -203,6 +204,9 @@ export function TutorPinModal({ visible, onSuccess, onCancel, isDark = false }: 
                 if (errorMsg) setErrorMsg(null);
               }}
               secureTextEntry
+              returnKeyType="go"
+              blurOnSubmit={false}
+              onSubmitEditing={handleLogin}
             />
           </View>
 

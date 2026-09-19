@@ -25,6 +25,10 @@ export default function Enroll() {
   }>();
 
   const [isDark, setIsDark] = useState(isDarkParam === "true");
+  const [themeTransitionColor, setThemeTransitionColor] = useState(
+    isDarkParam === "true" ? "#FAF9F5" : "#0B0F19"
+  );
+  const themeFadeAnim = useRef(new Animated.Value(0)).current;
   const [activeTab, setActiveTab] = useState<TabMode>(
     (initialMode || mode) === "refresh" ? "refresh" : "enroll"
   );
@@ -55,6 +59,20 @@ export default function Enroll() {
     inputRange: [0, 1],
     outputRange: [0, pillWidth],
   });
+
+  const updateContentDuringDrag = (target: TabMode) => {
+    if (target === activeTabRef.current) return;
+    triggerHaptic("tap");
+    activeTabRef.current = target;
+    setActiveTab(target);
+    contentFadeAnim.stopAnimation();
+    contentFadeAnim.setValue(0);
+    Animated.timing(contentFadeAnim, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const switchTab = (target: TabMode) => {
     triggerHaptic("tap");
@@ -93,6 +111,7 @@ export default function Enroll() {
           const delta = gesture.dx / pillWidth;
           const newVal = Math.max(0, Math.min(1, dragStart.current + delta));
           animatedValue.setValue(newVal);
+          updateContentDuringDrag(newVal >= 0.5 ? "refresh" : "enroll");
         }
       },
       onPanResponderRelease: (_, gesture) => {
@@ -123,6 +142,7 @@ export default function Enroll() {
       const delta = (e.clientX - webDragStartX.current) / pillWidth;
       const progress = Math.max(0, Math.min(1, webDragStartValue.current + delta));
       animatedValue.setValue(progress);
+      updateContentDuringDrag(progress >= 0.5 ? "refresh" : "enroll");
     }
   };
 
@@ -154,7 +174,20 @@ export default function Enroll() {
             <TouchableOpacity
               onPress={() => {
                 triggerHaptic("tap");
-                setIsDark((prev) => !prev);
+                const nextIsDark = !isDark;
+                setThemeTransitionColor(nextIsDark ? "#0B0F19" : "#FAF9F5");
+                Animated.timing(themeFadeAnim, {
+                  toValue: 1,
+                  duration: 120,
+                  useNativeDriver: true,
+                }).start(() => {
+                  setIsDark(nextIsDark);
+                  Animated.timing(themeFadeAnim, {
+                    toValue: 0,
+                    duration: 260,
+                    useNativeDriver: true,
+                  }).start();
+                });
               }}
               style={[styles.themeToggleBtn, isDark && styles.themeToggleBtnDark]}
               accessibilityRole="button"
@@ -172,6 +205,10 @@ export default function Enroll() {
       />
 
       <View style={styles.responsiveWrapper}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.themeTransitionOverlay, { opacity: themeFadeAnim, backgroundColor: themeTransitionColor }]}
+        />
         {/* Segmented control Fluido iOS com Arraste (Drag) e Pílula Deslizante */}
         <View
           style={[styles.tabContainer, isDark && styles.tabContainerDark]}
@@ -270,6 +307,10 @@ export default function Enroll() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FAF9F5", alignItems: "center" },
+  themeTransitionOverlay: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 100,
+  },
   containerDark: { backgroundColor: "#0B0F19" },
   responsiveWrapper: {
     flex: 1,

@@ -74,6 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
 
           if (!error && data?.session) {
+            const role = data.session.user?.app_metadata?.role;
+            if (role !== "tutor") {
+              await supabase.auth.signOut().catch(() => {});
+              throw new Error("Acesso negado. Esta conta não possui privilégios de tutor.");
+            }
             setSession(data.session);
             localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(data.session));
             localStorage.setItem("ailab_site_access_granted", "true");
