@@ -22,7 +22,13 @@ import {
   type SessionRecord,
 } from "../lib/reports";
 import { rangeFor, type PeriodKey } from "../lib/period";
-import { formatDuration, groupByDay, sessionSeconds, totalsByMember } from "../lib/aggregate";
+import {
+  formatDuration,
+  groupByDay,
+  sessionSeconds,
+  totalsByMember,
+  filterWeekdaySessions,
+} from "../lib/aggregate";
 import { Header } from "../components/Header";
 import { PeriodSelector } from "../components/PeriodSelector";
 import { TotalsTable } from "../components/TotalsTable";
@@ -36,6 +42,7 @@ import { Footer } from "../components/Footer";
 import { ViewSelector } from "../components/ViewSelector";
 import { KpiSkeleton, TableSkeleton } from "../components/TableSkeleton";
 import { WeeklyChart } from "../components/WeeklyChart";
+import { TutorInsightsCard } from "../components/TutorInsightsCard";
 import { ExportButton } from "../components/ExportButton";
 import { OfficialReportModal } from "../components/OfficialReportModal";
 
@@ -162,11 +169,16 @@ export function Dashboard() {
     return () => clearInterval(timer);
   }, [refreshData]);
 
-  const totals = useMemo(() => {
-    return totalsByMember(members, sessions, presentIds, now);
-  }, [members, sessions, presentIds, now]);
+  // Filtro Temporal de Dias Úteis: processa exclusivamente registros de Segunda a Sexta-feira
+  const weekdaySessions = useMemo(() => {
+    return filterWeekdaySessions(sessions);
+  }, [sessions]);
 
-  const days = useMemo(() => groupByDay(members, sessions, now), [members, sessions, now]);
+  const totals = useMemo(() => {
+    return totalsByMember(members, weekdaySessions, presentIds, now);
+  }, [members, weekdaySessions, presentIds, now]);
+
+  const days = useMemo(() => groupByDay(members, weekdaySessions, now), [members, weekdaySessions, now]);
 
   const selectedMemberTotal = useMemo(() => {
     if (!selectedMemberId) return null;
@@ -197,7 +209,7 @@ export function Dashboard() {
       .filter((day) => day.entries.length > 0);
   }, [days, searchQuery]);
 
-  // Métricas para KPI Cards
+  // Métricas para KPI Cards (Dias Úteis)
   const presentCount = useMemo(() => presentIds.length, [presentIds]);
   const totalLabSeconds = useMemo(
     () => totals.reduce((sum, r) => sum + r.totalSeconds, 0),
@@ -207,13 +219,13 @@ export function Dashboard() {
     () => totals.filter((r) => r.sessionCount > 0).length,
     [totals],
   );
-  const totalSessionsCount = useMemo(() => sessions.length, [sessions]);
+  const totalSessionsCount = useMemo(() => weekdaySessions.length, [weekdaySessions]);
 
-  // Contagem de alunos com débito na semana (< 4h) para o Tutor
+  // Contagem de alunos com débito na semana útil (< 4h) para o Tutor
   const studentsUnderFourHoursCount = useMemo(() => {
     const weekRange = rangeFor("week");
     const now = new Date();
-    const weekSessions = sessions.filter((s) => {
+    const weekSessions = weekdaySessions.filter((s) => {
       const d = new Date(s.checkIn);
       return d >= weekRange.from && d <= weekRange.to;
     });
@@ -224,7 +236,7 @@ export function Dashboard() {
       map.set(s.profileId, (map.get(s.profileId) ?? 0) + sessionSeconds(s, now));
     }
     return members.filter((m) => (map.get(m.id) ?? 0) < 4 * 3600).length;
-  }, [members, sessions]);
+  }, [members, weekdaySessions]);
 
   return (
     <div className="min-h-screen bg-transparent flex flex-col justify-between selection:bg-[#C15F3D]/20 text-[#171715]">
@@ -304,6 +316,16 @@ export function Dashboard() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* Painel Analítico de Insights da Tutoria (Dias Úteis) */}
+        {user && !loading && (
+          <TutorInsightsCard
+            members={members}
+            sessions={weekdaySessions}
+            now={now}
+            onSelectMember={(id) => setSelectedMemberId(id)}
+          />
         )}
 
         {/* KPI Cards com Cores Sutis e Sombras Delicadas */}
@@ -486,7 +508,7 @@ export function Dashboard() {
 
           {/* Gráfico de Distribuição e Análise de Frequência */}
           {!loading && totals.length > 0 && (
-            <WeeklyChart rows={filteredTotals} range={range} sessions={sessions} />
+            <WeeklyChart rows={filteredTotals} range={range} sessions={weekdaySessions} />
           )}
         </div>
 

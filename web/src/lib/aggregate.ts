@@ -1,5 +1,22 @@
 import type { Member, SessionRecord } from "./reports";
 
+/**
+ * Retorna true se a data cair em dia útil (Segunda a Sexta-feira).
+ * Descarta sábados (6) e domingos (0).
+ */
+export function isWeekday(d: Date | string): boolean {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const day = date.getDay();
+  return day >= 1 && day <= 5;
+}
+
+/**
+ * Filtra registros de sessão mantendo apenas os ocorridos em dias úteis (Seg–Sex).
+ */
+export function filterWeekdaySessions(sessions: SessionRecord[]): SessionRecord[] {
+  return sessions.filter((s) => isWeekday(s.checkIn));
+}
+
 export function formatDuration(totalSeconds: number, includeSeconds = false): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -115,3 +132,123 @@ export function groupByDay(members: Member[], sessions: SessionRecord[], now: Da
   }
   return [...groups.values()].sort((a, b) => (a.key < b.key ? 1 : -1));
 }
+
+export interface ShiftSummary {
+  morningSeconds: number;
+  afternoonSeconds: number;
+  eveningSeconds: number;
+  peakShift: "Manhã" | "Tarde" | "Noite" | "Sem dados";
+}
+
+export interface StudentAtRisk {
+  member: Member;
+  totalSeconds: number;
+  deficitSeconds: number;
+  lastCheckIn: string | null;
+  status: "critical" | "warning";
+}
+
+export interface TutorInsights {
+  totalWeekdaySessions: number;
+  totalWeekdaySeconds: number;
+  activeMembersCount: number;
+  totalMembersCount: number;
+  retentionRate: number; // 0 a 100%
+  averageStayPerActiveSeconds: number;
+  studentsAtRisk: StudentAtRisk[];
+  shifts: ShiftSummary;
+}
+
+export function calculateTutorInsights(
+  members: Member[],
+  sessions: SessionRecord[],
+  now: Date
+): TutorInsights {
+  const weekdaySessions = filterWeekdaySessions(sessions).filter((s) => s.voidedAt == null);
+
+  const memberSeconds = new Map<string, number>();
+  const lastCheckInMap = new Map<string, string>();
+  for (const m of members) {
+    memberSeconds.set(m.id, 0);
+  }
+
+  let morningSec = 0;
+  let afternoonSec = 0;
+  let eveningSec = 0;
+
+  for (const s of weekdaySessions) {
+    const sec = sessionSeconds(s, now);
+    memberSeconds.set(s.profileId, (memberSeconds.get(s.profileId) ?? 0) + sec);
+
+    const h = new Date(s.checkIn).getHours();
+    if (h < 12) {
+      morningSec += sec;
+    } else if (h < 18) {
+      afternoonSec += sec;
+    } else {
+      eveningSec += sec;
+    }
+
+    const prevLast = lastCheckInMap.get(s.profileId);
+    if (!prevLast || s.checkIn > prevLast) {
+      lastCheckInMap.set(s.profileId, s.checkIn);
+    }
+  }
+
+  const activeMembersCount = [...memberSeconds.values()].filter((sec) => sec > 0).length;
+  const totalMembersCount = members.length;
+  const retentionRate =
+    totalMembersCount > 0 ? Math.round((activeMembersCount / totalMembersCount) * 100) : 0;
+
+  const totalWeekdaySeconds = weekdaySessions.reduce((sum, s) => sum + sessionSeconds(s, now), 0);
+  const averageStayPerActiveSeconds =
+    activeMembersCount > 0 ? Math.round(totalWeekdaySeconds / activeMembersCount) : 0;
+
+  let peakShift: "Manhã" | "Tarde" | "Noite" | "Sem dados" = "Sem dados";
+  if (morningSec > 0 || afternoonSec > 0 || eveningSec > 0) {
+    if (morningSec >= afternoonSec && morningSec >= eveningSec) {
+      peakShift = "Manhã";
+    } else if (afternoonSec >= morningSec && afternoonSec >= eveningSec) {
+      peakShift = "Tarde";
+    } else {
+      peakShift = "Noite";
+    }
+  }
+
+  const TARGET_SECONDS = 4 * 3600;
+  const studentsAtRisk: StudentAtRisk[] = [];
+
+  for (const m of members) {
+    const sec = memberSeconds.get(m.id) ?? 0;
+    if (sec < TARGET_SECONDS) {
+      const deficit = TARGET_SECONDS - sec;
+      const lastCheckIn = lastCheckInMap.get(m.id) ?? null;
+      studentsAtRisk.push({
+        member: m,
+        totalSeconds: sec,
+        deficitSeconds: deficit,
+        lastCheckIn,
+        status: sec === 0 ? "critical" : "warning",
+      });
+    }
+  }
+
+  studentsAtRisk.sort((a, b) => b.deficitSeconds - a.deficitSeconds);
+
+  return {
+    totalWeekdaySessions: weekdaySessions.length,
+    totalWeekdaySeconds,
+    activeMembersCount,
+    totalMembersCount,
+    retentionRate,
+    averageStayPerActiveSeconds,
+    studentsAtRisk,
+    shifts: {
+      morningSeconds: morningSec,
+      afternoonSeconds: afternoonSec,
+      eveningSeconds: eveningSec,
+      peakShift,
+    },
+  };
+}
+

@@ -149,6 +149,22 @@ def verify_tutor_token(
         raise HTTPException(status_code=401, detail="Falha na validação do token de tutor.") from exc
 
 
+def verify_tutor_or_api_key(
+    api_key: str | None = Security(_api_key_header),
+    authorization: str | None = Security(_bearer_header),
+) -> dict:
+    """Autoriza acesso se houver Bearer token de tutor válido OU X-API-Key válida."""
+    if authorization and authorization.startswith("Bearer "):
+        return verify_tutor_token(authorization=authorization)
+    if api_key:
+        verify_api_key(api_key=api_key)
+        return {"role": "kiosk_api_key"}
+    raise HTTPException(
+        status_code=401,
+        detail="Acesso não autorizado. Forneça token de tutor ou X-API-Key válida.",
+    )
+
+
 # ── Janela Cadastral Temporária ───────────────────────────────────────────────
 
 

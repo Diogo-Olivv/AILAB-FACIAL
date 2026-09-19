@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
-import { SiteAccessGate } from "./components/SiteAccessGate";
+import { RequireTutorAuth } from "./components/RequireTutorAuth";
 
 const basename = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -15,9 +15,9 @@ export function App() {
           <Route
             path="/dashboard"
             element={
-              <SiteAccessGate>
+              <RequireTutorAuth>
                 <Dashboard />
-              </SiteAccessGate>
+              </RequireTutorAuth>
             }
           />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

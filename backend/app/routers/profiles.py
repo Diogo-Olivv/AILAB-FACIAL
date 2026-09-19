@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFil
 
 from app.config import settings
 from app.db.supabase_client import get_client
-from app.deps import validate_image, verify_api_key, verify_tutor_token, require_tutor_or_window
+from app.deps import validate_image, verify_api_key, verify_tutor_token, require_tutor_or_window, verify_tutor_or_api_key
 from app.routers.contracts import EnrollResponse, RevokeConsentResponse
 from app.services.enroll_service import EnrollError, ProfileNotFound, refresh_embedding
 from app.services.face_service import invalidate_embeddings_cache
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
 
 
-@router.get("/{profile_id}", dependencies=[Depends(verify_api_key)])
+@router.get("/{profile_id}", dependencies=[Depends(verify_tutor_or_api_key)])
 def get_profile(profile_id: str):
     """Consulta metadados do perfil e status de consentimento LGPD."""
     db = get_client()

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { BarChart3, TrendingUp, Clock3, Users, Flame } from "lucide-react";
 import type { MemberTotal } from "../lib/aggregate";
-import { formatDuration, sessionSeconds } from "../lib/aggregate";
+import { formatDuration, sessionSeconds, isWeekday } from "../lib/aggregate";
 import type { DateRange, SessionRecord } from "../lib/reports";
 
 type ChartMode = "bar" | "trend" | "shifts";
@@ -57,7 +57,11 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
   const [mode, setMode] = useState<ChartMode>("bar");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const daysList = useMemo(() => getDaysBetween(range.from, range.to), [range.from, range.to]);
+  // Considera exclusivamente dias úteis (Segunda a Sexta-feira)
+  const daysList = useMemo(
+    () => getDaysBetween(range.from, range.to).filter(isWeekday),
+    [range.from, range.to]
+  );
 
   const today = useMemo(() => {
     const t = new Date();
@@ -133,7 +137,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
 
     const now = new Date();
     for (const s of sessions) {
-      if (s.voidedAt) continue;
+      if (s.voidedAt || !isWeekday(s.checkIn)) continue;
       const hour = new Date(s.checkIn).getHours();
       const sec = sessionSeconds(s, now);
 
