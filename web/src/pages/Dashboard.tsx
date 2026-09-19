@@ -19,6 +19,7 @@ import {
   Coffee,
 } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import {
   fetchMembers,
@@ -58,6 +59,8 @@ type TutorTab = "overview" | "audit" | "records";
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
+  const [searchParams] = useSearchParams();
+  const isStudentView = searchParams.get("mode") === "student";
   const [members, setMembers] = useState<Member[]>([]);
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [presentIds, setPresentIds] = useState<string[]>([]);
@@ -321,6 +324,7 @@ export function Dashboard() {
       <Header
         user={user}
         signOut={signOut}
+        isStudentView={isStudentView}
         onOpenTerms={() => setIsTermsOpen(true)}
         onRefresh={() => refreshData(false)}
         isRefreshing={isRefreshing}
@@ -331,7 +335,7 @@ export function Dashboard() {
         <div className={`space-y-6 transition-opacity duration-300 ${isRefreshing ? "opacity-75" : "opacity-100"}`}>
 
           {/* ── 1. Painel do Tutor (Quando autenticado) ── */}
-          {user ? (
+          {user && !isStudentView ? (
             <div className="space-y-4 animate-fade-in-up">
               {/* Card Unificado de Workspace do Tutor */}
               <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xs transition-all duration-300 hover:shadow-sm">
