@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 
 export type FeedbackBadgeType =
   | "check_in"
@@ -38,7 +39,6 @@ interface BadgeConfig {
   accentColor: string;
   iconBg: string;
   iconSymbolColor: string;
-  iconSymbol: string;
   defaultTitle: string;
   defaultMessage: string;
 }
@@ -51,7 +51,6 @@ const BADGE_CONFIGS: Record<FeedbackBadgeType, BadgeConfig> = {
     accentColor: "#10B981",
     iconBg: "#ECFDF5",
     iconSymbolColor: "#059669",
-    iconSymbol: "✓",
     defaultTitle: "Presença Confirmada",
     defaultMessage: "Tenha um excelente período de atividades no AILAB Makers.",
   },
@@ -62,7 +61,6 @@ const BADGE_CONFIGS: Record<FeedbackBadgeType, BadgeConfig> = {
     accentColor: "#C15F3D",
     iconBg: "#FAF5F0",
     iconSymbolColor: "#C15F3D",
-    iconSymbol: "⏱",
     defaultTitle: "Sessão Finalizada",
     defaultMessage: "Até a próxima! Suas horas foram computadas.",
   },
@@ -73,7 +71,6 @@ const BADGE_CONFIGS: Record<FeedbackBadgeType, BadgeConfig> = {
     accentColor: "#EAB308",
     iconBg: "#FEFCE8",
     iconSymbolColor: "#CA8A04",
-    iconSymbol: "★",
     defaultTitle: "Biometria Registrada",
     defaultMessage: "Novo integrante apto para reconhecimento no totem.",
   },
@@ -84,7 +81,6 @@ const BADGE_CONFIGS: Record<FeedbackBadgeType, BadgeConfig> = {
     accentColor: "#F59E0B",
     iconBg: "#FFFBEB",
     iconSymbolColor: "#D97706",
-    iconSymbol: "?",
     defaultTitle: "Rosto Não Identificado",
     defaultMessage: "Aproxime-se do centro da lente ou contate um tutor.",
   },
@@ -95,7 +91,6 @@ const BADGE_CONFIGS: Record<FeedbackBadgeType, BadgeConfig> = {
     accentColor: "#EF4444",
     iconBg: "#FEF2F2",
     iconSymbolColor: "#DC2626",
-    iconSymbol: "!",
     defaultTitle: "Falha de Vivacidade",
     defaultMessage: "Fique de frente para a câmera. Não são permitidas fotos ou telas.",
   },
@@ -106,7 +101,6 @@ const BADGE_CONFIGS: Record<FeedbackBadgeType, BadgeConfig> = {
     accentColor: "#706E6A",
     iconBg: "#FAF9F5",
     iconSymbolColor: "#706E6A",
-    iconSymbol: "ℹ",
     defaultTitle: "Aviso de Presença",
     defaultMessage: "Verifique seu status no laboratório.",
   },
@@ -117,7 +111,6 @@ const BADGE_CONFIGS: Record<FeedbackBadgeType, BadgeConfig> = {
     accentColor: "#DC2626",
     iconBg: "#FEF2F2",
     iconSymbolColor: "#DC2626",
-    iconSymbol: "✕",
     defaultTitle: "Não foi possível concluir",
     defaultMessage: "Verifique a conexão de rede do totem e tente novamente.",
   },
@@ -221,7 +214,13 @@ export function FeedbackBadge({ data, onDismiss, autoCloseMs = 4500 }: Props) {
         <View style={styles.cardContent}>
           {/* Badge de Ícone Circular Minimalista */}
           <View style={[styles.iconContainer, { backgroundColor: cfg.iconBg, borderColor: cfg.accentColor + "30" }]}>
-            <Text style={[styles.iconGlyph, { color: cfg.iconSymbolColor }]}>{cfg.iconSymbol}</Text>
+            {data.type === "check_in" && <Feather name="check" size={17} color={cfg.iconSymbolColor} />}
+            {data.type === "check_out" && <Feather name="clock" size={17} color={cfg.iconSymbolColor} />}
+            {data.type === "enroll_success" && <Feather name="user-check" size={17} color={cfg.iconSymbolColor} />}
+            {data.type === "not_recognized" && <Feather name="help-circle" size={17} color={cfg.iconSymbolColor} />}
+            {data.type === "spoof_detected" && <Feather name="shield" size={17} color={cfg.iconSymbolColor} />}
+            {data.type === "warning" && <Feather name="alert-triangle" size={17} color={cfg.iconSymbolColor} />}
+            {data.type === "error" && <Feather name="alert-circle" size={17} color={cfg.iconSymbolColor} />}
           </View>
 
           {/* Coluna de Textos */}
@@ -270,7 +269,7 @@ export function FeedbackBadge({ data, onDismiss, autoCloseMs = 4500 }: Props) {
 
           {/* Botão de Fechar Sutil */}
           <View style={styles.closeHint}>
-            <Text style={styles.closeHintText}>✕</Text>
+            <Feather name="x" size={14} color="#706E6A" />
           </View>
         </View>
 

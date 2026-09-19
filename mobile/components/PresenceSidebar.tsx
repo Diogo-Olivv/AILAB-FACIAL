@@ -14,6 +14,7 @@ import { usePresence, type PresentMember } from "@/hooks/usePresence";
 import { useElapsed } from "@/hooks/useElapsed";
 import { getAvatarColor } from "@/lib/config";
 import { triggerHaptic } from "@/lib/sound";
+import { Feather } from "@expo/vector-icons";
 
 interface PresenceSidebarProps {
   onClose?: () => void;
@@ -75,7 +76,7 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
             accessibilityRole="button"
             accessibilityLabel="Fechar lista de presentes"
           >
-            <Text style={[styles.closeBtnText, isDark && styles.closeBtnTextDark]}>✕</Text>
+            <Feather name="x" size={17} color={isDark ? "#94A3B8" : "#706E6A"} />
           </TouchableOpacity>
         )}
       </View>
@@ -84,7 +85,12 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
       {members.length > 3 && (
         <View style={styles.searchWrapper}>
           <View style={[styles.searchContainer, isDark && styles.searchContainerDark]}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <Feather
+              name="search"
+              size={15}
+              color={isDark ? "#64748B" : "#9CA3AF"}
+              style={{ marginRight: 6 }}
+            />
             <TextInput
               placeholder="Filtrar por nome ou matrícula..."
               placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
@@ -104,7 +110,7 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
                 style={styles.clearSearchBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={[styles.clearSearchText, isDark && styles.clearSearchTextDark]}>✕</Text>
+                <Feather name="x" size={14} color={isDark ? "#94A3B8" : "#706E6A"} />
               </TouchableOpacity>
             )}
           </View>
@@ -135,7 +141,12 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
           overScrollMode="never"
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>☕</Text>
+              <Feather
+                name="coffee"
+                size={28}
+                color={isDark ? "#475569" : "#A8A29E"}
+                style={{ marginBottom: 8 }}
+              />
               <Text style={[styles.emptyTitle, isDark && styles.emptyTitleDark]}>Ninguém por aqui agora</Text>
               <Text style={[styles.emptySubtitle, isDark && styles.emptySubtitleDark]}>
                 {search

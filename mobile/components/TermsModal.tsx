@@ -8,13 +8,15 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 
 interface Props {
   visible: boolean;
   onClose: () => void;
+  isDark?: boolean;
 }
 
-export function TermsModal({ visible, onClose }: Props) {
+export function TermsModal({ visible, onClose, isDark = false }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -36,28 +38,38 @@ export function TermsModal({ visible, onClose }: Props) {
           },
         ]}
       >
-        <View style={styles.card}>
+        <View style={[styles.card, isDark && styles.cardDark]}>
           {/* Header estilo Apple Glass & Claude Editorial */}
-          <View style={styles.header}>
+          <View style={[styles.header, isDark && styles.headerDark]}>
             <View style={styles.headerLeft}>
-              <View style={styles.iconCircle}>
-                <Text style={styles.iconText}>⚖️</Text>
+              <View style={[styles.iconCircle, isDark && styles.iconCircleDark]}>
+                <MaterialCommunityIcons
+                  name="scale-balance"
+                  size={22}
+                  color={isDark ? "#F97316" : "#C15F3D"}
+                />
               </View>
               <View style={styles.headerTitleGroup}>
-                <Text style={styles.title}>Termos & Privacidade</Text>
-                <Text style={styles.subtitle}>
+                <Text style={[styles.title, isDark && styles.titleDark]}>
+                  Termos & Privacidade
+                </Text>
+                <Text style={[styles.subtitle, isDark && styles.subtitleDark]}>
                   Tratamento Biométrico · LGPD (Lei nº 13.709/18 - Art. 11)
                 </Text>
               </View>
             </View>
             <TouchableOpacity
               onPress={onClose}
-              style={styles.closeBtn}
+              style={[styles.closeBtn, isDark && styles.closeBtnDark]}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Fechar termos de privacidade"
             >
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Feather
+                name="x"
+                size={18}
+                color={isDark ? "#94A3B8" : "#706E6A"}
+              />
             </TouchableOpacity>
           </View>
 
@@ -70,13 +82,15 @@ export function TermsModal({ visible, onClose }: Props) {
             nestedScrollEnabled={true}
           >
             {/* Seção 1 - Identificação com Destaque Editorial Terracota */}
-            <View style={styles.sectionBox}>
-              <Text style={styles.sectionTitle}>
+            <View style={[styles.sectionBox, isDark && styles.sectionBoxDark]}>
+              <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>
                 1. IDENTIFICAÇÃO DO CONTROLADOR E FINALIDADE
               </Text>
-              <Text style={styles.paragraphHighlight}>
+              <Text style={[styles.paragraphHighlight, isDark && styles.paragraphHighlightDark]}>
                 O tratamento de biometria facial é gerido exclusivamente pelo{" "}
-                <Text style={styles.bold}>AILAB Makers (Maker Foundation)</Text>{" "}
+                <Text style={[styles.bold, isDark && styles.boldDark]}>
+                  AILAB Makers (Maker Foundation)
+                </Text>{" "}
                 com o propósito estrito de controle acadêmico de presença e apuração
                 do tempo de permanência no laboratório. Os dados jamais são
                 comercializados, cedidos ou utilizados para fins publicitários ou
@@ -86,13 +100,15 @@ export function TermsModal({ visible, onClose }: Props) {
 
             {/* Seção 2 */}
             <View style={styles.section}>
-              <Text style={styles.sectionHeading}>
+              <Text style={[styles.sectionHeading, isDark && styles.sectionHeadingDark]}>
                 2. BASE LEGAL PARA DADOS BIOMÉTRICOS SENSÍVEIS
               </Text>
-              <Text style={styles.paragraph}>
+              <Text style={[styles.paragraph, isDark && styles.paragraphDark]}>
                 O tratamento enquadra-se no{" "}
-                <Text style={styles.bold}>Artigo 11, inciso II, alínea "g" da LGPD</Text>,
-                sendo utilizado estritamente para a garantia da prevenção à fraude
+                <Text style={[styles.bold, isDark && styles.boldDark]}>
+                  Artigo 11, inciso II, alínea "g" da LGPD
+                </Text>
+                , sendo utilizado estritamente para a garantia da prevenção à fraude
                 e à segurança do titular nos processos de identificação e autenticação
                 de presença presencial em ambiente acadêmico protegido.
               </Text>
@@ -100,24 +116,27 @@ export function TermsModal({ visible, onClose }: Props) {
 
             {/* Seção 3 */}
             <View style={styles.section}>
-              <Text style={styles.sectionHeading}>
+              <Text style={[styles.sectionHeading, isDark && styles.sectionHeadingDark]}>
                 3. DESCARTE IMEDIATO DE FOTOS E EMBEDDINGS 512-D
               </Text>
-              <Text style={styles.paragraph}>
+              <Text style={[styles.paragraph, isDark && styles.paragraphDark]}>
                 O sistema adota o princípio de privacidade desde a concepção{" "}
-                (<Text style={styles.bold}>Privacy by Design</Text>):
+                (<Text style={[styles.bold, isDark && styles.boldDark]}>Privacy by Design</Text>):
               </Text>
               <View style={styles.bulletList}>
-                <Text style={styles.bulletItem}>
+                <Text style={[styles.bulletItem, isDark && styles.bulletItemDark]}>
                   • As fotos capturadas na câmera permanecem apenas em memória volátil
                   temporária (RAM) durante a inferência neural.
                 </Text>
-                <Text style={styles.bulletItem}>
+                <Text style={[styles.bulletItem, isDark && styles.bulletItemDark]}>
                   • A rede neural extrai uma representação matemática unidirecional
                   (vetor numérico de embeddings normalizado de 512 dimensões).
                 </Text>
-                <Text style={styles.bulletItem}>
-                  • <Text style={styles.bold}>As imagens brutas são imediatamente destruídas e descartadas.</Text>{" "}
+                <Text style={[styles.bulletItem, isDark && styles.bulletItemDark]}>
+                  •{" "}
+                  <Text style={[styles.bold, isDark && styles.boldDark]}>
+                    As imagens brutas são imediatamente destruídas e descartadas.
+                  </Text>{" "}
                   Nenhuma foto é salva no tablet ou no banco de dados. É matematicamente
                   impossível reconstruir a face original a partir do vetor numérico.
                 </Text>
@@ -126,46 +145,57 @@ export function TermsModal({ visible, onClose }: Props) {
 
             {/* Seção 4 */}
             <View style={styles.section}>
-              <Text style={styles.sectionHeading}>
+              <Text style={[styles.sectionHeading, isDark && styles.sectionHeadingDark]}>
                 4. SEGURANÇA TÉCNICA E ISOLAMENTO (RLS)
               </Text>
-              <Text style={styles.paragraph}>
+              <Text style={[styles.paragraph, isDark && styles.paragraphDark]}>
                 A base de dados opera com políticas ativas de{" "}
-                <Text style={styles.bold}>Row Level Security (RLS)</Text> no PostgreSQL,
-                garantindo que os vetores biométricos sejam acessíveis apenas pelo
-                mecanismo de inferência do servidor. A comunicação é criptografada via
-                TLS 1.3 com verificação anti-spoofing ativa no totem.
+                <Text style={[styles.bold, isDark && styles.boldDark]}>
+                  Row Level Security (RLS)
+                </Text>{" "}
+                no PostgreSQL, garantindo que os vetores biométricos sejam acessíveis
+                apenas pelo mecanismo de inferência do servidor. A comunicação é
+                criptografada via TLS 1.3 com verificação anti-spoofing ativa no totem.
               </Text>
             </View>
 
             {/* Seção 5 */}
             <View style={styles.section}>
-              <Text style={styles.sectionHeading}>
+              <Text style={[styles.sectionHeading, isDark && styles.sectionHeadingDark]}>
                 5. DIREITOS DO TITULAR (ART. 18 DA LGPD)
               </Text>
-              <Text style={styles.paragraph}>
+              <Text style={[styles.paragraph, isDark && styles.paragraphDark]}>
                 O integrante tem o direito garantido por lei a qualquer momento de:
               </Text>
               <View style={styles.bulletList}>
-                <Text style={styles.bulletItem}>
-                  • <Text style={styles.bold}>Revogação do Consentimento:</Text> Solicitar a
-                  revogação do uso da biometria facial junto ao tutor.
+                <Text style={[styles.bulletItem, isDark && styles.bulletItemDark]}>
+                  •{" "}
+                  <Text style={[styles.bold, isDark && styles.boldDark]}>
+                    Revogação do Consentimento:
+                  </Text>{" "}
+                  Solicitar a revogação do uso da biometria facial junto ao tutor.
                 </Text>
-                <Text style={styles.bulletItem}>
-                  • <Text style={styles.bold}>Expurgo Definitivo:</Text> Ao revogar ou ser
-                  descadastrado, todos os vetores biométricos são permanentemente excluídos
-                  do banco de dados.
+                <Text style={[styles.bulletItem, isDark && styles.bulletItemDark]}>
+                  •{" "}
+                  <Text style={[styles.bold, isDark && styles.boldDark]}>
+                    Expurgo Definitivo:
+                  </Text>{" "}
+                  Ao revogar ou ser descadastrado, todos os vetores biométricos são
+                  permanentemente excluídos do banco de dados.
                 </Text>
-                <Text style={styles.bulletItem}>
-                  • <Text style={styles.bold}>Transparência:</Text> Acompanhar o histórico de
-                  sessões diretamente no painel do laboratório.
+                <Text style={[styles.bulletItem, isDark && styles.bulletItemDark]}>
+                  •{" "}
+                  <Text style={[styles.bold, isDark && styles.boldDark]}>
+                    Transparência:
+                  </Text>{" "}
+                  Acompanhar o histórico de sessões diretamente no painel do laboratório.
                 </Text>
               </View>
             </View>
 
             {/* Nota de rodapé explicativa */}
-            <View style={styles.footerNote}>
-              <Text style={styles.footerNoteText}>
+            <View style={[styles.footerNote, isDark && styles.footerNoteDark]}>
+              <Text style={[styles.footerNoteText, isDark && styles.footerNoteTextDark]}>
                 Dúvidas ou solicitações de revogação: procure um dos tutores ou a
                 coordenação do AILAB Makers no laboratório.
               </Text>
@@ -173,9 +203,9 @@ export function TermsModal({ visible, onClose }: Props) {
           </ScrollView>
 
           {/* Action Footer estilo Apple Tactile Pill */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, isDark && styles.footerDark]}>
             <TouchableOpacity
-              style={styles.confirmBtn}
+              style={[styles.confirmBtn, isDark && styles.confirmBtnDark]}
               onPress={onClose}
               activeOpacity={0.88}
               accessibilityRole="button"
@@ -193,7 +223,7 @@ export function TermsModal({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(23, 23, 21, 0.65)",
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -214,6 +244,10 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flexDirection: "column",
   },
+  cardDark: {
+    backgroundColor: "#0F172A",
+    borderColor: "#1E293B",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -223,6 +257,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#E5E2DC",
     backgroundColor: "#FAF9F5",
+  },
+  headerDark: {
+    backgroundColor: "#0B0F19",
+    borderBottomColor: "#1E293B",
   },
   headerLeft: {
     flexDirection: "row",
@@ -243,8 +281,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  iconText: {
-    fontSize: 18,
+  iconCircleDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#334155",
   },
   title: {
     color: "#171715",
@@ -252,12 +291,18 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: -0.3,
   },
+  titleDark: {
+    color: "#F8FAFC",
+  },
   subtitle: {
     color: "#059669",
     fontSize: 11,
     fontWeight: "600",
     letterSpacing: 0.2,
     marginTop: 2,
+  },
+  subtitleDark: {
+    color: "#34D399",
   },
   closeBtn: {
     width: 36,
@@ -267,10 +312,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  closeBtnText: {
-    color: "#706E6A",
-    fontSize: 14,
-    fontWeight: "600",
+  closeBtnDark: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
   },
   scroll: {
     flex: 1,
@@ -287,6 +330,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F0DCD3",
   },
+  sectionBoxDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#334155",
+  },
   sectionTitle: {
     color: "#C15F3D",
     fontSize: 11.5,
@@ -294,10 +341,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     marginBottom: 6,
   },
+  sectionTitleDark: {
+    color: "#FB923C",
+  },
   paragraphHighlight: {
     color: "#171715",
     fontSize: 13,
     lineHeight: 19,
+  },
+  paragraphHighlightDark: {
+    color: "#F1F5F9",
   },
   section: {
     gap: 5,
@@ -308,14 +361,23 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: -0.2,
   },
+  sectionHeadingDark: {
+    color: "#F8FAFC",
+  },
   paragraph: {
     color: "#706E6A",
     fontSize: 12.5,
     lineHeight: 18,
   },
+  paragraphDark: {
+    color: "#94A3B8",
+  },
   bold: {
     fontWeight: "700",
     color: "#171715",
+  },
+  boldDark: {
+    color: "#F8FAFC",
   },
   bulletList: {
     gap: 6,
@@ -327,6 +389,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
   },
+  bulletItemDark: {
+    color: "#94A3B8",
+  },
   footerNote: {
     backgroundColor: "#FAF9F5",
     borderRadius: 14,
@@ -334,10 +399,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E2DC",
   },
+  footerNoteDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#334155",
+  },
   footerNoteText: {
     color: "#706E6A",
     fontSize: 11.5,
     lineHeight: 16,
+  },
+  footerNoteTextDark: {
+    color: "#94A3B8",
   },
   footer: {
     paddingHorizontal: 20,
@@ -346,6 +418,10 @@ const styles = StyleSheet.create({
     borderTopColor: "#E5E2DC",
     backgroundColor: "#FAF9F5",
     alignItems: "center",
+  },
+  footerDark: {
+    backgroundColor: "#0B0F19",
+    borderTopColor: "#1E293B",
   },
   confirmBtn: {
     width: "100%",
@@ -362,6 +438,10 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
+  },
+  confirmBtnDark: {
+    backgroundColor: "#059669",
+    shadowColor: "#059669",
   },
   confirmBtnText: {
     color: "#FAF9F5",

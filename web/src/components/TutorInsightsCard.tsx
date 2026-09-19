@@ -89,7 +89,7 @@ export function TutorInsightsCard({ members, sessions, now, onSelectMember }: Pr
           </div>
           <div className="flex items-baseline gap-2">
             <span className="font-mono-data text-2xl font-bold text-[#171715] dark:text-slate-100">
-              {insights.retentionRate}%
+              {Math.min(100, Math.max(0, insights.retentionRate))}%
             </span>
             <span className="text-2xs text-[#706E6A] dark:text-slate-400 font-sans">
               ({insights.activeMembersCount}/{insights.totalMembersCount} discentes)

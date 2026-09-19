@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BarChart3, TrendingUp, Clock3, Users, Flame } from "lucide-react";
+import { BarChart3, TrendingUp, Clock3, Flame } from "lucide-react";
 import type { MemberTotal } from "../lib/aggregate";
 import { formatDuration, sessionSeconds, isWeekday } from "../lib/aggregate";
 import type { DateRange, SessionRecord } from "../lib/reports";
@@ -373,6 +373,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                     onMouseLeave={() => setHoveredIndex(null)}
                     className="cursor-pointer transition-transform duration-150"
                   >
+                    <title>{`${d.weekdayLabel}, ${d.dateStr}: ${d.hours}h acumuladas (${formatDuration(d.totalSeconds)}) · ${d.activeMembers} discentes presentes`}</title>
                     {/* Track de fundo sutil */}
                     <rect
                       x={x}
@@ -487,37 +488,6 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
               </defs>
             </svg>
           </div>
-
-          {/* Tooltip Interativo no Hover */}
-          {hoveredIndex !== null && dailyData[hoveredIndex] && (
-            <div className="mt-2.5 p-2.5 rounded-xl border border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5] dark:bg-slate-950/70 flex flex-wrap items-center justify-between gap-3 text-xs animate-fade-in">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-[#171715] dark:text-slate-100">
-                  {dailyData[hoveredIndex].weekdayLabel}, {dailyData[hoveredIndex].dateStr}
-                </span>
-                {dailyData[hoveredIndex].isToday && (
-                  <span className="text-[10px] font-bold text-[#C15F3D] dark:text-amber-400 uppercase tracking-wide">
-                    • Hoje
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-4 text-2xs font-mono-data">
-                <span className="text-[#171715] dark:text-slate-200">
-                  <strong className="text-sm font-bold text-[#C15F3D] dark:text-amber-400">
-                    {dailyData[hoveredIndex].hours}h
-                  </strong>{" "}
-                  acumuladas ({formatDuration(dailyData[hoveredIndex].totalSeconds)})
-                </span>
-                <span className="text-[#706E6A] dark:text-slate-400 flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  {dailyData[hoveredIndex].activeMembers} discentes presentes
-                </span>
-                <span className="text-[#706E6A] dark:text-slate-400">
-                  {dailyData[hoveredIndex].sessionCount} registros
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       )}
 

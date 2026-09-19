@@ -15,6 +15,7 @@ import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadg
 import { extractErrorMessage, GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 import { notifyInteraction, triggerHaptic } from "@/lib/sound";
 import { enqueueOfflineAttendance, getOfflineQueueCount } from "@/lib/offlineQueue";
+import { Feather, Ionicons } from "@expo/vector-icons";
 
 export function RecognitionPanel() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -431,16 +432,22 @@ export function RecognitionPanel() {
             accessibilityRole="switch"
             accessibilityLabel="Alternar modo mãos-livres"
           >
-            <Text style={styles.handsFreeIcon}>{isHandsFree ? "✨" : "✋"}</Text>
+            <Ionicons
+              name={isHandsFree ? "sparkles" : "hand-left-outline"}
+              size={14}
+              color={isHandsFree ? "#065F46" : "#57534E"}
+              style={{ marginRight: 6 }}
+            />
             <Text style={[styles.handsFreeText, isHandsFree && styles.handsFreeTextActive]}>
               {isHandsFree ? "Mãos-Livres: Ativo" : "Manual"}
             </Text>
           </TouchableOpacity>
 
           {pendingOfflineCount > 0 && (
-            <View style={styles.offlineBadge}>
+            <View style={[styles.offlineBadge, { flexDirection: "row", alignItems: "center", gap: 4 }]}>
+              <Feather name="zap" size={11} color="#D97706" />
               <Text style={styles.offlineBadgeText}>
-                ⚡ {pendingOfflineCount} offline
+                {pendingOfflineCount} offline
               </Text>
             </View>
           )}
@@ -450,8 +457,8 @@ export function RecognitionPanel() {
         <View style={styles.guideBanner} pointerEvents="none">
           <Text style={styles.guideText}>
             {isHandsFree
-              ? "✨ Mãos-livres: Centralize o rosto para registro automático"
-              : "👤 Alinhe seu rosto no centro e selecione Entrada ou Saída"}
+              ? "Mãos-livres: Centralize o rosto para registro automático"
+              : "Alinhe seu rosto no centro e selecione Entrada ou Saída"}
           </Text>
         </View>
 
@@ -602,7 +609,11 @@ function SmoothActionButton({
         ) : (
           <View style={styles.buttonContent}>
             <View style={styles.buttonLabelRow}>
-              <Text style={styles.buttonIcon}>{type === "entrada" ? "✓" : "⏱"}</Text>
+              {type === "entrada" ? (
+                <Feather name="check" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+              ) : (
+                <Feather name="clock" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+              )}
               <Text style={styles.actionText}>{label}</Text>
             </View>
             {sublabel && <Text style={styles.sublabelText}>{sublabel}</Text>}

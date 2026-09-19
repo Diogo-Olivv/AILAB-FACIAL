@@ -15,6 +15,7 @@ import { PresenceSidebar } from "@/components/PresenceSidebar";
 import { TutorPinModal } from "@/components/TutorPinModal";
 import { TermsModal } from "@/components/TermsModal";
 import { triggerHaptic } from "@/lib/sound";
+import { Feather } from "@expo/vector-icons";
 
 const logo = require("../assets/ailab_makers.jpeg");
 
@@ -80,7 +81,11 @@ export default function Home() {
             accessibilityRole="button"
             accessibilityLabel={isDark ? "Alternar para modo claro" : "Alternar para modo escuro"}
           >
-            <Text style={styles.themeBtnText}>{isDark ? "☀️" : "🌙"}</Text>
+            <Feather
+              name={isDark ? "sun" : "moon"}
+              size={17}
+              color={isDark ? "#F8FAFC" : "#171715"}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -109,7 +114,16 @@ export default function Home() {
               accessibilityRole="button"
               accessibilityLabel="Ver integrantes presentes no laboratório"
             >
-              <Text style={[styles.presenceToggleBtnText, isDark && styles.presenceToggleBtnTextDark]}>👥 Presentes</Text>
+              <View style={styles.presenceBtnContent}>
+                <Feather
+                  name="users"
+                  size={14}
+                  color={isDark ? "#F8FAFC" : "#171715"}
+                />
+                <Text style={[styles.presenceToggleBtnText, isDark && styles.presenceToggleBtnTextDark]}>
+                  Presentes
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -166,7 +180,11 @@ export default function Home() {
           setPinModalVisible(false);
           router.push({
             pathname: "/enroll",
-            params: { tutorToken: token, initialMode: pendingMode },
+            params: {
+              tutorToken: token,
+              initialMode: pendingMode,
+              isDark: isDark ? "true" : "false",
+            },
           });
         }}
         onCancel={() => setPinModalVisible(false)}
@@ -175,6 +193,7 @@ export default function Home() {
       <TermsModal
         visible={termsVisible}
         onClose={() => setTermsVisible(false)}
+        isDark={isDark}
       />
     </View>
   );
@@ -253,6 +272,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   presenceToggleBtnText: { color: "#171715", fontWeight: "600", fontSize: 12.5 },
+  presenceBtnContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   refreshBtn: {
     backgroundColor: "#FAF9F5",
     borderWidth: 1,

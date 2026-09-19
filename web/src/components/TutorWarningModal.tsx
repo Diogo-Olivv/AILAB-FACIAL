@@ -629,7 +629,13 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
         </div>
 
         {/* Lista de Alunos com suporte a Modo Compacto e Seleção em Lote */}
-        <div className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 space-y-3 bg-stone-100/30 dark:bg-slate-950/40">
+        <div
+          className={
+            isInline
+              ? "p-3 sm:p-5 space-y-3 bg-stone-100/30 dark:bg-slate-950/40"
+              : "flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 space-y-3 bg-stone-100/30 dark:bg-slate-950/40"
+          }
+        >
           {filteredList.length === 0 ? (
             <div className="claude-card rounded-3xl p-8 sm:p-12 text-center bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800">
               <Sparkles className="h-8 w-8 text-stone-400 dark:text-slate-500 mx-auto mb-2" />

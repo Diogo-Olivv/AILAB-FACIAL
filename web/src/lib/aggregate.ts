@@ -176,7 +176,10 @@ export function calculateTutorInsights(
   let afternoonSec = 0;
   let eveningSec = 0;
 
+  const memberIds = new Set(members.map((m) => m.id));
+
   for (const s of weekdaySessions) {
+    if (!memberIds.has(s.profileId)) continue;
     const sec = sessionSeconds(s, now);
     memberSeconds.set(s.profileId, (memberSeconds.get(s.profileId) ?? 0) + sec);
 
@@ -195,10 +198,11 @@ export function calculateTutorInsights(
     }
   }
 
-  const activeMembersCount = [...memberSeconds.values()].filter((sec) => sec > 0).length;
+  const activeMembersCount = members.filter((m) => (memberSeconds.get(m.id) ?? 0) > 0).length;
   const totalMembersCount = members.length;
-  const retentionRate =
+  const rawRetention =
     totalMembersCount > 0 ? Math.round((activeMembersCount / totalMembersCount) * 100) : 0;
+  const retentionRate = Math.min(100, Math.max(0, rawRetention));
 
   const totalWeekdaySeconds = weekdaySessions.reduce((sum, s) => sum + sessionSeconds(s, now), 0);
   const averageStayPerActiveSeconds =
@@ -252,6 +256,14 @@ export function calculateTutorInsights(
   };
 }
 
+export interface HourlyOccupancy {
+  hour: number;
+  label: string;
+  shortLabel: string;
+  seconds: number;
+  sessionsCount: number;
+}
+
 export interface OccupancyInsights {
   peakShift: {
     name: "Manhã" | "Tarde" | "Noite" | "Sem dados";
@@ -265,6 +277,8 @@ export interface OccupancyInsights {
     seconds: number;
     sessionsCount: number;
   };
+  peakHour: HourlyOccupancy | null;
+  quietHour: HourlyOccupancy | null;
   peakWeekday: {
     name: string;
     shortName: string;
@@ -298,6 +312,12 @@ export function calculateOccupancyInsights(
     weekdaySecMap.set(d, { seconds: 0, count: 0 });
   }
 
+  // Mapa de horas de operação do laboratório (08h às 20h) para granularidade precisa
+  const hourlyMap = new Map<number, { seconds: number; count: number }>();
+  for (let h = 8; h <= 20; h++) {
+    hourlyMap.set(h, { seconds: 0, count: 0 });
+  }
+
   for (const s of weekdaySessions) {
     const sec = sessionSeconds(s, now);
     const date = new Date(s.checkIn);
@@ -322,6 +342,14 @@ export function calculateOccupancyInsights(
         entry.count++;
       }
     }
+
+    if (h >= 8 && h <= 20) {
+      const hEntry = hourlyMap.get(h);
+      if (hEntry) {
+        hEntry.seconds += sec;
+        hEntry.count++;
+      }
+    }
   }
 
   const shiftDefs = [
@@ -343,6 +371,49 @@ export function calculateOccupancyInsights(
     morningSec === 0 && afternoonSec === 0 && eveningSec === 0
       ? { name: "Sem dados" as const, hoursDescription: "Sem registros", seconds: 0, sessionsCount: 0 }
       : sortedAscending[0];
+
+  // Cálculo da hora específica de pico (08h às 20h)
+  let peakHourEntry: HourlyOccupancy | null = null;
+  let maxHourSec = 0;
+  for (let h = 8; h <= 20; h++) {
+    const data = hourlyMap.get(h);
+    if (data && data.seconds > maxHourSec) {
+      maxHourSec = data.seconds;
+      const nextH = (h + 1).toString().padStart(2, "0");
+      const curH = h.toString().padStart(2, "0");
+      peakHourEntry = {
+        hour: h,
+        label: `${curH}h às ${nextH}h`,
+        shortLabel: `${curH}h`,
+        seconds: data.seconds,
+        sessionsCount: data.count,
+      };
+    }
+  }
+
+  // Cálculo da hora mais tranquila durante o expediente diurno (08h às 19h)
+  // Evita pós-20h conforme diretriz do usuário, buscando horários de menor fluxo
+  let quietHourEntry: HourlyOccupancy | null = null;
+  if (peakHourEntry) {
+    let minHourCount = Infinity;
+    for (let h = 8; h <= 19; h++) {
+      const data = hourlyMap.get(h);
+      const count = data?.count ?? 0;
+      // Considera horários com menor afluência mas dentro da rotina
+      if (count < minHourCount) {
+        minHourCount = count;
+        const nextH = (h + 1).toString().padStart(2, "0");
+        const curH = h.toString().padStart(2, "0");
+        quietHourEntry = {
+          hour: h,
+          label: `${curH}h às ${nextH}h`,
+          shortLabel: `${curH}h`,
+          seconds: data?.seconds ?? 0,
+          sessionsCount: count,
+        };
+      }
+    }
+  }
 
   const WEEKDAY_NAMES = ["", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira"];
   const WEEKDAY_SHORTS = ["", "Seg", "Ter", "Qua", "Qui", "Sex"];
@@ -377,6 +448,8 @@ export function calculateOccupancyInsights(
   return {
     peakShift,
     quietShift,
+    peakHour: peakHourEntry,
+    quietHour: quietHourEntry,
     peakWeekday,
     currentCrowdLevel,
     shiftsSummary: {

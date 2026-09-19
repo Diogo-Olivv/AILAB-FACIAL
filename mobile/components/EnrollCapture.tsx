@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useCameraPermissions } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { useEnroll } from "@/hooks/useEnroll";
 import { SequentialCamera } from "@/components/SequentialCamera";
 import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
@@ -21,9 +22,10 @@ import { notifyInteraction } from "@/lib/sound";
 
 interface Props {
   tutorToken?: string;
+  isDark?: boolean;
 }
 
-export function EnrollCapture({ tutorToken }: Props) {
+export function EnrollCapture({ tutorToken, isDark = false }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const { enroll, loading } = useEnroll();
   const insets = useSafeAreaInsets();
@@ -93,166 +95,182 @@ export function EnrollCapture({ tutorToken }: Props) {
   }, [enroll, name, matricula, consent, shots, tutorToken]);
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, isDark && styles.rootDark]}>
       <FeedbackBadge
         data={badgeData}
         onDismiss={() => setBadgeData(null)}
         autoCloseMs={5000}
       />
       <ScrollView
-        style={styles.container}
-      contentContainerStyle={[
-        styles.content,
-        {
-          paddingBottom: insets.bottom + 40,
-          paddingLeft: insets.left + 16,
-          paddingRight: insets.right + 16,
-        },
-      ]}
-    >
-      <View style={styles.row}>
-        <View style={styles.col}>
-          <Text style={styles.label}>Nome completo</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nome completo"
-            placeholderTextColor="#94A3B8"
-            value={name}
-            onChangeText={setName}
-          />
+        style={[styles.container, isDark && styles.containerDark]}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingBottom: insets.bottom + 40,
+            paddingLeft: insets.left + 16,
+            paddingRight: insets.right + 16,
+          },
+        ]}
+      >
+        <View style={styles.row}>
+          <View style={styles.col}>
+            <Text style={[styles.label, isDark && styles.labelDark]}>Nome completo</Text>
+            <TextInput
+              style={[styles.input, isDark && styles.inputDark]}
+              placeholder="Nome completo"
+              placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+              value={name}
+              onChangeText={setName}
+            />
+          </View>
+          <View style={styles.col}>
+            <Text style={[styles.label, isDark && styles.labelDark]}>Matrícula</Text>
+            <TextInput
+              style={[styles.input, isDark && styles.inputDark]}
+              placeholder="9 dígitos"
+              placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+              value={matricula}
+              onChangeText={(t) => setMatricula(t.replace(/\D/g, "").slice(0, MATRICULA_LENGTH))}
+              keyboardType="number-pad"
+              maxLength={MATRICULA_LENGTH}
+            />
+            {matricula.length > 0 && !matriculaValid && (
+              <Text style={styles.hint}>Informe {MATRICULA_LENGTH} números.</Text>
+            )}
+          </View>
         </View>
-        <View style={styles.col}>
-          <Text style={styles.label}>Matrícula</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="9 dígitos"
-            placeholderTextColor="#94A3B8"
-            value={matricula}
-            onChangeText={(t) => setMatricula(t.replace(/\D/g, "").slice(0, MATRICULA_LENGTH))}
-            keyboardType="number-pad"
-            maxLength={MATRICULA_LENGTH}
-          />
-          {matricula.length > 0 && !matriculaValid && (
-            <Text style={styles.hint}>Informe {MATRICULA_LENGTH} números.</Text>
-          )}
+
+        <View style={styles.captureRow}>
+          <TouchableOpacity
+            style={[styles.captureBtn, isDark && styles.captureBtnDark]}
+            onPress={openCamera}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir câmera para capturar fotos"
+          >
+            <Feather name="camera" size={16} color="#FFFFFF" />
+            <Text style={styles.captureBtnText}>
+              {shots.length === ENROLL_PHOTO_COUNT
+                ? "Refazer Fotos"
+                : `Tirar ${ENROLL_PHOTO_COUNT} Fotos`}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={[styles.photoCountBadge, isDark && styles.photoCountBadgeDark]}>
+            <Text style={[styles.photoCountText, isDark && styles.photoCountTextDark]}>
+              {shots.length}/{ENROLL_PHOTO_COUNT} fotos
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.captureRow}>
-        <TouchableOpacity
-          style={styles.captureBtn}
-          onPress={openCamera}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel="Abrir câmera para capturar fotos"
-        >
-          <Text style={styles.captureBtnIcon}>📸</Text>
-          <Text style={styles.captureBtnText}>
-            {shots.length === ENROLL_PHOTO_COUNT
-              ? "Refazer Fotos"
-              : `Tirar ${ENROLL_PHOTO_COUNT} Fotos`}
-          </Text>
-        </TouchableOpacity>
+        {shots.length > 0 && (
+          <View style={styles.thumbs}>
+            {shots.map((uri, i) => (
+              <Image key={i} source={{ uri }} style={[styles.thumb, isDark && styles.thumbDark]} />
+            ))}
+          </View>
+        )}
 
-        <View style={styles.photoCountBadge}>
-          <Text style={styles.photoCountText}>
-            {shots.length}/{ENROLL_PHOTO_COUNT} fotos
-          </Text>
-        </View>
-      </View>
-
-      {shots.length > 0 && (
-        <View style={styles.thumbs}>
-          {shots.map((uri, i) => (
-            <Image key={i} source={{ uri }} style={styles.thumb} />
-          ))}
-        </View>
-      )}
-
-      <View style={styles.tipCard}>
-        <Text style={styles.tipTitle}>💡 Dica para quem usa óculos ou barba</Text>
-        <Text style={styles.tipBody}>
-          Se você costuma usar óculos ou variar a barba, capture algumas fotos com óculos e outras sem. O sistema salva representações calibradas para reconhecê-lo em qualquer situação.
-        </Text>
-      </View>
-
-      <View style={styles.consentCard}>
-        <Text style={styles.consentTitle}>Termo de Consentimento Biométrico (LGPD - v1.0)</Text>
-        <Text style={styles.consentBody}>
-          Autorizo expressamente o tratamento dos meus dados biométricos faciais exclusivamente para
-          controle de frequência acadêmica e presença no AILAB Makers. As fotos capturadas são
-          convertidas em vetor numérico e descartadas. O titular pode revogar este consentimento ou
-          solicitar a exclusão definitiva a qualquer momento.
-        </Text>
-        <TouchableOpacity
-          onPress={() => setTermsOpen(true)}
-          style={styles.termsBtn}
-          activeOpacity={0.75}
-          accessibilityRole="button"
-        >
-          <Text style={styles.termsBtnText}>📖 Ler Termos de Privacidade e LGPD</Text>
-        </TouchableOpacity>
-        <View style={styles.consentSwitchRow}>
-          <Switch
-            value={consent}
-            onValueChange={setConsent}
-            trackColor={{ true: "#059669", false: "#CBD5E1" }}
-            thumbColor="#FFFFFF"
-          />
-          <Text style={styles.consentSwitchLabel}>
-            Li e concordo com os termos de uso de biometria facial
+        <View style={[styles.tipCard, isDark && styles.tipCardDark]}>
+          <View style={styles.tipHeader}>
+            <Ionicons name="bulb-outline" size={16} color={isDark ? "#FDE68A" : "#92400E"} />
+            <Text style={[styles.tipTitle, isDark && styles.tipTitleDark]}>
+              Dica para quem usa óculos ou barba
+            </Text>
+          </View>
+          <Text style={[styles.tipBody, isDark && styles.tipBodyDark]}>
+            Se você costuma usar óculos ou variar a barba, capture algumas fotos com óculos e outras sem. O sistema salva representações calibradas para reconhecê-lo em qualquer situação.
           </Text>
         </View>
-      </View>
 
-      <View style={styles.submitContainer}>
-        <TouchableOpacity
-          style={[styles.submitBtn, (!canSubmit || loading) && styles.disabled]}
-          onPress={submit}
-          disabled={!canSubmit || loading}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <>
-              <Text style={styles.submitBtnIcon}>✓</Text>
-              <Text style={styles.submitBtnText}>Cadastrar Integrante</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+        <View style={[styles.consentCard, isDark && styles.consentCardDark]}>
+          <Text style={[styles.consentTitle, isDark && styles.consentTitleDark]}>
+            Termo de Consentimento Biométrico (LGPD - v1.0)
+          </Text>
+          <Text style={[styles.consentBody, isDark && styles.consentBodyDark]}>
+            Autorizo expressamente o tratamento dos meus dados biométricos faciais exclusivamente para
+            controle de frequência acadêmica e presença no AILAB Makers. As fotos capturadas são
+            convertidas em vetor numérico e descartadas. O titular pode revogar este consentimento ou
+            solicitar a exclusão definitiva a qualquer momento.
+          </Text>
+          <TouchableOpacity
+            onPress={() => setTermsOpen(true)}
+            style={[styles.termsBtn, isDark && styles.termsBtnDark]}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+          >
+            <View style={styles.termsBtnRow}>
+              <Feather name="book-open" size={13} color={isDark ? "#FB923C" : "#C15F3D"} />
+              <Text style={[styles.termsBtnText, isDark && styles.termsBtnTextDark]}>
+                Ler Termos de Privacidade e LGPD
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <View style={[styles.consentSwitchRow, isDark && styles.consentSwitchRowDark]}>
+            <Switch
+              value={consent}
+              onValueChange={setConsent}
+              trackColor={{ true: "#059669", false: isDark ? "#334155" : "#CBD5E1" }}
+              thumbColor="#FFFFFF"
+            />
+            <Text style={[styles.consentSwitchLabel, isDark && styles.consentSwitchLabelDark]}>
+              Li e concordo com os termos de uso de biometria facial
+            </Text>
+          </View>
+        </View>
 
-      {feedback && (
-        <Text style={[styles.feedback, feedback.ok ? styles.feedbackOk : styles.feedbackErr]}>
-          {feedback.text}
-        </Text>
-      )}
+        <View style={styles.submitContainer}>
+          <TouchableOpacity
+            style={[styles.submitBtn, (!canSubmit || loading) && styles.disabled]}
+            onPress={submit}
+            disabled={!canSubmit || loading}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Feather name="check" size={17} color="#FFFFFF" />
+                <Text style={styles.submitBtnText}>Cadastrar Integrante</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
 
-      <SequentialCamera
-        visible={cameraOpen}
-        onComplete={onCaptured}
-        onCancel={() => setCameraOpen(false)}
-      />
-    </ScrollView>
+        {feedback && (
+          <Text style={[styles.feedback, feedback.ok ? styles.feedbackOk : styles.feedbackErr]}>
+            {feedback.text}
+          </Text>
+        )}
 
-    <TermsModal
-      visible={termsOpen}
-      onClose={() => setTermsOpen(false)}
-    />
+        <SequentialCamera
+          visible={cameraOpen}
+          onComplete={onCaptured}
+          onCancel={() => setCameraOpen(false)}
+        />
+
+        <TermsModal
+          visible={termsOpen}
+          onClose={() => setTermsOpen(false)}
+          isDark={isDark}
+        />
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FAF9F5", position: "relative" },
+  rootDark: { backgroundColor: "#0B0F19" },
   container: { flex: 1, backgroundColor: "#FAF9F5" },
+  containerDark: { backgroundColor: "#0B0F19" },
   content: { padding: 16, gap: 16, paddingBottom: 48 },
   row: { flexDirection: "row", gap: 12 },
   col: { flex: 1, gap: 6 },
   label: { color: "#171715", fontSize: 13.5, fontWeight: "700" },
-  hint: { color: "#B91C1C", fontSize: 12, fontWeight: "500" },
+  labelDark: { color: "#F8FAFC" },
+  hint: { color: "#EF4444", fontSize: 12, fontWeight: "500" },
   captureRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -276,7 +294,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  captureBtnIcon: { fontSize: 16 },
+  captureBtnDark: {
+    backgroundColor: "#1E293B",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
   captureBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13.5 },
   photoCountBadge: {
     backgroundColor: "#F5F5F4",
@@ -289,10 +311,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 40,
   },
+  photoCountBadgeDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#334155",
+  },
   photoCountText: {
     color: "#171715",
     fontSize: 12.5,
     fontWeight: "700",
+  },
+  photoCountTextDark: {
+    color: "#F8FAFC",
   },
   disabled: { opacity: 0.45 },
   thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 4 },
@@ -302,6 +331,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.08)",
+  },
+  thumbDark: {
+    borderColor: "#334155",
   },
   input: {
     backgroundColor: "#FFFFFF",
@@ -318,6 +350,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
+  inputDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#334155",
+    color: "#F8FAFC",
+  },
   consentCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
@@ -331,15 +368,25 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
+  consentCardDark: {
+    backgroundColor: "#0F172A",
+    borderColor: "#1E293B",
+  },
   consentTitle: {
     color: "#171715",
     fontSize: 14,
     fontWeight: "700",
   },
+  consentTitleDark: {
+    color: "#F8FAFC",
+  },
   consentBody: {
     color: "#57534E",
     fontSize: 12,
     lineHeight: 18,
+  },
+  consentBodyDark: {
+    color: "#94A3B8",
   },
   consentSwitchRow: {
     flexDirection: "row",
@@ -348,6 +395,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.06)",
+  },
+  consentSwitchRowDark: {
+    borderTopColor: "#1E293B",
   },
   termsBtn: {
     alignSelf: "flex-start",
@@ -359,16 +409,31 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 4,
   },
+  termsBtnDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#334155",
+  },
+  termsBtnRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   termsBtnText: {
     color: "#C15F3D",
     fontSize: 12.5,
     fontWeight: "700",
+  },
+  termsBtnTextDark: {
+    color: "#FB923C",
   },
   consentSwitchLabel: {
     flex: 1,
     color: "#171715",
     fontSize: 13,
     fontWeight: "600",
+  },
+  consentSwitchLabelDark: {
+    color: "#F8FAFC",
   },
   submitContainer: {
     alignItems: "center",
@@ -392,11 +457,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-  submitBtnIcon: { color: "#FFFFFF", fontSize: 15, fontWeight: "900" },
   submitBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 15 },
   feedback: { fontSize: 13.5, fontWeight: "600", textAlign: "center", marginTop: 4 },
-  feedbackOk: { color: "#065F46" },
-  feedbackErr: { color: "#B91C1C" },
+  feedbackOk: { color: "#059669" },
+  feedbackErr: { color: "#EF4444" },
   tipCard: {
     backgroundColor: "#FFFBEB",
     borderRadius: 16,
@@ -405,14 +469,29 @@ const styles = StyleSheet.create({
     borderColor: "#FDE68A",
     gap: 4,
   },
+  tipCardDark: {
+    backgroundColor: "#1E293B",
+    borderColor: "#451A03",
+  },
+  tipHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   tipTitle: {
     color: "#92400E",
     fontSize: 13,
     fontWeight: "700",
   },
+  tipTitleDark: {
+    color: "#FDE68A",
+  },
   tipBody: {
     color: "#78350F",
     fontSize: 12.5,
     lineHeight: 18,
+  },
+  tipBodyDark: {
+    color: "#FCD34D",
   },
 });

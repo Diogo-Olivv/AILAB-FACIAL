@@ -69,6 +69,41 @@ export function Dashboard() {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [view, setView] = useState<View>("totals");
   const [tutorTab, setTutorTab] = useState<TutorTab>("overview");
+  const tutorTabContainerRef = useRef<HTMLDivElement>(null);
+  const [isTutorTabDragging, setIsTutorTabDragging] = useState(false);
+
+  const updateTutorTabFromClientX = (clientX: number) => {
+    if (!tutorTabContainerRef.current) return;
+    const rect = tutorTabContainerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const tabIndex = Math.min(2, Math.floor((x / rect.width) * 3));
+    const tabs: TutorTab[] = ["overview", "audit", "records"];
+    const targetTab = tabs[tabIndex];
+    if (targetTab && targetTab !== tutorTab) {
+      setTutorTab(targetTab);
+    }
+  };
+
+  const handleTutorTabPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsTutorTabDragging(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    updateTutorTabFromClientX(e.clientX);
+  };
+
+  const handleTutorTabPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isTutorTabDragging) return;
+    updateTutorTabFromClientX(e.clientX);
+  };
+
+  const handleTutorTabPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isTutorTabDragging) return;
+    setIsTutorTabDragging(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -314,12 +349,8 @@ export function Dashboard() {
                       <h2 className="font-editorial text-lg sm:text-xl font-normal text-[#171715] dark:text-slate-100">
                         Painel da Tutoria
                       </h2>
-                      <span className="inline-flex items-center gap-1 font-mono-data rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 text-2xs font-semibold text-emerald-800 dark:text-emerald-300">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Tutor Ativo
-                      </span>
                       <span className="font-mono-data rounded-md bg-stone-100 dark:bg-slate-800 border border-stone-200 dark:border-slate-700 px-2 py-0.5 text-2xs text-[#57534E] dark:text-slate-300">
-                        {user.email}
+                        {user.email ? user.email.replace(/@ailab\.com$/i, "") : "Tutor"}
                       </span>
                     </div>
                     <p className="text-xs text-[#57534E] dark:text-slate-400 font-sans mt-0.5">
@@ -350,8 +381,15 @@ export function Dashboard() {
                 </div>
               </div>
 
-              {/* Segmented Control Fluido Estilo iOS para as Abas do Tutor */}
-              <div className="relative w-full sm:w-[560px] h-11 p-1 bg-[#FAF9F5] dark:bg-slate-800/80 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 backdrop-blur-md shadow-2xs select-none">
+              {/* Segmented Control Fluido Estilo iOS com Arraste (Drag) para as Abas do Tutor */}
+              <div
+                ref={tutorTabContainerRef}
+                onPointerDown={handleTutorTabPointerDown}
+                onPointerMove={handleTutorTabPointerMove}
+                onPointerUp={handleTutorTabPointerUp}
+                onPointerCancel={handleTutorTabPointerUp}
+                className="relative w-full sm:w-[560px] h-11 p-1 bg-[#FAF9F5] dark:bg-slate-800/80 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 backdrop-blur-md shadow-2xs select-none touch-none cursor-pointer"
+              >
                 {/* Pílula deslizante fluida iOS */}
                 <div
                   className="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 shadow-2xs border border-[#E5E2DC]/80 dark:border-slate-600 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
@@ -406,6 +444,27 @@ export function Dashboard() {
                     <span className="truncate">Histórico & Relatórios</span>
                   </button>
                 </div>
+              </div>
+
+              {/* Seletor de Período Global da Tutoria (Compartilhado entre todas as abas) */}
+              <div className="pt-0.5">
+                <PeriodSelector
+                  period={period}
+                  range={range}
+                  onPeriod={(p) => {
+                    setPeriod(p);
+                    if (p !== "custom") {
+                      setCustomFrom("");
+                      setCustomTo("");
+                    }
+                  }}
+                  customFrom={customFrom}
+                  customTo={customTo}
+                  onCustomRange={(from, to) => {
+                    setCustomFrom(from);
+                    setCustomTo(to);
+                  }}
+                />
               </div>
 
               {/* ABA 1 DO TUTOR: Visão Geral & Presença */}
@@ -656,10 +715,12 @@ export function Dashboard() {
                   </div>
                   <div>
                     <div className="text-xl sm:text-2xl font-bold font-mono-data text-amber-900 dark:text-amber-200">
-                      {occupancyInsights.peakShift.name}
+                      {occupancyInsights.peakHour ? occupancyInsights.peakHour.label : occupancyInsights.peakShift.name}
                     </div>
                     <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-1 leading-snug">
-                      {occupancyInsights.peakShift.hoursDescription} ({occupancyInsights.peakShift.sessionsCount} presenças)
+                      {occupancyInsights.peakHour
+                        ? `${occupancyInsights.peakHour.sessionsCount} presenças no pico · Turno da ${occupancyInsights.peakShift.name}`
+                        : `${occupancyInsights.peakShift.hoursDescription} (${occupancyInsights.peakShift.sessionsCount} presenças)`}
                     </p>
                   </div>
                 </div>
@@ -676,10 +737,12 @@ export function Dashboard() {
                   </div>
                   <div>
                     <div className="text-xl sm:text-2xl font-bold font-mono-data text-indigo-900 dark:text-indigo-200">
-                      {occupancyInsights.quietShift.name}
+                      {occupancyInsights.quietHour ? occupancyInsights.quietHour.label : occupancyInsights.quietShift.name}
                     </div>
                     <p className="text-[11px] text-indigo-800/80 dark:text-indigo-300/80 mt-1 leading-snug">
-                      {occupancyInsights.quietShift.hoursDescription} · Menor fluxo para foco
+                      {occupancyInsights.quietHour
+                        ? `${occupancyInsights.quietHour.sessionsCount} presenças · Intervalo favorável para foco`
+                        : `${occupancyInsights.quietShift.hoursDescription} · Menor fluxo para foco`}
                     </p>
                   </div>
                 </div>
@@ -776,25 +839,6 @@ export function Dashboard() {
           {/* ABA 3 DO TUTOR: Histórico Completo, Filtros e Exportação */}
           {user && tutorTab === "records" && (
             <div className="space-y-4 animate-fade-in-up">
-              {/* Seletor de Período */}
-              <PeriodSelector
-                period={period}
-                range={range}
-                onPeriod={(p) => {
-                  setPeriod(p);
-                  if (p !== "custom") {
-                    setCustomFrom("");
-                    setCustomTo("");
-                  }
-                }}
-                customFrom={customFrom}
-                customTo={customTo}
-                onCustomRange={(from, to) => {
-                  setCustomFrom(from);
-                  setCustomTo(to);
-                }}
-              />
-
               {/* Barra de Busca, Alternância e Exportação */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-3xl p-3 sm:p-3.5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs transition-all duration-300">
                 <div className="relative flex-1 group">
