@@ -149,30 +149,61 @@ create policy "anon_select_sessions"
 -- Bloqueio Total para 'anon': face_embeddings e face_logs não possuem NENHUMA policy para anon,
 -- garantindo que qualquer tentativa de select/insert/update/delete com a anon key resulte em erro/vazio.
 
--- 3. Políticas para authenticated (Tutores / Gestores autenticados no Painel Web)
-create policy "authenticated_select_profiles"
+-- 3. Políticas para authenticated (Tutores autenticados no Painel Web - restrito a app_metadata)
+drop policy if exists "authenticated_select_profiles" on public.profiles;
+drop policy if exists "authenticated_update_profiles" on public.profiles;
+drop policy if exists "tutor_write_profiles" on public.profiles;
+drop policy if exists "tutor_update_profiles" on public.profiles;
+drop policy if exists "tutor_delete_profiles" on public.profiles;
+drop policy if exists "tutor_select_profiles" on public.profiles;
+
+create policy "tutor_select_profiles"
   on public.profiles for select to authenticated
-  using (true);
+  using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
 
--- Escrita restrita a usuários com role 'tutor' no JWT app_metadata (Fail-Closed / Migração 05)
 create policy "tutor_write_profiles"
-  on public.profiles for all to authenticated
-  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'tutor')
-  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'tutor');
+  on public.profiles for insert to authenticated
+  with check (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
 
-create policy "authenticated_select_sessions"
+create policy "tutor_update_profiles"
+  on public.profiles for update to authenticated
+  using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor')
+  with check (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
+
+create policy "tutor_delete_profiles"
+  on public.profiles for delete to authenticated
+  using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
+
+drop policy if exists "authenticated_select_sessions" on public.sessions;
+drop policy if exists "authenticated_manage_sessions" on public.sessions;
+drop policy if exists "tutor_write_sessions" on public.sessions;
+drop policy if exists "tutor_update_sessions" on public.sessions;
+drop policy if exists "tutor_delete_sessions" on public.sessions;
+drop policy if exists "tutor_select_sessions" on public.sessions;
+
+create policy "tutor_select_sessions"
   on public.sessions for select to authenticated
-  using (true);
+  using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
 
--- Gestão de sessões restrita a usuários com role 'tutor' no JWT app_metadata (Fail-Closed / Migração 05)
 create policy "tutor_write_sessions"
-  on public.sessions for all to authenticated
-  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'tutor')
-  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'tutor');
+  on public.sessions for insert to authenticated
+  with check (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
 
-create policy "authenticated_select_logs"
+create policy "tutor_update_sessions"
+  on public.sessions for update to authenticated
+  using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor')
+  with check (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
+
+create policy "tutor_delete_sessions"
+  on public.sessions for delete to authenticated
+  using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
+
+drop policy if exists "authenticated_select_logs" on public.face_logs;
+drop policy if exists "tutor_select_logs" on public.face_logs;
+
+create policy "tutor_select_logs"
   on public.face_logs for select to authenticated
-  using (true);
+  using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
 
 -- ── Funções e RPCs ─────────────────────────────────────────────────────────────
 
