@@ -312,16 +312,11 @@ export function Dashboard() {
     return totals.filter((t) => t.present);
   }, [totals]);
 
-  // Total de alunos com menos de 4 horas nesta semana (dias úteis)
+  // Total de alunos com menos de 4 horas no período selecionado (dias úteis)
   const studentsUnderFourHoursCount = useMemo(() => {
-    const weekRange = rangeFor("week");
-    const weekSessions = weekdaySessions.filter((s) => {
-      const d = new Date(s.checkIn);
-      return d >= weekRange.from && d <= weekRange.to;
-    });
     const map = new Map<string, number>();
     for (const m of members) map.set(m.id, 0);
-    for (const s of weekSessions) {
+    for (const s of weekdaySessions) {
       if (s.voidedAt != null) continue;
       map.set(s.profileId, (map.get(s.profileId) ?? 0) + sessionSeconds(s, now));
     }
@@ -862,6 +857,9 @@ export function Dashboard() {
                   members={members}
                   sessions={weekdaySessions}
                   tutorEmail={user.email ?? "tutor@ailab.com"}
+                  period={period}
+                  range={range}
+                  now={now}
                 />
               )}
             </div>
@@ -967,8 +965,11 @@ export function Dashboard() {
           isOpen={isTutorWarningOpen}
           onClose={() => setIsTutorWarningOpen(false)}
           members={members}
-          sessions={sessions}
+          sessions={weekdaySessions}
           tutorEmail={user.email ?? ""}
+          period={period}
+          range={range}
+          now={now}
         />
       )}
 

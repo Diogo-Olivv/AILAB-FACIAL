@@ -18,9 +18,9 @@ import {
   Copy,
   FileText,
 } from "lucide-react";
-import type { Member, SessionRecord } from "../lib/reports";
-import { formatDuration, sessionSeconds } from "../lib/aggregate";
-import { rangeFor } from "../lib/period";
+import type { Member, SessionRecord, DateRange } from "../lib/reports";
+import { formatDuration, sessionSeconds, isWeekday } from "../lib/aggregate";
+import { formatRange, type PeriodKey } from "../lib/period";
 
 interface Props {
   isOpen: boolean;
@@ -29,6 +29,9 @@ interface Props {
   sessions: SessionRecord[];
   tutorEmail: string;
   isInline?: boolean;
+  period?: PeriodKey;
+  range?: DateRange;
+  now?: Date;
 }
 
 interface WarningRecord {
@@ -50,6 +53,9 @@ export function TutorWarningModal({
   sessions,
   tutorEmail,
   isInline = false,
+  period = "week",
+  range,
+  now,
 }: Props) {
   const [filterMode, setFilterMode] = useState<"under" | "met" | "all">("under");
   const [search, setSearch] = useState("");
@@ -145,26 +151,19 @@ export function TutorWarningModal({
     };
   }, [isOpen, onClose]);
 
-  // Calcula sessões da semana atual
+  // Calcula sessões do período selecionado em dias úteis
   const weeklyTotals = useMemo(() => {
-    const weekRange = rangeFor("week");
-    const now = new Date();
-
-    // Filtra sessões válidas dentro da semana
-    const weekSessions = sessions.filter((s) => {
-      const checkInDate = new Date(s.checkIn);
-      return checkInDate >= weekRange.from && checkInDate <= weekRange.to;
-    });
+    const effectiveNow = now ?? new Date();
 
     const secondsMap = new Map<string, number>();
     for (const m of members) {
       secondsMap.set(m.id, 0);
     }
 
-    for (const s of weekSessions) {
-      if (s.voidedAt != null) continue;
+    for (const s of sessions) {
+      if (s.voidedAt != null || !isWeekday(s.checkIn)) continue;
       const current = secondsMap.get(s.profileId) ?? 0;
-      secondsMap.set(s.profileId, current + sessionSeconds(s, now));
+      secondsMap.set(s.profileId, current + sessionSeconds(s, effectiveNow));
     }
 
     const TARGET_SECONDS = 4 * 3600; // 4 horas = 14.400s
@@ -183,7 +182,7 @@ export function TutorWarningModal({
         progressPercent,
       };
     });
-  }, [members, sessions]);
+  }, [members, sessions, now]);
 
   // Estatísticas do resumo
   const totalStudents = weeklyTotals.length;
@@ -215,11 +214,18 @@ export function TutorWarningModal({
   }, [weeklyTotals, filterMode, search]);
 
   const generateNoticeText = (item: (typeof weeklyTotals)[0]) => {
+    const periodText =
+      period === "week"
+        ? "nesta semana"
+        : range
+        ? `no período de ${formatRange(range)}`
+        : "neste período";
+
     return `[AiLab Makers · Comunicado Acadêmico de Frequência]
 Prezado(a) ${item.member.name} (Matrícula: ${item.member.matricula ?? "N/A"}):
-Informamos que nesta semana você registrou ${formatDuration(item.totalSeconds)} de permanência no laboratório.
-A meta obrigatória semanal é de 4h00 (débito restante de ${formatDuration(item.deficitSeconds)}).
-Pedimos que regularize seu horário até o encerramento do ciclo semanal para manter sua situação acadêmica regular.
+Informamos que ${periodText} você registrou ${formatDuration(item.totalSeconds)} de permanência no laboratório.
+A meta obrigatória é de 4h00 (débito restante de ${formatDuration(item.deficitSeconds)}).
+Pedimos que regularize seu horário para manter sua situação acadêmica regular.
 — Coordenação & Tutoria AiLab (${tutorEmail})`;
   };
 
@@ -292,11 +298,18 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
   }, [weeklyTotals, selectedMemberIds]);
 
   const generateBatchNoticeText = () => {
+    const periodHeader =
+      period === "week"
+        ? "Semanal"
+        : range
+        ? `(${formatRange(range)})`
+        : "do Período";
+
     const lines = [
-      `[AiLab Makers · Relatório & Comunicado Coletivo de Frequência Semanal]`,
+      `[AiLab Makers · Relatório & Comunicado Coletivo de Frequência ${periodHeader}]`,
       `Emissão: ${new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}`,
       `Tutor Responsável: ${tutorEmail}`,
-      `Meta Semanal Obrigatória: 4h 00m\n`,
+      `Meta Obrigatória: 4h 00m\n`,
       `Total de alunos selecionados em acompanhamento: ${selectedItems.length}`,
       `--------------------------------------------------`,
     ];
@@ -311,7 +324,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
 
     lines.push(
       `--------------------------------------------------`,
-      `Solicitamos a regularização das horas até o encerramento da semana letiva.`,
+      `Solicitamos a regularização das horas para cumprimento da carga horária obrigatória.`,
       `— Coordenação AiLab Makers`
     );
 
@@ -469,11 +482,17 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                 id="tutor-modal-title"
                 className="font-editorial text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate"
               >
-                Auditoria Semanal de Permanência
+                {period === "day"
+                  ? "Auditoria Diária de Permanência"
+                  : period === "month"
+                  ? "Auditoria Mensal de Permanência"
+                  : period === "custom"
+                  ? "Auditoria de Permanência (Período)"
+                  : "Auditoria Semanal de Permanência"}
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 font-medium truncate mt-0.5">
-              Tutor: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">{tutorEmail}</strong> · Meta: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">4h 00m / sem</strong>
+              Tutor: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">{tutorEmail}</strong> · Meta: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">4h 00m</strong>{range && <> · Período: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">{formatRange(range)}</strong></>}
             </p>
           </div>
         </div>
@@ -549,7 +568,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
             </span>
             <div className="flex-1 min-w-0">
               <span className="text-xs font-bold text-rose-800 dark:text-rose-300">
-                {neverPresentStudents.length} {neverPresentStudents.length === 1 ? 'aluno ausente' : 'alunos ausentes'} esta semana
+                {neverPresentStudents.length} {neverPresentStudents.length === 1 ? 'aluno ausente' : 'alunos ausentes'} {period === "week" ? "esta semana" : "no período"}
               </span>
               <span className="text-2xs text-rose-600/80 dark:text-rose-400/80 ml-1.5 font-sans">
                 — sem nenhum registro de presença
@@ -954,7 +973,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                   <div className="rounded-2xl bg-stone-50 dark:bg-slate-800/80 p-3 sm:p-4 border border-stone-200/60 dark:border-slate-700 space-y-2.5">
                     <div className="flex items-center justify-between text-xs sm:text-sm font-bold">
                       <span className="text-stone-600 dark:text-slate-300">
-                        Permanência semanal:{" "}
+                        Permanência {period === "week" ? "semanal" : "no período"}:{" "}
                         <strong className={`font-mono-data text-sm sm:text-base ${item.metTarget ? "text-emerald-700 dark:text-emerald-400" : "text-slate-900 dark:text-slate-100"}`}>
                           {formatDuration(item.totalSeconds)}
                         </strong>{" "}
@@ -1035,7 +1054,7 @@ Pedimos que regularize seu horário até o encerramento do ciclo semanal para ma
                     ) : (
                       <div className="w-full text-center py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1.5">
                         <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                        <span>Aluno regularizado com a meta semanal de 4 horas</span>
+                        <span>Aluno regularizado com a meta de 4 horas</span>
                       </div>
                     )}
                   </div>
@@ -1212,10 +1231,16 @@ export function TutorWarningPanel({
   members,
   sessions,
   tutorEmail,
+  period,
+  range,
+  now,
 }: {
   members: Member[];
   sessions: SessionRecord[];
   tutorEmail: string;
+  period?: PeriodKey;
+  range?: DateRange;
+  now?: Date;
 }) {
   return (
     <TutorWarningModal
@@ -1225,6 +1250,9 @@ export function TutorWarningPanel({
       sessions={sessions}
       tutorEmail={tutorEmail}
       isInline={true}
+      period={period}
+      range={range}
+      now={now}
     />
   );
 }
