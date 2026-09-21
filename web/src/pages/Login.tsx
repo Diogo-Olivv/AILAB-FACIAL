@@ -136,7 +136,7 @@ export function Login() {
                 Acesso Institucional com E-mail @ailab.com
               </strong>
               <span className="text-xs text-[#706E6A] dark:text-slate-400 leading-relaxed block">
-                Utilize seu e-mail cadastrado (<code className="rounded-md bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-1.5 py-0.5 font-mono-data text-[#171715] dark:text-slate-200 font-medium">nome@ailab.com</code>). Para obter ou redefinir seu acesso de tutor, contate a coordenação do laboratório.
+                Utilize seu e-mail cadastrado (<code className="rounded-md bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-1.5 py-0.5 font-mono-data text-[#171715] dark:text-slate-200 font-medium">nome@ailab.com</code>) ou a credencial de primeiro acesso do tutor mestre (<code className="rounded-md bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-1.5 py-0.5 font-mono-data text-[#171715] dark:text-slate-200 font-medium">tutor@ailab.com</code>).
               </span>
             </div>
           </div>
