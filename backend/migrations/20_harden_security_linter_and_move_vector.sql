@@ -68,7 +68,7 @@ CREATE POLICY tutor_select_profiles
 
 DROP POLICY IF EXISTS tutor_write_profiles ON public.profiles;
 CREATE POLICY tutor_write_profiles
-  ON public.profiles FOR INSERT, UPDATE, DELETE TO authenticated
+  ON public.profiles FOR ALL TO authenticated
   USING (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor')
   WITH CHECK (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
 
@@ -80,7 +80,7 @@ CREATE POLICY tutor_select_sessions
 
 DROP POLICY IF EXISTS tutor_write_sessions ON public.sessions;
 CREATE POLICY tutor_write_sessions
-  ON public.sessions FOR INSERT, UPDATE, DELETE TO authenticated
+  ON public.sessions FOR ALL TO authenticated
   USING (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor')
   WITH CHECK (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
 
