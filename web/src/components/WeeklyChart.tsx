@@ -63,6 +63,14 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
   const [mode, setMode] = useState<ChartMode>("bar");
   const [isDragging, setIsDragging] = useState(false);
   const [dragLeftPx, setDragLeftPx] = useState<number | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    initialLeft: number;
+    pointerId: number;
+    isDragging: boolean;
+  } | null>(null);
+  const justDraggedRef = useRef(false);
   const modeSelectorRef = useRef<HTMLDivElement>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
@@ -248,7 +256,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
   // Índice da pílula deslizante do Segmented Control iOS
   const modeIndex = Math.max(0, MODES.findIndex((m) => m.id === mode));
 
-  const updateModeFromClientX = (clientX: number, isFinal = false) => {
+  const handleModePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!modeSelectorRef.current) return;
     const rect = modeSelectorRef.current.getBoundingClientRect();
     const padding = 4;
@@ -256,54 +264,91 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
     const pillWidth = usableWidth / 3;
     const maxLeft = usableWidth - pillWidth;
 
-    const relativeX = clientX - rect.left - padding;
-    const currentLeft = Math.max(0, Math.min(relativeX - pillWidth / 2, maxLeft));
-    setDragLeftPx(currentLeft);
+    const currentPillLeft = modeIndex * pillWidth;
+    const touchX = event.clientX - rect.left - padding;
+    const isTouchNearPill =
+      touchX >= currentPillLeft - 12 && touchX <= currentPillLeft + pillWidth + 12;
 
-    if (isFinal) {
-      const nearestIndex = Math.min(2, Math.max(0, Math.round(currentLeft / pillWidth)));
-      const nextMode = MODES[nearestIndex]?.id;
-      if (nextMode && nextMode !== mode) {
-        setMode(nextMode);
-        setSelectedDayIndex(null);
-      }
-    }
-  };
+    const initialLeft = isTouchNearPill
+      ? currentPillLeft
+      : Math.max(0, Math.min(touchX - pillWidth / 2, maxLeft));
 
-  const handleModePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    setIsDragging(true);
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // Ignora navegadores sem suporte a captura de ponteiro.
-    }
-    updateModeFromClientX(event.clientX, false);
+    dragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      initialLeft,
+      pointerId: event.pointerId,
+      isDragging: false,
+    };
   };
 
   const handleModePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (isDragging) updateModeFromClientX(event.clientX, false);
+    const drag = dragRef.current;
+    if (!drag || !modeSelectorRef.current) return;
+
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+
+    if (!drag.isDragging) {
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 7) {
+        dragRef.current = null;
+        return;
+      }
+      if (Math.abs(dx) >= 7) {
+        drag.isDragging = true;
+        setIsDragging(true);
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {}
+      } else {
+        return;
+      }
+    }
+
+    const rect = modeSelectorRef.current.getBoundingClientRect();
+    const padding = 4;
+    const usableWidth = Math.max(rect.width - padding * 2, 1);
+    const pillWidth = usableWidth / 3;
+    const maxLeft = usableWidth - pillWidth;
+
+    const currentLeft = Math.max(0, Math.min(drag.initialLeft + dx, maxLeft));
+    setDragLeftPx(currentLeft);
+
+    // Atualização imediata em tempo real durante o arraste
+    const nearestIndex = Math.min(2, Math.max(0, Math.round(currentLeft / pillWidth)));
+    const nextMode = MODES[nearestIndex]?.id;
+    if (nextMode && nextMode !== mode) {
+      setMode(nextMode);
+      setSelectedDayIndex(null);
+    }
   };
 
   const handleModePointerUp = (event: PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    updateModeFromClientX(event.clientX, true);
-    setIsDragging(false);
-    setDragLeftPx(null);
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // Ignora navegadores sem suporte a captura de ponteiro.
+    const drag = dragRef.current;
+    if (drag?.isDragging) {
+      justDraggedRef.current = true;
+      setTimeout(() => {
+        justDraggedRef.current = false;
+      }, 50);
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {}
+      setIsDragging(false);
+      setDragLeftPx(null);
     }
+    dragRef.current = null;
   };
 
   const handleModePointerCancel = (event: PointerEvent<HTMLDivElement>) => {
-    setIsDragging(false);
-    setDragLeftPx(null);
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // Ignora
+    const drag = dragRef.current;
+    if (drag?.isDragging) {
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {}
+      setIsDragging(false);
+      setDragLeftPx(null);
     }
+    dragRef.current = null;
   };
 
   if (dailyData.length === 0) {
@@ -351,7 +396,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
             onPointerMove={handleModePointerMove}
             onPointerUp={handleModePointerUp}
             onPointerCancel={handleModePointerCancel}
-            className="relative inline-flex h-9 rounded-2xl bg-[#FAF9F5] dark:bg-slate-800/90 p-1 border border-[#E5E2DC] dark:border-slate-700 shadow-2xs select-none touch-none cursor-grab active:cursor-grabbing"
+            className="relative inline-flex h-9 rounded-2xl bg-[#FAF9F5] dark:bg-slate-800/90 p-1 border border-[#E5E2DC] dark:border-slate-700 shadow-2xs select-none touch-pan-y cursor-grab active:cursor-grabbing"
             role="tablist"
             aria-label="Modo de visualização do gráfico"
           >
@@ -379,6 +424,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                   key={m.id}
                   type="button"
                   onClick={() => {
+                    if (justDraggedRef.current) return;
                     setMode(m.id);
                     setSelectedDayIndex(null);
                   }}

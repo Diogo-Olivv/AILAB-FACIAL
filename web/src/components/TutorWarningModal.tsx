@@ -68,6 +68,14 @@ export function TutorWarningModal({
   const filterSelectorRef = useRef<HTMLDivElement>(null);
   const [isFilterDragging, setIsFilterDragging] = useState(false);
   const [filterDragLeftPx, setFilterDragLeftPx] = useState<number | null>(null);
+  const filterDragRef = useRef<{
+    startX: number;
+    startY: number;
+    initialLeft: number;
+    pointerId: number;
+    isDragging: boolean;
+  } | null>(null);
+  const filterJustDraggedRef = useRef(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
@@ -400,7 +408,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
 
   const filterIndex = Math.max(0, FILTER_MODES.indexOf(filterMode));
 
-  const updateFilterFromClientX = (clientX: number, isFinal = false) => {
+  const handleFilterPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!filterSelectorRef.current) return;
     const rect = filterSelectorRef.current.getBoundingClientRect();
     const padding = 4;
@@ -408,51 +416,90 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
     const pillWidth = usableWidth / FILTER_MODES.length;
     const maxLeft = usableWidth - pillWidth;
 
-    const relativeX = clientX - rect.left - padding;
-    const currentLeft = Math.max(0, Math.min(relativeX - pillWidth / 2, maxLeft));
-    setFilterDragLeftPx(currentLeft);
+    const currentPillLeft = filterIndex * pillWidth;
+    const touchX = event.clientX - rect.left - padding;
+    const isTouchNearPill =
+      touchX >= currentPillLeft - 12 && touchX <= currentPillLeft + pillWidth + 12;
 
-    if (isFinal) {
-      const nextIndex = Math.min(FILTER_MODES.length - 1, Math.max(0, Math.round(currentLeft / pillWidth)));
-      const nextMode = FILTER_MODES[nextIndex];
-      if (nextMode && nextMode !== filterMode) setFilterMode(nextMode);
-    }
-  };
+    const initialLeft = isTouchNearPill
+      ? currentPillLeft
+      : Math.max(0, Math.min(touchX - pillWidth / 2, maxLeft));
 
-  const handleFilterPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    setIsFilterDragging(true);
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // Ignora navegadores sem suporte a captura de ponteiro.
-    }
-    updateFilterFromClientX(event.clientX, false);
+    filterDragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      initialLeft,
+      pointerId: event.pointerId,
+      isDragging: false,
+    };
   };
 
   const handleFilterPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (isFilterDragging) updateFilterFromClientX(event.clientX, false);
+    const drag = filterDragRef.current;
+    if (!drag || !filterSelectorRef.current) return;
+
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+
+    if (!drag.isDragging) {
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 7) {
+        filterDragRef.current = null;
+        return;
+      }
+      if (Math.abs(dx) >= 7) {
+        drag.isDragging = true;
+        setIsFilterDragging(true);
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {}
+      } else {
+        return;
+      }
+    }
+
+    const rect = filterSelectorRef.current.getBoundingClientRect();
+    const padding = 4;
+    const usableWidth = Math.max(rect.width - padding * 2, 1);
+    const pillWidth = usableWidth / FILTER_MODES.length;
+    const maxLeft = usableWidth - pillWidth;
+
+    const currentLeft = Math.max(0, Math.min(drag.initialLeft + dx, maxLeft));
+    setFilterDragLeftPx(currentLeft);
+
+    // Atualização imediata em tempo real durante o arraste
+    const nextIndex = Math.min(FILTER_MODES.length - 1, Math.max(0, Math.round(currentLeft / pillWidth)));
+    const nextMode = FILTER_MODES[nextIndex];
+    if (nextMode && nextMode !== filterMode) {
+      setFilterMode(nextMode);
+    }
   };
 
   const handleFilterPointerUp = (event: PointerEvent<HTMLDivElement>) => {
-    if (!isFilterDragging) return;
-    updateFilterFromClientX(event.clientX, true);
-    setIsFilterDragging(false);
-    setFilterDragLeftPx(null);
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // Ignora navegadores sem suporte a captura de ponteiro.
+    const drag = filterDragRef.current;
+    if (drag?.isDragging) {
+      filterJustDraggedRef.current = true;
+      setTimeout(() => {
+        filterJustDraggedRef.current = false;
+      }, 50);
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {}
+      setIsFilterDragging(false);
+      setFilterDragLeftPx(null);
     }
+    filterDragRef.current = null;
   };
 
   const handleFilterPointerCancel = (event: PointerEvent<HTMLDivElement>) => {
-    setIsFilterDragging(false);
-    setFilterDragLeftPx(null);
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // Ignora
+    const drag = filterDragRef.current;
+    if (drag?.isDragging) {
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {}
+      setIsFilterDragging(false);
+      setFilterDragLeftPx(null);
     }
+    filterDragRef.current = null;
   };
 
   if (!isOpen && !isInline) return null;
@@ -590,7 +637,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
               onPointerMove={handleFilterPointerMove}
               onPointerUp={handleFilterPointerUp}
               onPointerCancel={handleFilterPointerCancel}
-              className="relative flex w-full max-w-full items-center overflow-hidden rounded-2xl bg-stone-200/60 dark:bg-slate-800 p-1 select-none touch-none cursor-grab active:cursor-grabbing sm:w-auto"
+              className="relative flex w-full max-w-full items-center overflow-hidden rounded-2xl bg-stone-200/60 dark:bg-slate-800 p-1 select-none touch-pan-y cursor-grab active:cursor-grabbing sm:w-auto"
             >
               <div
                 className={`pointer-events-none absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-700 shadow-sm ${
@@ -608,7 +655,10 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
               />
               <button
                 type="button"
-                onClick={() => setFilterMode("under")}
+                onClick={() => {
+                  if (filterJustDraggedRef.current) return;
+                  setFilterMode("under");
+                }}
                 className={`relative z-10 min-w-0 flex-1 rounded-xl px-2 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "under"
                     ? "relative z-10 text-amber-900 dark:text-amber-300 font-extrabold"
@@ -623,7 +673,10 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
               </button>
               <button
                 type="button"
-                onClick={() => setFilterMode("met")}
+                onClick={() => {
+                  if (filterJustDraggedRef.current) return;
+                  setFilterMode("met");
+                }}
                 className={`relative z-10 min-w-0 flex-1 rounded-xl px-2 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "met"
                     ? "relative z-10 text-emerald-900 dark:text-emerald-300 font-extrabold"
@@ -638,7 +691,10 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
               </button>
               <button
                 type="button"
-                onClick={() => setFilterMode("all")}
+                onClick={() => {
+                  if (filterJustDraggedRef.current) return;
+                  setFilterMode("all");
+                }}
                 className={`relative z-10 min-w-0 flex-1 rounded-xl px-2 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "all"
                     ? "relative z-10 text-slate-900 dark:text-slate-100 font-extrabold"

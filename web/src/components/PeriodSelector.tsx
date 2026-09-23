@@ -265,8 +265,17 @@ export function PeriodSelector({
     applyPresetAndClose(toDateInputValue(firstOfLastMonth), toDateInputValue(lastOfLastMonth));
   };
 
-  // Segmented control drag/click
-  const updateSegmentFromClientX = (clientX: number, isFinal = false) => {
+  // Segmented control drag/click com threshold de sensibilidade e atualização em tempo real
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    initialLeft: number;
+    pointerId: number;
+    isDragging: boolean;
+  } | null>(null);
+  const justDraggedRef = useRef(false);
+
+  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const padding = 4;
@@ -274,56 +283,107 @@ export function PeriodSelector({
     const pillWidth = usableWidth / 3;
     const maxLeft = usableWidth - pillWidth;
 
-    const relativeX = clientX - rect.left - padding;
-    const currentLeft = Math.max(0, Math.min(relativeX - pillWidth / 2, maxLeft));
-    setDragLeftPx(currentLeft);
+    const currentDisplayIndex =
+      period === "custom"
+        ? 0
+        : Math.max(0, KEYS.indexOf(period as "day" | "week" | "month"));
+    const currentPillLeft = currentDisplayIndex * pillWidth;
 
-    if (isFinal) {
-      const nearestIndex = Math.min(2, Math.max(0, Math.round(currentLeft / pillWidth)));
-      const targetKey = KEYS[nearestIndex];
-      if (targetKey && targetKey !== period) {
-        onPeriod(targetKey);
-        setIsPickerOpen(false);
-      }
-    }
-  };
+    const touchX = e.clientX - rect.left - padding;
+    const isTouchNearPill =
+      period !== "custom" &&
+      touchX >= currentPillLeft - 12 &&
+      touchX <= currentPillLeft + pillWidth + 12;
 
-  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    setIsDragging(true);
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // Ignora
-    }
-    updateSegmentFromClientX(e.clientX, false);
+    const initialLeft = isTouchNearPill
+      ? currentPillLeft
+      : Math.max(0, Math.min(touchX - pillWidth / 2, maxLeft));
+
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialLeft,
+      pointerId: e.pointerId,
+      isDragging: false,
+    };
   };
 
   const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    updateSegmentFromClientX(e.clientX, false);
+    const drag = dragRef.current;
+    if (!drag || !containerRef.current) return;
+
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+
+    // Threshold de sensibilidade para evitar arrastes acidentais em toques ou rolagem vertical
+    if (!drag.isDragging) {
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 7) {
+        // Usuário está rolando verticalmente a página, cancela detecção de arraste
+        dragRef.current = null;
+        return;
+      }
+      if (Math.abs(dx) >= 7) {
+        drag.isDragging = true;
+        setIsDragging(true);
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          // Ignora caso navegador não suporte pointer capture
+        }
+      } else {
+        return;
+      }
+    }
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const padding = 4;
+    const usableWidth = Math.max(rect.width - padding * 2, 1);
+    const pillWidth = usableWidth / 3;
+    const maxLeft = usableWidth - pillWidth;
+
+    const currentLeft = Math.max(0, Math.min(drag.initialLeft + dx, maxLeft));
+    setDragLeftPx(currentLeft);
+
+    // ATUALIZAÇÃO IMEDIATA DURANTE O ARRASTE:
+    // Conforme a pílula entra no novo segmento, já seleciona o período e dispara a atualização dos dados
+    const nearestIndex = Math.min(2, Math.max(0, Math.round(currentLeft / pillWidth)));
+    const targetKey = KEYS[nearestIndex];
+    if (targetKey && targetKey !== period) {
+      onPeriod(targetKey);
+      setIsPickerOpen(false);
+    }
   };
 
   const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
-    if (isDragging) {
-      setIsDragging(false);
-      updateSegmentFromClientX(e.clientX, true);
-      setDragLeftPx(null);
+    const drag = dragRef.current;
+    if (drag?.isDragging) {
+      justDraggedRef.current = true;
+      setTimeout(() => {
+        justDraggedRef.current = false;
+      }, 50);
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
         // Ignora
       }
+      setIsDragging(false);
+      setDragLeftPx(null);
     }
+    dragRef.current = null;
   };
 
   const handlePointerCancel = (e: PointerEvent<HTMLDivElement>) => {
-    setIsDragging(false);
-    setDragLeftPx(null);
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // Ignora
+    const drag = dragRef.current;
+    if (drag?.isDragging) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignora
+      }
+      setIsDragging(false);
+      setDragLeftPx(null);
     }
+    dragRef.current = null;
   };
 
   // Grade do calendário do mês visualizado
@@ -400,7 +460,7 @@ export function PeriodSelector({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
-          className="relative w-full sm:w-[350px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-grab active:cursor-grabbing touch-none shadow-2xs"
+          className="relative w-full sm:w-[350px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-grab active:cursor-grabbing touch-pan-y shadow-2xs"
           role="tablist"
           aria-label="Seletor de período"
         >
@@ -433,6 +493,7 @@ export function PeriodSelector({
                   aria-selected={isActive}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (justDraggedRef.current) return;
                     onPeriod(key);
                     setIsPickerOpen(false);
                   }}

@@ -75,11 +75,19 @@ export function Dashboard() {
   const tutorTabContainerRef = useRef<HTMLDivElement>(null);
   const [isTutorTabDragging, setIsTutorTabDragging] = useState(false);
   const [tutorTabDragLeftPx, setTutorTabDragLeftPx] = useState<number | null>(null);
+  const tutorTabDragRef = useRef<{
+    startX: number;
+    startY: number;
+    initialLeft: number;
+    pointerId: number;
+    isDragging: boolean;
+  } | null>(null);
+  const tutorTabJustDraggedRef = useRef(false);
 
   const tutorTabsList: TutorTab[] = ["overview", "audit", "records"];
   const tutorTabIndex = Math.max(0, tutorTabsList.indexOf(tutorTab));
 
-  const updateTutorTabFromClientX = (clientX: number, isFinal = false) => {
+  const handleTutorTabPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!tutorTabContainerRef.current) return;
     const rect = tutorTabContainerRef.current.getBoundingClientRect();
     const padding = 4;
@@ -87,48 +95,90 @@ export function Dashboard() {
     const pillWidth = usableWidth / 3;
     const maxLeft = usableWidth - pillWidth;
 
-    const relativeX = clientX - rect.left - padding;
-    const currentLeft = Math.max(0, Math.min(relativeX - pillWidth / 2, maxLeft));
-    setTutorTabDragLeftPx(currentLeft);
+    const currentPillLeft = tutorTabIndex * pillWidth;
+    const touchX = e.clientX - rect.left - padding;
+    const isTouchNearPill =
+      touchX >= currentPillLeft - 12 && touchX <= currentPillLeft + pillWidth + 12;
 
-    if (isFinal) {
-      const targetIndex = Math.min(2, Math.max(0, Math.round(currentLeft / pillWidth)));
-      const targetTab = tutorTabsList[targetIndex];
-      if (targetTab && targetTab !== tutorTab) {
-        setTutorTab(targetTab);
-      }
-    }
-  };
+    const initialLeft = isTouchNearPill
+      ? currentPillLeft
+      : Math.max(0, Math.min(touchX - pillWidth / 2, maxLeft));
 
-  const handleTutorTabPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    setIsTutorTabDragging(true);
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
-    updateTutorTabFromClientX(e.clientX, false);
+    tutorTabDragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialLeft,
+      pointerId: e.pointerId,
+      isDragging: false,
+    };
   };
 
   const handleTutorTabPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isTutorTabDragging) return;
-    updateTutorTabFromClientX(e.clientX, false);
+    const drag = tutorTabDragRef.current;
+    if (!drag || !tutorTabContainerRef.current) return;
+
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+
+    if (!drag.isDragging) {
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 7) {
+        tutorTabDragRef.current = null;
+        return;
+      }
+      if (Math.abs(dx) >= 7) {
+        drag.isDragging = true;
+        setIsTutorTabDragging(true);
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {}
+      } else {
+        return;
+      }
+    }
+
+    const rect = tutorTabContainerRef.current.getBoundingClientRect();
+    const padding = 4;
+    const usableWidth = Math.max(rect.width - padding * 2, 1);
+    const pillWidth = usableWidth / 3;
+    const maxLeft = usableWidth - pillWidth;
+
+    const currentLeft = Math.max(0, Math.min(drag.initialLeft + dx, maxLeft));
+    setTutorTabDragLeftPx(currentLeft);
+
+    // Atualização imediata em tempo real durante o arraste
+    const targetIndex = Math.min(2, Math.max(0, Math.round(currentLeft / pillWidth)));
+    const targetTab = tutorTabsList[targetIndex];
+    if (targetTab && targetTab !== tutorTab) {
+      setTutorTab(targetTab);
+    }
   };
 
   const handleTutorTabPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isTutorTabDragging) return;
-    updateTutorTabFromClientX(e.clientX, true);
-    setIsTutorTabDragging(false);
-    setTutorTabDragLeftPx(null);
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {}
+    const drag = tutorTabDragRef.current;
+    if (drag?.isDragging) {
+      tutorTabJustDraggedRef.current = true;
+      setTimeout(() => {
+        tutorTabJustDraggedRef.current = false;
+      }, 50);
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {}
+      setIsTutorTabDragging(false);
+      setTutorTabDragLeftPx(null);
+    }
+    tutorTabDragRef.current = null;
   };
 
   const handleTutorTabPointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
-    setIsTutorTabDragging(false);
-    setTutorTabDragLeftPx(null);
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {}
+    const drag = tutorTabDragRef.current;
+    if (drag?.isDragging) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {}
+      setIsTutorTabDragging(false);
+      setTutorTabDragLeftPx(null);
+    }
+    tutorTabDragRef.current = null;
   };
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -409,7 +459,7 @@ export function Dashboard() {
                 onPointerMove={handleTutorTabPointerMove}
                 onPointerUp={handleTutorTabPointerUp}
                 onPointerCancel={handleTutorTabPointerCancel}
-                className="relative w-full sm:w-[560px] h-11 p-1 bg-[#FAF9F5] dark:bg-slate-800/80 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 backdrop-blur-md shadow-2xs select-none touch-none cursor-grab active:cursor-grabbing"
+                className="relative w-full sm:w-[560px] h-11 p-1 bg-[#FAF9F5] dark:bg-slate-800/80 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 backdrop-blur-md shadow-2xs select-none touch-pan-y cursor-grab active:cursor-grabbing"
               >
                 {/* Pílula deslizante fluida iOS */}
                 <div
@@ -430,7 +480,10 @@ export function Dashboard() {
                 <div className="relative z-10 grid grid-cols-3 h-full">
                   <button
                     type="button"
-                    onClick={() => setTutorTab("overview")}
+                    onClick={() => {
+                      if (tutorTabJustDraggedRef.current) return;
+                      setTutorTab("overview");
+                    }}
                     className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
                       tutorTab === "overview"
                         ? "text-[#171715] dark:text-white font-semibold"
@@ -444,7 +497,10 @@ export function Dashboard() {
 
                   <button
                     type="button"
-                    onClick={() => setTutorTab("audit")}
+                    onClick={() => {
+                      if (tutorTabJustDraggedRef.current) return;
+                      setTutorTab("audit");
+                    }}
                     className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
                       tutorTab === "audit"
                         ? "text-[#171715] dark:text-white font-semibold"
@@ -463,7 +519,10 @@ export function Dashboard() {
 
                   <button
                     type="button"
-                    onClick={() => setTutorTab("records")}
+                    onClick={() => {
+                      if (tutorTabJustDraggedRef.current) return;
+                      setTutorTab("records");
+                    }}
                     className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
                       tutorTab === "records"
                         ? "text-[#171715] dark:text-white font-semibold"

@@ -16,9 +16,17 @@ export function ViewSelector({ view, onViewChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragLeftPx, setDragLeftPx] = useState<number | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    initialLeft: number;
+    pointerId: number;
+    isDragging: boolean;
+  } | null>(null);
+  const justDraggedRef = useRef(false);
   const activeIndex = view === "totals" ? 0 : 1;
 
-  const updateSegmentFromClientX = (clientX: number, isFinal = false) => {
+  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const padding = 4;
@@ -26,55 +34,90 @@ export function ViewSelector({ view, onViewChange }: Props) {
     const pillWidth = usableWidth / 2;
     const maxLeft = usableWidth - pillWidth;
 
-    const relativeX = clientX - rect.left - padding;
-    const currentLeft = Math.max(0, Math.min(relativeX - pillWidth / 2, maxLeft));
-    setDragLeftPx(currentLeft);
+    const currentPillLeft = activeIndex * pillWidth;
+    const touchX = e.clientX - rect.left - padding;
+    const isTouchNearPill =
+      touchX >= currentPillLeft - 12 && touchX <= currentPillLeft + pillWidth + 12;
 
-    if (isFinal) {
-      const segmentIndex = Math.min(1, Math.max(0, Math.round(currentLeft / pillWidth)));
-      const targetKey = VIEWS[segmentIndex].key;
-      if (targetKey !== view) {
-        onViewChange(targetKey);
-      }
-    }
-  };
+    const initialLeft = isTouchNearPill
+      ? currentPillLeft
+      : Math.max(0, Math.min(touchX - pillWidth / 2, maxLeft));
 
-  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    setIsDragging(true);
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // Ignora caso o navegador não suporte pointer capture
-    }
-    updateSegmentFromClientX(e.clientX, false);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialLeft,
+      pointerId: e.pointerId,
+      isDragging: false,
+    };
   };
 
   const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    updateSegmentFromClientX(e.clientX, false);
+    const drag = dragRef.current;
+    if (!drag || !containerRef.current) return;
+
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+
+    if (!drag.isDragging) {
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 7) {
+        dragRef.current = null;
+        return;
+      }
+      if (Math.abs(dx) >= 7) {
+        drag.isDragging = true;
+        setIsDragging(true);
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {}
+      } else {
+        return;
+      }
+    }
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const padding = 4;
+    const usableWidth = Math.max(rect.width - padding * 2, 1);
+    const pillWidth = usableWidth / 2;
+    const maxLeft = usableWidth - pillWidth;
+
+    const currentLeft = Math.max(0, Math.min(drag.initialLeft + dx, maxLeft));
+    setDragLeftPx(currentLeft);
+
+    // Atualização em tempo real durante o arraste
+    const segmentIndex = Math.min(1, Math.max(0, Math.round(currentLeft / pillWidth)));
+    const targetKey = VIEWS[segmentIndex].key;
+    if (targetKey !== view) {
+      onViewChange(targetKey);
+    }
   };
 
   const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
-    if (isDragging) {
-      setIsDragging(false);
-      updateSegmentFromClientX(e.clientX, true);
-      setDragLeftPx(null);
+    const drag = dragRef.current;
+    if (drag?.isDragging) {
+      justDraggedRef.current = true;
+      setTimeout(() => {
+        justDraggedRef.current = false;
+      }, 50);
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
-      } catch {
-        // Ignora
-      }
+      } catch {}
+      setIsDragging(false);
+      setDragLeftPx(null);
     }
+    dragRef.current = null;
   };
 
   const handlePointerCancel = (e: PointerEvent<HTMLDivElement>) => {
-    setIsDragging(false);
-    setDragLeftPx(null);
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // Ignora
+    const drag = dragRef.current;
+    if (drag?.isDragging) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {}
+      setIsDragging(false);
+      setDragLeftPx(null);
     }
+    dragRef.current = null;
   };
 
   return (
@@ -84,7 +127,7 @@ export function ViewSelector({ view, onViewChange }: Props) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
-      className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-grab active:cursor-grabbing touch-none"
+      className="relative w-full sm:w-[360px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-grab active:cursor-grabbing touch-pan-y"
       role="tablist"
       aria-label="Alternar entre totais e histórico"
     >
@@ -115,6 +158,7 @@ export function ViewSelector({ view, onViewChange }: Props) {
               aria-selected={isActive}
               onClick={(e) => {
                 e.stopPropagation();
+                if (justDraggedRef.current) return;
                 onViewChange(v.key);
               }}
               className={`flex items-center justify-center px-3 text-xs sm:text-sm font-sans rounded-xl transition-colors duration-200 cursor-pointer h-full select-none ${
