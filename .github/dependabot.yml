@@ -1,4 +1,4 @@
-﻿# Configuração de Governança de Dependências e Segurança (ASPM / SCA - Fase 4)
+# Configuração de Governança de Dependências e Segurança (ASPM / SCA - Fase 4)
 # Monitora e atualiza vulnerabilidades em todas as camadas da aplicação (LGPD Art. 11 Compliance)
 version: 2
 updates:
@@ -23,6 +23,14 @@ updates:
       - "security"
       - "dependencies"
       - "mobile"
+    # Proteção de compatibilidade nativa do Expo SDK 57 (evita quebra de compilação EAS)
+    ignore:
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-safe-area-context"
+      - dependency-name: "typescript"
+      - dependency-name: "@types/react"
 
   # 3. Dependências do Backend (Python FastAPI + Supabase + InsightFace)
   - package-ecosystem: "pip"
