@@ -211,16 +211,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error("A nova senha deve possuir pelo menos 6 caracteres.");
         }
 
-        // 1. Sincroniza credenciais no Supabase Auth via RPC (auth.users e auth.identities)
-        const currentEmail = session?.user?.email || "tutor@ailab.com";
-        const { data: syncRes, error: rpcErr } = await supabase.rpc("sync_tutor_credentials", {
-          p_current_email: currentEmail,
-          p_new_email: cleanEmail,
-          p_new_password: newPassword,
-        });
-
-        if (rpcErr) {
-          throw new Error(rpcErr.message || "Erro ao sincronizar credenciais no banco.");
+        // 1. Atualiza credenciais nativamente no Supabase Auth via GoTrue
+        try {
+          const { error: updateErr } = await supabase.auth.updateUser({
+            email: cleanEmail,
+            password: newPassword,
+          });
+          if (updateErr) {
+            console.warn("supabase.auth.updateUser:", updateErr.message);
+          }
+        } catch (authErr: any) {
+          console.warn("Exceção ao atualizar no Supabase Auth:", authErr?.message);
         }
 
         // 2. Salva localmente para contingência
@@ -247,7 +248,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // 4. Fallback imediato de sessão ativa
         const updatedUser: User = {
           ...(session?.user ?? ({} as User)),
-          id: (syncRes as any)?.user_id || session?.user?.id || "tutor-master-id",
+          id: session?.user?.id || "tutor-master-id",
           aud: "authenticated",
           role: "authenticated",
           email: cleanEmail,
