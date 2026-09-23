@@ -63,6 +63,13 @@ def test_migration_20_supabase_linter_hardening():
         func_chunk = sql.split(f"FUNCTION public.{func}", 1)[1].split("AS $$", 1)[0]
         assert "SECURITY INVOKER" in func_chunk, f"{func} deve ser SECURITY INVOKER"
 
-    # 4. verify_tutor_login revogado de anon
-    assert "REVOKE ALL ON FUNCTION public.verify_tutor_login(text, text) FROM anon, PUBLIC;" in sql
+    # 4. verify_tutor_login e match_face restritos a service_role (elimina 0028 e 0029)
+    assert "REVOKE ALL ON FUNCTION public.verify_tutor_login(text, text) FROM anon, authenticated, PUBLIC;" in sql
+    assert "REVOKE ALL ON FUNCTION public.match_face(extensions.vector, float8, int) FROM PUBLIC, anon, authenticated;" in sql
+
+    # 5. RLS refere-se exclusivamente a app_metadata (elimina 0015)
+    for line in sql.splitlines():
+        if "CREATE POLICY" in line or "USING" in line or "WITH CHECK" in line:
+            assert "user_metadata" not in line, f"Policy não pode referenciar user_metadata: {line}"
+    assert "app_metadata" in sql
 

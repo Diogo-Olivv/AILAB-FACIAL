@@ -1,9 +1,9 @@
 -- Migration 20: Hardening do Supabase Linter (splinter)
 -- 1. Move extensão vector para o schema 'extensions' (0014_extension_in_public)
--- 2. Atualiza search_path de match_face para incluir extensions e pg_catalog
--- 3. Revoga EXECUTE de anon em verify_tutor_login (0028_anon_security_definer_function_executable)
--- 4. Converte RPCs de gestão de sessão do tutor para SECURITY INVOKER apoiadas por RLS (0029_authenticated_security_definer_function_executable)
--- 5. Adiciona policies RLS explícitas para tutores em face_embeddings e face_logs para expurgo LGPD
+-- 2. Atualiza search_path de match_face e restringe execução estritamente a service_role
+-- 3. Converte RPCs de gestão de presença para SECURITY INVOKER apoiadas por RLS
+-- 4. Corrige policies RLS para referenciar estritamente app_metadata (0015_rls_references_user_metadata)
+-- 5. Revoga chamadas anônimas e públicas de RPCs administrativas
 
 BEGIN;
 
@@ -19,7 +19,7 @@ BEGIN
   END IF;
 END $$;
 
--- ─── 2. Atualizar RPC match_face com search_path seguro ──────────────────────
+-- ─── 2. Atualizar RPC match_face (restrita estritamente a service_role) ──────
 CREATE OR REPLACE FUNCTION public.match_face(
     query_embedding  extensions.vector(512),
     match_threshold  float8 DEFAULT 0.32,
@@ -51,27 +51,57 @@ BEGIN
 END;
 $$;
 
--- ─── 3. RLS para permitir ao tutor expurgar embeddings e logs (LGPD) ──────────
-DROP POLICY IF EXISTS tutor_delete_face_embeddings ON public.face_embeddings;
-CREATE POLICY tutor_delete_face_embeddings
-  ON public.face_embeddings FOR DELETE TO authenticated
-  USING (
-    ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor'
-    OR ((select auth.jwt()) -> 'user_metadata' ->> 'role') = 'tutor'
-  );
+-- match_face é executado exclusivamente pelo backend (FastAPI / Cloud Run) via service_role.
+-- Revogar de anon e authenticated elimina 0028 e 0029 do linter.
+REVOKE ALL ON FUNCTION public.match_face(extensions.vector, float8, int) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.match_face(extensions.vector, float8, int) TO service_role;
+
+-- ─── 3. Hardening de RLS: usar estritamente app_metadata (corrige 0015) ──────
+-- Supabase Linter 0015: user_metadata é editável pelo cliente final e NÃO pode
+-- ser referenciado em regras de segurança. Usar unicamente app_metadata->'role'.
+
+-- Profiles
+DROP POLICY IF EXISTS tutor_select_profiles ON public.profiles;
+CREATE POLICY tutor_select_profiles
+  ON public.profiles FOR SELECT TO authenticated
+  USING (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
+
+DROP POLICY IF EXISTS tutor_write_profiles ON public.profiles;
+CREATE POLICY tutor_write_profiles
+  ON public.profiles FOR INSERT, UPDATE, DELETE TO authenticated
+  USING (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor')
+  WITH CHECK (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
+
+-- Sessions
+DROP POLICY IF EXISTS tutor_select_sessions ON public.sessions;
+CREATE POLICY tutor_select_sessions
+  ON public.sessions FOR SELECT TO authenticated
+  USING (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
+
+DROP POLICY IF EXISTS tutor_write_sessions ON public.sessions;
+CREATE POLICY tutor_write_sessions
+  ON public.sessions FOR INSERT, UPDATE, DELETE TO authenticated
+  USING (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor')
+  WITH CHECK (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
+
+-- Face Logs
+DROP POLICY IF EXISTS tutor_select_logs ON public.face_logs;
+CREATE POLICY tutor_select_logs
+  ON public.face_logs FOR SELECT TO authenticated
+  USING (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
 
 DROP POLICY IF EXISTS tutor_delete_face_logs ON public.face_logs;
 CREATE POLICY tutor_delete_face_logs
   ON public.face_logs FOR DELETE TO authenticated
-  USING (
-    ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor'
-    OR ((select auth.jwt()) -> 'user_metadata' ->> 'role') = 'tutor'
-  );
+  USING (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
+
+-- Face Embeddings
+DROP POLICY IF EXISTS tutor_delete_face_embeddings ON public.face_embeddings;
+CREATE POLICY tutor_delete_face_embeddings
+  ON public.face_embeddings FOR DELETE TO authenticated
+  USING (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor');
 
 -- ─── 4. Conversão das RPCs de presença para SECURITY INVOKER ─────────────────
--- Como os tutores já possuem a policy tutor_write_sessions e tutor_write_profiles,
--- estas funções operam com privilégios de invoker com segurança e sem elevar permissões.
-
 CREATE OR REPLACE FUNCTION public.tutor_close_session(
     p_profile_id uuid,
     p_action text
@@ -231,18 +261,19 @@ BEGIN
 END;
 $$;
 
--- ─── 5. Revogar permissão anônima de verify_tutor_login ─────────────────────
-REVOKE ALL ON FUNCTION public.verify_tutor_login(text, text) FROM anon, PUBLIC;
-GRANT EXECUTE ON FUNCTION public.verify_tutor_login(text, text) TO authenticated, service_role;
+-- ─── 5. verify_tutor_login: Restringir exclusivamente ao service_role ────────
+-- O cliente web e mobile já utilizam supabase.auth.signInWithPassword diretamente.
+-- Restringir ao service_role elimina os alertas 0028 e 0029 do linter.
+REVOKE ALL ON FUNCTION public.verify_tutor_login(text, text) FROM anon, authenticated, PUBLIC;
+GRANT EXECUTE ON FUNCTION public.verify_tutor_login(text, text) TO service_role;
 
--- ─── 6. Permissões de Execução atualizadas para as funções INVOKER ───────────
+-- ─── 6. Permissões de Execução para as funções INVOKER ───────────────────────
 GRANT EXECUTE ON FUNCTION public.tutor_close_session(uuid, text) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.tutor_register_entry(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.tutor_remove_member(uuid, boolean) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.tutor_void_session(bigint, text) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.tutor_unvoid_session(bigint) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.tutor_delete_session(bigint) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.match_face(extensions.vector, float8, int) TO anon, authenticated, service_role;
 
 NOTIFY pgrst, 'reload schema';
 COMMIT;
