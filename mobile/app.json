@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "br.edu.ailab.facial",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#1E2D5F",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -25,6 +25,12 @@
         "android.permission.CAMERA"
       ]
     },
+    "updates": {
+      "url": "https://u.expo.dev/b2e1a478-5e3f-4b3f-8a75-e487de512672"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
@@ -34,7 +40,8 @@
       "expo-camera",
       "expo-audio",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true

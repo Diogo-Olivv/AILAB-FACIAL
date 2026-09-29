@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { GraduationCap, X, Lightbulb, Camera, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
+import { supabase } from "../lib/supabase";
 import { compressImageToBase64 } from "../lib/reports";
 
 interface Props {
@@ -18,6 +19,8 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
     }
     return "tutor";
   });
+  const [matricula, setMatricula] = useState("");
+  const [linkFeedback, setLinkFeedback] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
     (user?.user_metadata as any)?.avatar_url ?? null
   );
@@ -92,15 +95,33 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
     }
 
     setBusy(true);
+    setLinkFeedback(null);
     try {
       await updateTutorCredentials(fullEmail, newPassword);
+
+      if (matricula.trim()) {
+        try {
+          const { data: linkRes, error: linkErr } = await supabase.rpc("link_tutor_profile", {
+            p_matricula: matricula.trim(),
+            p_tutor_email: fullEmail,
+          });
+          if (!linkErr && linkRes?.message) {
+            setLinkFeedback(linkRes.message);
+          }
+        } catch (rpcEx) {
+          console.warn("Falha ao invocar link_tutor_profile:", rpcEx);
+        }
+      }
+
       setSuccess(true);
       setTimeout(() => {
         onClose();
         setSuccess(false);
         setNewPassword("");
         setConfirmPassword("");
-      }, 1400);
+        setMatricula("");
+        setLinkFeedback(null);
+      }, 1600);
     } catch (err: any) {
       setError(err?.message || "Erro ao atualizar credenciais.");
     } finally {
@@ -251,6 +272,26 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
           </div>
 
           <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Matrícula de Aluno para Vínculo
+              </label>
+              <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Opcional</span>
+            </div>
+            <input
+              type="text"
+              value={matricula}
+              onChange={(e) => setMatricula(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="Ex: 232038442"
+              maxLength={9}
+              className="w-full rounded-2xl border border-black/15 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 text-sm shadow-xs transition-all font-mono"
+            />
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-sans">
+              Se você possui cadastro prévio como aluno no laboratório, informe sua matrícula para promover seu perfil a <strong>Tutor</strong> no Totem e nas listas de presença.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
               Nova Senha de Acesso
             </label>
@@ -288,9 +329,16 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
           )}
 
           {success && (
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-300 font-semibold text-center animate-fade-in flex items-center justify-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              <span>Credenciais atualizadas com sucesso!</span>
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-300 font-semibold text-center animate-fade-in flex flex-col items-center justify-center gap-1">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>Credenciais atualizadas com sucesso!</span>
+              </div>
+              {linkFeedback && (
+                <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-normal">
+                  {linkFeedback}
+                </span>
+              )}
             </div>
           )}
 

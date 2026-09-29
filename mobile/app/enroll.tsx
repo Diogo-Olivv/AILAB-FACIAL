@@ -11,18 +11,23 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { EnrollCapture } from "@/components/EnrollCapture";
 import { RefreshCapture } from "@/components/RefreshCapture";
+import { TutorPinModal } from "@/components/TutorPinModal";
 import { triggerHaptic } from "@/lib/sound";
+import { isEnrollmentWindowActive } from "@/lib/enrollmentWindow";
 
 type TabMode = "enroll" | "refresh";
 
 export default function Enroll() {
   const router = useRouter();
-  const { tutorToken, initialMode, mode, isDark: isDarkParam } = useLocalSearchParams<{
+  const { tutorToken: initialTutorToken, initialMode, mode, isDark: isDarkParam } = useLocalSearchParams<{
     tutorToken?: string;
     initialMode?: TabMode;
     mode?: TabMode;
     isDark?: string;
   }>();
+
+  const [tutorToken, setTutorToken] = useState<string | undefined>(initialTutorToken);
+  const [pinModalVisible, setPinModalVisible] = useState(false);
 
   const [isDark, setIsDark] = useState(isDarkParam === "true");
   const [themeTransitionColor, setThemeTransitionColor] = useState(
@@ -49,7 +54,7 @@ export default function Enroll() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (!tutorToken) {
+    if (!tutorToken && !isEnrollmentWindowActive()) {
       router.replace("/");
     }
   }, [tutorToken, router]);
@@ -61,6 +66,7 @@ export default function Enroll() {
   });
 
   const updateContentDuringDrag = (target: TabMode) => {
+    if (target === "enroll" && !tutorToken) return;
     if (target === activeTabRef.current) return;
     triggerHaptic("tap");
     activeTabRef.current = target;
@@ -74,7 +80,13 @@ export default function Enroll() {
     }).start();
   };
 
-  const switchTab = (target: TabMode) => {
+  const switchTab = (target: TabMode, tokenOverride?: string) => {
+    const effectiveToken = tokenOverride ?? tutorToken;
+    if (target === "enroll" && !effectiveToken) {
+      triggerHaptic("tap");
+      setPinModalVisible(true);
+      return;
+    }
     triggerHaptic("tap");
     const isChange = target !== activeTabRef.current;
     activeTabRef.current = target;
@@ -118,7 +130,12 @@ export default function Enroll() {
         const delta = pillWidth > 0 ? gesture.dx / pillWidth : 0;
         const currentPos = dragStart.current + delta;
         const target: TabMode = currentPos > 0.5 ? "refresh" : "enroll";
-        switchTab(target);
+        if (target === "enroll" && !tutorToken) {
+          switchTab("refresh");
+          setPinModalVisible(true);
+        } else {
+          switchTab(target);
+        }
       },
       onPanResponderTerminate: () => {
         switchTab(activeTabRef.current);
@@ -152,11 +169,17 @@ export default function Enroll() {
       e.currentTarget?.releasePointerCapture?.(e.pointerId);
       const delta = pillWidth > 0 ? (e.clientX - webDragStartX.current) / pillWidth : 0;
       const currentPos = Math.max(0, Math.min(1, webDragStartValue.current + delta));
-      switchTab(currentPos > 0.5 ? "refresh" : "enroll");
+      const target: TabMode = currentPos > 0.5 ? "refresh" : "enroll";
+      if (target === "enroll" && !tutorToken) {
+        switchTab("refresh");
+        setPinModalVisible(true);
+      } else {
+        switchTab(target);
+      }
     }
   };
 
-  if (!tutorToken) {
+  if (!tutorToken && !isEnrollmentWindowActive()) {
     return null;
   }
 
@@ -301,6 +324,20 @@ export default function Enroll() {
           )}
         </Animated.View>
       </View>
+
+      <TutorPinModal
+        visible={pinModalVisible}
+        onSuccess={(token: string) => {
+          setTutorToken(token);
+          setPinModalVisible(false);
+          switchTab("enroll", token);
+        }}
+        onCancel={() => {
+          setPinModalVisible(false);
+          switchTab("refresh");
+        }}
+        isDark={isDark}
+      />
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { refreshEmbedding, type EnrollResult, type UploadFile } from "@/lib/api";
 import { extractErrorMessage } from "@/lib/errors";
+import { isEnrollmentWindowActive } from "@/lib/enrollmentWindow";
 
 export type RefreshOutcome =
   | { ok: true; data: EnrollResult }
@@ -15,7 +16,7 @@ export function useRefreshEmbedding() {
       frames: UploadFile[],
       tutorToken?: string
     ): Promise<RefreshOutcome> => {
-      if (!tutorToken) {
+      if (!tutorToken && !isEnrollmentWindowActive()) {
         return {
           ok: false,
           message: "Sessão do tutor ausente ou expirada. Faça login novamente.",

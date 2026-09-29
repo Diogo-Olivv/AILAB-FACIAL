@@ -1,4 +1,5 @@
 diff --git a/node_modules/expo-modules-core/android/src/main/cpp/fabric/ExpoComponentDescriptorFactory.cpp b/node_modules/expo-modules-core/android/src/main/cpp/fabric/ExpoComponentDescriptorFactory.cpp
+index b7a5d55..0126e7b 100644
 --- a/node_modules/expo-modules-core/android/src/main/cpp/fabric/ExpoComponentDescriptorFactory.cpp
 +++ b/node_modules/expo-modules-core/android/src/main/cpp/fabric/ExpoComponentDescriptorFactory.cpp
 @@ -14,7 +14,7 @@ react::ComponentDescriptor::Unique concreteExpoComponentDescriptorConstructor(

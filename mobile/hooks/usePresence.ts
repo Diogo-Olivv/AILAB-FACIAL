@@ -10,6 +10,7 @@ export interface Profile {
   name: string;
   matricula: string | null;
   avatar_url: string | null;
+  is_tutor?: boolean;
 }
 
 export interface PresentMember {
@@ -47,7 +48,7 @@ export function usePresence() {
   const fetchOpen = useCallback(async () => {
     const { data, error: err } = await supabase
       .from("sessions")
-      .select("id, check_in, profiles(id, name, matricula, avatar_url)")
+      .select("id, check_in, profiles(id, name, matricula, avatar_url, is_tutor)")
       .is("check_out", null)
       .is("voided_at", null)
       .order("check_in", { ascending: true });

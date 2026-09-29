@@ -186,11 +186,11 @@ export async function enrollStudent(
   );
 }
 
-/** POST /profiles/:id/refresh-embedding — requer tutorToken. */
+/** POST /profiles/:id/refresh-embedding — requer tutorToken (exceto durante janela cadastral ativa). */
 export async function refreshEmbedding(
   profileId: string,
   frames: UploadFile[],
-  tutorToken: string
+  tutorToken?: string
 ): Promise<EnrollResult> {
   const form = new FormData();
   for (const frame of frames) {

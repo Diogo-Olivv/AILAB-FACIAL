@@ -60,6 +60,8 @@ alter table public.profiles add column if not exists consent_at timestamptz;
 alter table public.profiles add column if not exists terms_version text default 'v1.0';
 alter table public.profiles add column if not exists consent_revoked_at timestamptz;
 alter table public.profiles add column if not exists created_at timestamptz not null default now();
+alter table public.profiles add column if not exists is_tutor boolean not null default false;
+alter table public.profiles add column if not exists tutor_email text;
 
 -- Embedding vive em face_embeddings; coluna homonima em profiles e vestigial.
 alter table public.profiles drop column if exists embedding;

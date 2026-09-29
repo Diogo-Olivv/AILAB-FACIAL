@@ -28,6 +28,7 @@ const ROW_TOTAL_HEIGHT = ITEM_HEIGHT + SEPARATOR_HEIGHT;
 
 export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSidebarProps) {
   const { members, loading, error } = usePresence();
+  const activeTutors = useMemo(() => members.filter((m) => m.profile?.is_tutor), [members]);
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -80,6 +81,23 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Banner de Tutor Ativo no Laboratório */}
+      {activeTutors.length > 0 && (
+        <View style={[styles.tutorBanner, isDark && styles.tutorBannerDark]}>
+          <View style={styles.tutorBannerIconWrap}>
+            <Feather name="award" size={15} color="#059669" />
+          </View>
+          <View style={styles.tutorBannerTextWrap}>
+            <Text style={[styles.tutorBannerTitle, isDark && styles.tutorBannerTitleDark]}>
+              Tutor no Laboratório
+            </Text>
+            <Text style={[styles.tutorBannerName, isDark && styles.tutorBannerNameDark]} numberOfLines={1}>
+              {activeTutors.map((t) => t.profile.name).join(", ")}
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Busca rápida com ícone e botão de limpar */}
       {members.length > 3 && (
@@ -185,11 +203,14 @@ function SidebarRow({ member, isDark }: { member: PresentMember; isDark?: boolea
 
   const avatar = getAvatarColor(memberName);
 
+  const isTutor = Boolean(member.profile?.is_tutor);
+
   return (
     <Animated.View
       style={[
         styles.row,
         isDark && styles.rowDark,
+        isTutor && (isDark ? styles.rowTutorDark : styles.rowTutor),
         {
           opacity: fadeAnim,
         },
@@ -198,17 +219,24 @@ function SidebarRow({ member, isDark }: { member: PresentMember; isDark?: boolea
       {member.profile?.avatar_url ? (
         <Image
           source={{ uri: member.profile.avatar_url }}
-          style={[styles.avatar, { backgroundColor: "#E2E8F0" }]}
+          style={[styles.avatar, isTutor && styles.avatarTutor, { backgroundColor: "#E2E8F0" }]}
         />
       ) : (
-        <View style={[styles.avatar, { backgroundColor: avatar.bg }]}>
+        <View style={[styles.avatar, isTutor && styles.avatarTutor, { backgroundColor: avatar.bg }]}>
           <Text style={[styles.initials, { color: avatar.text }]}>{initials}</Text>
         </View>
       )}
       <View style={styles.info}>
-        <Text style={[styles.name, isDark && styles.nameDark]} numberOfLines={1}>
-          {memberName}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={[styles.name, isDark && styles.nameDark, isTutor && styles.nameTutor]} numberOfLines={1}>
+            {memberName}
+          </Text>
+          {isTutor && (
+            <View style={[styles.tutorBadgePill, isDark && styles.tutorBadgePillDark]}>
+              <Text style={styles.tutorBadgePillText}>TUTOR</Text>
+            </View>
+          )}
+        </View>
         <View style={styles.statusRow}>
           <View style={styles.liveDot} />
           <Text style={[styles.elapsed, isDark && styles.elapsedDark]}>{elapsed}</Text>
@@ -224,7 +252,8 @@ const MemoizedSidebarRow = React.memo(SidebarRow, (prev, next) => {
     prev.member.session_id === next.member.session_id &&
     prev.member.check_in === next.member.check_in &&
     prev.member.profile?.name === next.member.profile?.name &&
-    prev.member.profile?.avatar_url === next.member.profile?.avatar_url
+    prev.member.profile?.avatar_url === next.member.profile?.avatar_url &&
+    prev.member.profile?.is_tutor === next.member.profile?.is_tutor
   );
 });
 
@@ -465,6 +494,92 @@ const styles = StyleSheet.create({
   },
   emptySubtitleDark: {
     color: "#94A3B8",
+  },
+  // ── Estilos de Tutoria (AILAB Makers) ──
+  tutorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1.5,
+    borderColor: "#059669",
+    borderRadius: 14,
+    marginHorizontal: 12,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  tutorBannerDark: {
+    backgroundColor: "#064E3B",
+    borderColor: "#10B981",
+  },
+  tutorBannerIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: "rgba(5, 150, 105, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tutorBannerTextWrap: {
+    flex: 1,
+    gap: 1,
+  },
+  tutorBannerTitle: {
+    fontSize: 10.5,
+    fontWeight: "800",
+    color: "#059669",
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
+  },
+  tutorBannerTitleDark: {
+    color: "#34D399",
+  },
+  tutorBannerName: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#064E3B",
+  },
+  tutorBannerNameDark: {
+    color: "#F8FAFC",
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  nameTutor: {
+    fontWeight: "700",
+  },
+  tutorBadgePill: {
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#F59E0B",
+  },
+  tutorBadgePillDark: {
+    backgroundColor: "#78350F",
+    borderColor: "#D97706",
+  },
+  tutorBadgePillText: {
+    fontSize: 9.5,
+    fontWeight: "800",
+    color: "#92400E",
+    letterSpacing: 0.3,
+  },
+  avatarTutor: {
+    borderWidth: 2,
+    borderColor: "#059669",
+  },
+  rowTutor: {
+    borderColor: "#A7F3D0",
+    backgroundColor: "#F9FEFA",
+  },
+  rowTutorDark: {
+    borderColor: "#065F46",
+    backgroundColor: "#06281E",
   },
 });
 

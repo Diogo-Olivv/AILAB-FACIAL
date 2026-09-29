@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Animated,
   Image,
@@ -17,6 +17,8 @@ import { TutorPinModal } from "@/components/TutorPinModal";
 import { TermsModal } from "@/components/TermsModal";
 import { triggerHaptic } from "@/lib/sound";
 import { Feather } from "@expo/vector-icons";
+import { isEnrollmentWindowActive } from "@/lib/enrollmentWindow";
+import { usePresence } from "@/hooks/usePresence";
 
 const logo = require("../assets/ailab_makers.jpeg");
 
@@ -33,6 +35,9 @@ export default function Home() {
   const [termsVisible, setTermsVisible] = useState(false);
   const [presenceModalVisible, setPresenceModalVisible] = useState(false);
   const [pendingMode, setPendingMode] = useState<"enroll" | "refresh">("enroll");
+
+  const { members } = usePresence();
+  const activeTutor = useMemo(() => members.find((m) => m.profile?.is_tutor), [members]);
 
   const toggleTheme = () => {
     triggerHaptic("tap");
@@ -86,9 +91,20 @@ export default function Home() {
           <Image source={logo} style={styles.brandLogo} />
           <View style={styles.brandTextGroup}>
             <Text style={[styles.title, isDark && styles.titleDark]}>AILAB Makers</Text>
-            <View style={styles.statusPill}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>Totem Ativo</Text>
+            <View style={styles.statusPillsRow}>
+              <View style={styles.statusPill}>
+                <View style={styles.statusDot} />
+                <Text style={styles.statusText}>Totem Ativo</Text>
+              </View>
+              {activeTutor && (
+                <View style={[styles.tutorHeaderPill, isDark && styles.tutorHeaderPillDark]}>
+                  <View style={styles.tutorPulseDot} />
+                  <Feather name="award" size={11} color={isDark ? "#34D399" : "#059669"} />
+                  <Text style={[styles.tutorHeaderPillText, isDark && styles.tutorHeaderPillTextDark]}>
+                    Tutor no Lab: {activeTutor.profile.name.split(" ")[0]}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -149,7 +165,20 @@ export default function Home() {
 
           <TouchableOpacity
             style={[styles.refreshBtn, isDark && styles.refreshBtnDark]}
-            onPress={() => openTutorAuth("refresh")}
+            onPress={() => {
+              if (isEnrollmentWindowActive()) {
+                triggerHaptic("tap");
+                router.push({
+                  pathname: "/enroll",
+                  params: {
+                    initialMode: "refresh",
+                    isDark: isDark ? "true" : "false",
+                  },
+                });
+              } else {
+                openTutorAuth("refresh");
+              }
+            }}
             activeOpacity={0.75}
           >
             <Text style={[styles.refreshBtnText, isDark && styles.refreshBtnTextDark]}>Recadastrar</Text>
@@ -254,6 +283,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: -0.4,
   },
+  statusPillsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   statusPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -270,6 +304,36 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#059669",
     letterSpacing: 0.1,
+  },
+  tutorHeaderPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4.5,
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  tutorHeaderPillDark: {
+    backgroundColor: "#064E3B",
+    borderColor: "#059669",
+  },
+  tutorPulseDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "#059669",
+  },
+  tutorHeaderPillText: {
+    fontSize: 10.5,
+    fontWeight: "700",
+    color: "#065F46",
+    letterSpacing: 0.1,
+  },
+  tutorHeaderPillTextDark: {
+    color: "#A7F3D0",
   },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 9 },
   termsBtn: {
