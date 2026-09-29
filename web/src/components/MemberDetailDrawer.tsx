@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  GraduationCap,
 } from "lucide-react";
 import type { Member, SessionRecord } from "../lib/reports";
 import {
@@ -324,9 +325,20 @@ export function MemberDetailDrawer({
                   </button>
                 )}
               </div>
-              <h2 id="drawer-member-name" className="font-editorial text-xl sm:text-2xl font-normal text-[#171715] dark:text-slate-100 truncate">
-                {member.name}
-              </h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 id="drawer-member-name" className="font-editorial text-xl sm:text-2xl font-normal text-[#171715] dark:text-slate-100 truncate">
+                  {member.name}
+                </h2>
+                {member.isTutor && (
+                  <span
+                    title="Tutor Oficial do Laboratório"
+                    className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 text-[10.5px] font-bold text-emerald-800 dark:text-emerald-300 select-none shadow-2xs"
+                  >
+                    <GraduationCap className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>TUTOR</span>
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {member.matricula && (
                   <span className="rounded-md bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-2 py-0.5 text-2xs font-mono-data font-medium text-[#706E6A] dark:text-slate-300">

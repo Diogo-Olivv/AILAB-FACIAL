@@ -244,3 +244,35 @@ test("calculateTutorInsights: calcula retenção, média diária, turnos e aluno
   assert.strictEqual(insights.shifts.peakShift, "Manhã");
 });
 
+test("groupByDay: preserva a tag isTutor vinculada ao perfil do membro", () => {
+  const members: Member[] = [
+    { id: "aluno-1", name: "Pedro Tutor", matricula: "232038442", isTutor: true },
+    { id: "aluno-2", name: "Aluno Regular", matricula: "232038443", isTutor: false },
+  ];
+
+  const sessions: SessionRecord[] = [
+    {
+      profileId: "aluno-1",
+      checkIn: "2026-09-15T09:00:00Z",
+      checkOut: "2026-09-15T11:00:00Z",
+      durationS: 7200,
+    },
+    {
+      profileId: "aluno-2",
+      checkIn: "2026-09-15T10:00:00Z",
+      checkOut: "2026-09-15T12:00:00Z",
+      durationS: 7200,
+    },
+  ];
+
+  const days = groupByDay(members, sessions, new Date("2026-09-15T18:00:00Z"));
+  assert.strictEqual(days.length, 1);
+  const day = days[0];
+  const tutorEntry = day.entries.find((e) => e.memberName === "Pedro Tutor");
+  const regularEntry = day.entries.find((e) => e.memberName === "Aluno Regular");
+
+  assert.strictEqual(tutorEntry?.isTutor, true, "Sessão do tutor deve manter isTutor: true");
+  assert.strictEqual(regularEntry?.isTutor, false, "Sessão do aluno regular deve ter isTutor: false");
+});
+
+

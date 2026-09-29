@@ -1,4 +1,4 @@
-import { CalendarRange, Ban } from "lucide-react";
+import { CalendarRange, Ban, GraduationCap } from "lucide-react";
 import type { DayGroup } from "../lib/aggregate";
 import { formatDuration, formatTime } from "../lib/aggregate";
 
@@ -45,8 +45,19 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
                     key={index}
                     className="transition-colors duration-150 hover:bg-[#FAF9F5] dark:hover:bg-slate-800/50"
                   >
-                    <td className="px-3.5 py-3 sm:px-5 font-sans font-medium text-[#171715] dark:text-slate-100 truncate max-w-[140px] sm:max-w-none">
-                      {entry.memberName}
+                    <td className="px-3.5 py-3 sm:px-5 font-sans font-medium text-[#171715] dark:text-slate-100 max-w-[140px] sm:max-w-none">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="truncate">{entry.memberName}</span>
+                        {entry.isTutor && (
+                          <span
+                            title="Tutor do Laboratório"
+                            className="inline-flex items-center gap-0.5 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 px-1 py-0.5 text-[9.5px] font-bold text-emerald-800 dark:text-emerald-300 select-none shadow-2xs"
+                          >
+                            <GraduationCap className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span>TUTOR</span>
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-2 py-3 sm:px-5 text-[#706E6A] dark:text-slate-400 font-mono-data text-xs">
                       {formatTime(entry.checkIn)} às{" "}

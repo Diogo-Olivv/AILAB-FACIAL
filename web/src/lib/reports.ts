@@ -5,6 +5,7 @@ export interface Member {
   name: string;
   matricula: string | null;
   avatarUrl?: string | null;
+  isTutor?: boolean;
 }
 
 export interface SessionRecord {
@@ -25,7 +26,7 @@ export interface DateRange {
 export async function fetchMembers(): Promise<Member[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, name, matricula, avatar_url")
+    .select("id, name, matricula, avatar_url, is_tutor")
     .eq("active", true)
     .order("name");
   if (error) throw error;
@@ -34,6 +35,7 @@ export async function fetchMembers(): Promise<Member[]> {
     name: p.name,
     matricula: p.matricula,
     avatarUrl: p.avatar_url ?? null,
+    isTutor: Boolean(p.is_tutor),
   }));
 }
 

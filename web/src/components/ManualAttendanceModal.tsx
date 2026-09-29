@@ -146,7 +146,7 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4 animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -154,23 +154,23 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
     >
       <div
         ref={modalRef}
-        className="w-full max-w-md rounded-3xl border border-white/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl p-6 sm:p-7 shadow-apple animate-scale-up space-y-5 text-slate-900 dark:text-slate-100 max-h-[92vh] overflow-y-auto overscroll-contain"
+        className="w-full max-w-lg max-h-[92dvh] sm:max-h-[88vh] flex flex-col rounded-3xl border border-white/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-apple animate-scale-up text-slate-900 dark:text-slate-100 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-[#C15F3D] text-white text-xl shadow-md shadow-orange-500/25">
+        <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-4.5 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-[#C15F3D] text-white text-xl shadow-md shadow-orange-500/25">
               <FileEdit className="h-5 w-5 text-white" />
             </span>
-            <div>
+            <div className="min-w-0">
               <h2
                 id="manual-attendance-title"
-                className="font-editorial text-lg sm:text-xl font-normal text-[#171715] dark:text-slate-100"
+                className="font-editorial text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-slate-100 truncate"
               >
                 Registrar Presença Manual
               </h2>
-              <p className="text-xs text-[#706E6A] dark:text-slate-400">
-                Contingência para a lista de papel (queda de internet ou totem)
+              <p className="text-xs text-[#706E6A] dark:text-slate-400 truncate">
+                Contingência para lista de papel e totens
               </p>
             </div>
           </div>
@@ -183,7 +183,8 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6 sm:py-5 space-y-4">
           {/* Seletor de integrante */}
           <div className="space-y-1.5">
             <label htmlFor="manual-member-search" className="text-xs font-bold text-[#706E6A] dark:text-slate-300">
@@ -342,19 +343,22 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
             </div>
           )}
 
-          <div className="flex gap-2.5 pt-2">
+          </div>
+
+          {/* Rodapé Fixo */}
+          <div className="flex gap-2.5 p-4 sm:p-5 border-t border-black/[0.06] dark:border-white/[0.08] bg-slate-50/70 dark:bg-slate-900/70 backdrop-blur-sm shrink-0">
             <button
               type="button"
               onClick={onClose}
               disabled={busy}
-              className="flex-1 rounded-2xl border border-black/10 dark:border-slate-700 bg-white/80 dark:bg-slate-800 py-3 text-xs sm:text-sm font-bold text-[#706E6A] dark:text-slate-300 hover:bg-white hover:text-[#171715] dark:hover:bg-slate-700 dark:hover:text-white transition-all cursor-pointer min-h-[44px]"
+              className="flex-1 rounded-2xl border border-black/10 dark:border-slate-700 bg-white/80 dark:bg-slate-800 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-[#706E6A] dark:text-slate-300 hover:bg-slate-100 hover:text-[#171715] dark:hover:bg-slate-700 dark:hover:text-white transition-all cursor-pointer min-h-[44px]"
             >
               Fechar
             </button>
             <button
               type="submit"
               disabled={busy}
-              className="flex-1 rounded-2xl bg-[#171715] hover:bg-[#2A2925] dark:bg-white dark:hover:bg-slate-100 py-3 text-xs sm:text-sm font-bold text-[#FAF9F5] dark:text-slate-900 shadow-sm active:scale-98 disabled:opacity-50 transition-all cursor-pointer min-h-[44px]"
+              className="flex-1 rounded-2xl bg-[#171715] hover:bg-[#2A2925] dark:bg-white dark:hover:bg-slate-100 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-[#FAF9F5] dark:text-slate-900 shadow-sm active:scale-98 disabled:opacity-50 transition-all cursor-pointer min-h-[44px]"
             >
               {busy ? "Registrando..." : "Registrar Presença"}
             </button>

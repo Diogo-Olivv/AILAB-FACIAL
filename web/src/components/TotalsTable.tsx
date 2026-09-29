@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { SearchX, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { SearchX, ArrowUp, ArrowDown, ArrowUpDown, GraduationCap } from "lucide-react";
 import type { MemberTotal } from "../lib/aggregate";
 import { formatDuration } from "../lib/aggregate";
 
@@ -257,11 +257,19 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                       <img
                         src={row.member.avatarUrl}
                         alt={row.member.name}
-                        className="h-7 w-7 sm:h-9 sm:w-9 shrink-0 rounded-full object-cover ring-1.5 sm:ring-2 ring-white dark:ring-slate-900 shadow-2xs transition-transform duration-200 group-hover:scale-105"
+                        className={`h-7 w-7 sm:h-9 sm:w-9 shrink-0 rounded-full object-cover ring-1.5 sm:ring-2 ${
+                          row.member.isTutor
+                            ? "ring-emerald-500 dark:ring-emerald-400"
+                            : "ring-white dark:ring-slate-900"
+                        } shadow-2xs transition-transform duration-200 group-hover:scale-105`}
                       />
                     ) : (
                       <div
-                        className={`flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarStyle(row.member.name)} text-[10px] sm:text-xs font-bold ring-1.5 sm:ring-2 ring-white dark:ring-slate-900 shadow-2xs transition-transform duration-200 group-hover:scale-105`}
+                        className={`flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarStyle(row.member.name)} text-[10px] sm:text-xs font-bold ring-1.5 sm:ring-2 ${
+                          row.member.isTutor
+                            ? "ring-emerald-500 dark:ring-emerald-400"
+                            : "ring-white dark:ring-slate-900"
+                        } shadow-2xs transition-transform duration-200 group-hover:scale-105`}
                       >
                         {row.member.name.charAt(0).toUpperCase()}
                       </div>
@@ -274,6 +282,15 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
                         >
                           {row.member.name}
                         </span>
+                        {row.member.isTutor && (
+                          <span
+                            title="Tutor Oficial do Laboratório"
+                            className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 select-none shadow-2xs"
+                          >
+                            <GraduationCap className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span>TUTOR</span>
+                          </span>
+                        )}
                         {isDurationDesc && idx < 3 && (
                           <RankBadge rank={(idx + 1) as 1 | 2 | 3} />
                         )}

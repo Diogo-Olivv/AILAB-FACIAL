@@ -84,6 +84,7 @@ export interface DayEntry {
   seconds: number;
   open: boolean;
   voided: boolean;
+  isTutor?: boolean;
 }
 
 export interface DayGroup {
@@ -108,8 +109,8 @@ function dayLabel(iso: string): string {
   });
 }
 
-export function groupByDay(members: Member[], sessions: SessionRecord[], now: Date): DayGroup[] {
-  const names = new Map(members.map((m) => [m.id, m.name]));
+export function groupByDay(members: Member[], sessions: SessionRecord[], now: Date = new Date()): DayGroup[] {
+  const memberMap = new Map(members.map((m) => [m.id, m]));
   const groups = new Map<string, DayGroup>();
   for (const session of sessions) {
     const key = dayKey(session.checkIn);
@@ -121,13 +122,15 @@ export function groupByDay(members: Member[], sessions: SessionRecord[], now: Da
     const isVoided = session.voidedAt != null;
     const seconds = sessionSeconds(session, now);
     group.totalSeconds += seconds;
+    const member = memberMap.get(session.profileId);
     group.entries.push({
-      memberName: names.get(session.profileId) ?? "Desconhecido",
+      memberName: member?.name ?? "Desconhecido",
       checkIn: session.checkIn,
       checkOut: session.checkOut,
       seconds,
       open: session.checkOut === null && !isVoided,
       voided: isVoided,
+      isTutor: Boolean(member?.isTutor),
     });
   }
   return [...groups.values()].sort((a, b) => (a.key < b.key ? 1 : -1));
