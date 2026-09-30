@@ -24,6 +24,7 @@ export interface FeedbackBadgeData {
   message?: string;
   detail?: string;
   durationMinutes?: number | string;
+  isTutor?: boolean;
 }
 
 interface Props {
@@ -189,7 +190,24 @@ export function FeedbackBadge({ data, onDismiss, autoCloseMs = 4500 }: Props) {
 
   if (!data) return null;
 
-  const cfg = BADGE_CONFIGS[data.type] || BADGE_CONFIGS.warning;
+  const baseCfg = BADGE_CONFIGS[data.type] || BADGE_CONFIGS.warning;
+  const isTutor = Boolean(data.isTutor);
+  const cfg = isTutor
+    ? {
+        ...baseCfg,
+        pillText: data.type === "check_out" ? "SAÍDA DE TUTOR" : "TUTOR REGISTRADO",
+        pillBg: "#FEF3C7",
+        pillColor: "#92400E",
+        accentColor: "#D97706",
+        iconBg: "#FEF3C7",
+        iconSymbolColor: "#B45309",
+        defaultTitle: data.type === "check_out" ? "Saída de Tutor" : "Tutor no Laboratório",
+        defaultMessage:
+          data.type === "check_out"
+            ? "Atividades de tutoria finalizadas."
+            : "Atividades de tutoria confirmadas no AILAB Makers.",
+      }
+    : baseCfg;
   const title = data.title || cfg.defaultTitle;
   const message = data.message || cfg.defaultMessage;
 

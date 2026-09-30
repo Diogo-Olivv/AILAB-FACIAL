@@ -77,6 +77,7 @@ export interface RecognizeResult {
   cosine_similarity?: number;
   status?: string;
   message?: string;
+  is_tutor?: boolean;
   event?: {
     action: RecognitionAction;
     profile_id?: string;

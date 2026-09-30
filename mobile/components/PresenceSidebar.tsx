@@ -40,6 +40,16 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
     );
   }, [members, search]);
 
+  const sortedMembers = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const aTutor = Boolean(a.profile?.is_tutor);
+      const bTutor = Boolean(b.profile?.is_tutor);
+      if (aTutor && !bTutor) return -1;
+      if (!aTutor && bTutor) return 1;
+      return 0;
+    });
+  }, [filtered]);
+
   const renderItem = useCallback(
     ({ item }: { item: PresentMember }) => <MemoizedSidebarRow member={item} isDark={isDark} />,
     [isDark]
@@ -144,7 +154,7 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
         <Text style={styles.error}>{error}</Text>
       ) : (
         <FlatList
-          data={filtered}
+          data={sortedMembers}
           keyExtractor={(m) => String(m.session_id)}
           renderItem={renderItem}
           getItemLayout={getItemLayout}
@@ -232,7 +242,7 @@ function SidebarRow({ member, isDark }: { member: PresentMember; isDark?: boolea
             {memberName}
           </Text>
           {isTutor && (
-            <View style={[styles.tutorBadgePill, isDark && styles.tutorBadgePillDark]}>
+          <View style={[styles.tutorBadgePill, isDark && styles.tutorBadgePillDark]}>
               <Text style={styles.tutorBadgePillText}>TUTOR</Text>
             </View>
           )}

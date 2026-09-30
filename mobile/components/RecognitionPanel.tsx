@@ -260,6 +260,7 @@ export function RecognitionPanel() {
             notifyInteraction("check_in");
             setBadgeData({
               type: "check_in",
+              isTutor: Boolean(res.is_tutor),
               name: res.name || "Integrante",
               title: "Entrada Registrada",
               message: "Presença confirmada no AILAB Makers. Bom trabalho!",
@@ -285,6 +286,7 @@ export function RecognitionPanel() {
               type: "check_out",
               name: res.name || "Integrante",
               title: "Saída Registrada",
+              isTutor: Boolean(res.is_tutor),
               durationMinutes: displayMins,
               message: durationMsg,
             });
@@ -293,6 +295,7 @@ export function RecognitionPanel() {
             setBadgeData({
               type: "warning",
               name: res.name,
+              isTutor: Boolean(res.is_tutor),
               title: "Usuário Já Presente",
               message: "Sua entrada já está ativa. Caso deseje sair, clique no botão 'Saída'.",
             });
@@ -301,6 +304,7 @@ export function RecognitionPanel() {
             setBadgeData({
               type: "warning",
               name: res.name,
+              isTutor: Boolean(res.is_tutor),
               title: "Entrada Não Encontrada",
               message: "Você ainda não deu entrada no laboratório hoje. Clique em 'Entrada'.",
             });

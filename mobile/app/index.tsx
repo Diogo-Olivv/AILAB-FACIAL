@@ -59,6 +59,14 @@ export default function Home() {
 
   const openTutorAuth = (mode: "enroll" | "refresh") => {
     triggerHaptic("tap");
+    if (mode === "refresh" && isEnrollmentWindowActive()) {
+      // Durante a janela temporária de recadastro (28/09 a 02/10), dispensa autorização do tutor
+      router.push({
+        pathname: "/enroll",
+        params: { initialMode: "refresh", mode: "refresh", isDark: String(isDark) },
+      });
+      return;
+    }
     setPendingMode(mode);
     setPinModalVisible(true);
   };

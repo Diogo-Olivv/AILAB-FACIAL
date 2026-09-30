@@ -40,6 +40,7 @@ class RecognizeResponse(BaseModel):
     confidence: float | None = Field(None, description="Grau de confiança estatística da correspondência")
     distance: float | None = Field(None, description="Distância euclidiana ou cosseno calculada")
     cosine_similarity: float | None = Field(None, description="Similaridade de cosseno normalizada")
+    is_tutor: bool | None = Field(False, description="Indica se o integrante possui perfil de tutor")
     event: EventDetail | None = Field(None, description="Detalhes do registro de presença gerado")
 
 

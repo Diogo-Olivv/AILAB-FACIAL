@@ -191,6 +191,7 @@ async def recognize(
 
     profile_id = result.get("profile_id")
     event = None
+    is_tutor = False
     if profile_id:
         lock = _get_profile_lock(profile_id)
         async with lock:
@@ -204,7 +205,14 @@ async def recognize(
 
             event = register_event(profile_id, action)
 
-    final_result = {"recognized": True, **result, "event": event}
+            try:
+                prof_data = get_client().table("profiles").select("is_tutor").eq("id", profile_id).maybe_single().execute()
+                if prof_data and prof_data.data:
+                    is_tutor = bool(prof_data.data.get("is_tutor"))
+            except Exception as exc:  # noqa: BLE001
+                log.warning("Falha ao consultar status de tutor: %s", exc)
+
+    final_result = {"recognized": True, **result, "is_tutor": is_tutor, "event": event}
 
     # Armazena resultado positivo no cache de idempotência
     if idempotency_key:
@@ -219,7 +227,7 @@ def open_sessions():
     rows = (
         get_client()
         .table("sessions")
-        .select("id, check_in, profiles(id, name, avatar_url, matricula)")
+        .select("id, check_in, profiles(id, name, avatar_url, matricula, is_tutor)")
         .is_("check_out", "null")
         .is_("voided_at", "null")
         .order("check_in", desc=False)

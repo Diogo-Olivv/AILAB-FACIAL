@@ -60,11 +60,29 @@ export function usePresence() {
     }
 
     setMembers(
-      (data ?? []).map((s: any) => ({
-        session_id: s.id,
-        check_in: s.check_in,
-        profile: s.profiles as Profile,
-      }))
+      (data ?? []).map((s: any) => {
+        const raw = s.profiles;
+        const p = Array.isArray(raw) ? raw[0] : raw;
+        return {
+          session_id: s.id,
+          check_in: s.check_in,
+          profile: p
+            ? {
+                id: p.id,
+                name: p.name ?? "Desconhecido",
+                matricula: p.matricula ?? null,
+                avatar_url: p.avatar_url ?? null,
+                is_tutor: Boolean(p.is_tutor),
+              }
+            : {
+                id: "",
+                name: "Desconhecido",
+                matricula: null,
+                avatar_url: null,
+                is_tutor: false,
+              },
+        };
+      })
     );
     setLoading(false);
     setError(null);

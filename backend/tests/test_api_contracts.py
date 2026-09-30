@@ -88,6 +88,25 @@ def test_recognize_response_contract_check_in_and_check_out():
     assert model_out.event.profile_id == "00000000-0000-0000-0000-000000000001"
 
 
+def test_recognize_response_contract_tutor():
+    """Valida o contrato de resposta de reconhecimento com identificação de tutor."""
+    payload_tutor = {
+        "recognized": True,
+        "profile_id": "334e33f9-3bd0-478e-8e05-e68a4e11ee5a",
+        "name": "Pedro Henrique Pereira Santos",
+        "is_tutor": True,
+        "event": {
+            "action": "check_in",
+            "session_id": 718,
+            "timestamp": "2026-09-30T14:58:55Z",
+        },
+    }
+    model = RecognizeResponse(**payload_tutor)
+    assert model.recognized is True
+    assert model.is_tutor is True
+    assert model.name == "Pedro Henrique Pereira Santos"
+
+
 def test_recognize_response_contract_debounced_and_unrecognized():
     """Valida o contrato para status de debounce temporal e rosto não reconhecido."""
     debounced_payload = {
