@@ -6,6 +6,8 @@ export interface ProfileItem {
   id: string;
   name: string;
   matricula: string | null;
+  avatar_url?: string | null;
+  is_tutor?: boolean;
 }
 
 export function useProfiles() {
@@ -18,7 +20,7 @@ export function useProfiles() {
     try {
       const { data, error: err } = await supabase
         .from("profiles")
-        .select("id, name, matricula")
+        .select("id, name, matricula, avatar_url, is_tutor")
         .eq("active", true)
         .is("consent_revoked_at", null)
         .order("name", { ascending: true });

@@ -100,6 +100,7 @@ export function EnrollCapture({ tutorToken, isDark = false }: Props) {
         data={badgeData}
         onDismiss={() => setBadgeData(null)}
         autoCloseMs={5000}
+        isDark={isDark}
       />
       <ScrollView
         style={[styles.container, isDark && styles.containerDark]}
@@ -111,36 +112,81 @@ export function EnrollCapture({ tutorToken, isDark = false }: Props) {
             paddingRight: insets.right + 16,
           },
         ]}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.row}>
-          <View style={styles.col}>
-            <Text style={[styles.label, isDark && styles.labelDark]}>Nome completo</Text>
-            <TextInput
-              style={[styles.input, isDark && styles.inputDark]}
-              placeholder="Nome completo"
-              placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
-              value={name}
-              onChangeText={setName}
-            />
-          </View>
-          <View style={styles.col}>
-            <Text style={[styles.label, isDark && styles.labelDark]}>Matrícula</Text>
-            <TextInput
-              style={[styles.input, isDark && styles.inputDark]}
-              placeholder="9 dígitos"
-              placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
-              value={matricula}
-              onChangeText={(t) => setMatricula(t.replace(/\D/g, "").slice(0, MATRICULA_LENGTH))}
-              keyboardType="number-pad"
-              maxLength={MATRICULA_LENGTH}
-            />
-            {matricula.length > 0 && !matriculaValid && (
-              <Text style={styles.hint}>Informe {MATRICULA_LENGTH} números.</Text>
-            )}
+        {/* Seção 1: Identificação Acadêmica */}
+        <View style={[styles.card, isDark && styles.cardDark]}>
+          <Text style={[styles.stepEyebrow, isDark && styles.stepEyebrowDark]}>
+            ETAPA 1 · IDENTIFICAÇÃO ACADÊMICA
+          </Text>
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={[styles.label, isDark && styles.labelDark]}>Nome completo</Text>
+              <TextInput
+                style={[styles.input, isDark && styles.inputDark]}
+                placeholder="Ex.: Ana Beatriz Silva"
+                placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
+            <View style={styles.col}>
+              <View style={styles.labelRow}>
+                <Text style={[styles.label, isDark && styles.labelDark]}>Matrícula</Text>
+                <Text
+                  style={[
+                    styles.counterBadge,
+                    matriculaValid && styles.counterBadgeValid,
+                  ]}
+                >
+                  {matricula.length}/{MATRICULA_LENGTH}
+                </Text>
+              </View>
+              <TextInput
+                style={[styles.input, styles.inputMono, isDark && styles.inputDark]}
+                placeholder={`${MATRICULA_LENGTH} dígitos`}
+                placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+                value={matricula}
+                onChangeText={(t) =>
+                  setMatricula(t.replace(/\D/g, "").slice(0, MATRICULA_LENGTH))
+                }
+                keyboardType="number-pad"
+                maxLength={MATRICULA_LENGTH}
+              />
+              {matricula.length > 0 && !matriculaValid && (
+                <Text style={styles.hint}>
+                  Informe exatamente {MATRICULA_LENGTH} números.
+                </Text>
+              )}
+            </View>
           </View>
         </View>
 
-        <View style={styles.captureRow}>
+        {/* Seção 2: Captura Biométrica Multi-Frame */}
+        <View style={[styles.card, isDark && styles.cardDark]}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.stepEyebrow, isDark && styles.stepEyebrowDark]}>
+              ETAPA 2 · CAPTURA BIOMÉTRICA ({ENROLL_PHOTO_COUNT} FRAMES)
+            </Text>
+            <View
+              style={[
+                styles.photoCountBadge,
+                shots.length === ENROLL_PHOTO_COUNT && styles.photoCountBadgeDone,
+                isDark && styles.photoCountBadgeDark,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.photoCountText,
+                  shots.length === ENROLL_PHOTO_COUNT && styles.photoCountTextDone,
+                  isDark && styles.photoCountTextDark,
+                ]}
+              >
+                {shots.length}/{ENROLL_PHOTO_COUNT} fotos
+              </Text>
+            </View>
+          </View>
+
           <TouchableOpacity
             style={[styles.captureBtn, isDark && styles.captureBtnDark]}
             onPress={openCamera}
@@ -151,47 +197,53 @@ export function EnrollCapture({ tutorToken, isDark = false }: Props) {
             <Feather name="camera" size={16} color="#FFFFFF" />
             <Text style={styles.captureBtnText}>
               {shots.length === ENROLL_PHOTO_COUNT
-                ? "Refazer Fotos"
-                : `Tirar ${ENROLL_PHOTO_COUNT} Fotos`}
+                ? "Refazer Captura de Fotos"
+                : `Capturar ${ENROLL_PHOTO_COUNT} Fotos Sequenciais`}
             </Text>
           </TouchableOpacity>
 
-          <View style={[styles.photoCountBadge, isDark && styles.photoCountBadgeDark]}>
-            <Text style={[styles.photoCountText, isDark && styles.photoCountTextDark]}>
-              {shots.length}/{ENROLL_PHOTO_COUNT} fotos
+          {shots.length > 0 && (
+            <View style={styles.thumbs}>
+              {shots.map((uri, i) => (
+                <View key={i} style={styles.thumbWrap}>
+                  <Image
+                    source={{ uri }}
+                    style={[styles.thumb, isDark && styles.thumbDark]}
+                  />
+                  <View style={styles.thumbNumberBadge}>
+                    <Text style={styles.thumbNumberText}>#{i + 1}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <View style={[styles.tipCard, isDark && styles.tipCardDark]}>
+            <View style={styles.tipHeader}>
+              <Ionicons
+                name="bulb-outline"
+                size={15}
+                color={isDark ? "#FBBF24" : "#D97706"}
+              />
+              <Text style={[styles.tipTitle, isDark && styles.tipTitleDark]}>
+                Dica para quem usa óculos ou barba
+              </Text>
+            </View>
+            <Text style={[styles.tipBody, isDark && styles.tipBodyDark]}>
+              Capture algumas fotos com óculos e outras sem. O sistema extrai vetores ArcFace calibrados para reconhecê-lo em qualquer variação.
             </Text>
           </View>
         </View>
 
-        {shots.length > 0 && (
-          <View style={styles.thumbs}>
-            {shots.map((uri, i) => (
-              <Image key={i} source={{ uri }} style={[styles.thumb, isDark && styles.thumbDark]} />
-            ))}
-          </View>
-        )}
-
-        <View style={[styles.tipCard, isDark && styles.tipCardDark]}>
-          <View style={styles.tipHeader}>
-            <Ionicons name="bulb-outline" size={16} color={isDark ? "#FDE68A" : "#92400E"} />
-            <Text style={[styles.tipTitle, isDark && styles.tipTitleDark]}>
-              Dica para quem usa óculos ou barba
-            </Text>
-          </View>
-          <Text style={[styles.tipBody, isDark && styles.tipBodyDark]}>
-            Se você costuma usar óculos ou variar a barba, capture algumas fotos com óculos e outras sem. O sistema salva representações calibradas para reconhecê-lo em qualquer situação.
-          </Text>
-        </View>
-
-        <View style={[styles.consentCard, isDark && styles.consentCardDark]}>
-          <Text style={[styles.consentTitle, isDark && styles.consentTitleDark]}>
-            Termo de Consentimento Biométrico (LGPD - v1.0)
+        {/* Seção 3: Consentimento LGPD */}
+        <View style={[styles.card, isDark && styles.cardDark]}>
+          <Text style={[styles.stepEyebrow, isDark && styles.stepEyebrowDark]}>
+            ETAPA 3 · CONSENTIMENTO BIOMÉTRICO (LGPD ART. 11)
           </Text>
           <Text style={[styles.consentBody, isDark && styles.consentBodyDark]}>
             Autorizo expressamente o tratamento dos meus dados biométricos faciais exclusivamente para
-            controle de frequência acadêmica e presença no AILAB Makers. As fotos capturadas são
-            convertidas em vetor numérico e descartadas. O titular pode revogar este consentimento ou
-            solicitar a exclusão definitiva a qualquer momento.
+            controle de frequência acadêmica no AILAB Makers. As fotos são convertidas em vetor numérico
+            de 512 dimensões e descartadas imediatamente da memória.
           </Text>
           <TouchableOpacity
             onPress={() => setTermsOpen(true)}
@@ -200,9 +252,13 @@ export function EnrollCapture({ tutorToken, isDark = false }: Props) {
             accessibilityRole="button"
           >
             <View style={styles.termsBtnRow}>
-              <Feather name="book-open" size={13} color={isDark ? "#FB923C" : "#C15F3D"} />
+              <Feather
+                name="book-open"
+                size={13}
+                color={isDark ? "#FB923C" : "#EA580C"}
+              />
               <Text style={[styles.termsBtnText, isDark && styles.termsBtnTextDark]}>
-                Ler Termos de Privacidade e LGPD
+                Ler Termos de Privacidade e LGPD Completos
               </Text>
             </View>
           </TouchableOpacity>
@@ -219,6 +275,7 @@ export function EnrollCapture({ tutorToken, isDark = false }: Props) {
           </View>
         </View>
 
+        {/* Botão de Envio */}
         <View style={styles.submitContainer}>
           <TouchableOpacity
             style={[styles.submitBtn, (!canSubmit || loading) && styles.disabled]}
@@ -231,8 +288,8 @@ export function EnrollCapture({ tutorToken, isDark = false }: Props) {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Feather name="check" size={17} color="#FFFFFF" />
-                <Text style={styles.submitBtnText}>Cadastrar Integrante</Text>
+                <Feather name="check-circle" size={17} color="#FFFFFF" />
+                <Text style={styles.submitBtnText}>Concluir Cadastro Biométrico</Text>
               </>
             )}
           </TouchableOpacity>
@@ -261,128 +318,153 @@ export function EnrollCapture({ tutorToken, isDark = false }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAF9F5", position: "relative" },
-  rootDark: { backgroundColor: "#0B0F19" },
-  container: { flex: 1, backgroundColor: "#FAF9F5" },
-  containerDark: { backgroundColor: "#0B0F19" },
-  content: { padding: 16, gap: 16, paddingBottom: 48 },
-  row: { flexDirection: "row", gap: 12 },
-  col: { flex: 1, gap: 6 },
-  label: { color: "#171715", fontSize: 13.5, fontWeight: "700" },
-  labelDark: { color: "#F8FAFC" },
-  hint: { color: "#EF4444", fontSize: 12, fontWeight: "500" },
-  captureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  captureBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#171715",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    minHeight: 44,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  captureBtnDark: {
-    backgroundColor: "#1E293B",
-    borderWidth: 1,
-    borderColor: "#334155",
-  },
-  captureBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13.5 },
-  photoCountBadge: {
-    backgroundColor: "#F5F5F4",
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 40,
-  },
-  photoCountBadgeDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
-  },
-  photoCountText: {
-    color: "#171715",
-    fontSize: 12.5,
-    fontWeight: "700",
-  },
-  photoCountTextDark: {
-    color: "#F8FAFC",
-  },
-  disabled: { opacity: 0.45 },
-  thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 4 },
-  thumb: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
-  },
-  thumbDark: {
-    borderColor: "#334155",
-  },
-  input: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
-    borderRadius: 14,
-    padding: 12,
-    color: "#171715",
-    fontSize: 14.5,
-    fontWeight: "500",
-    shadowColor: "#000",
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  inputDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
-    color: "#F8FAFC",
-  },
-  consentCard: {
+  root: { flex: 1, backgroundColor: "#F8FAFC", position: "relative" },
+  rootDark: { backgroundColor: "#090D16" },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  containerDark: { backgroundColor: "#090D16" },
+  content: { padding: 16, gap: 14, paddingBottom: 48 },
+  card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
-    gap: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    borderColor: "#E2E8F0",
+    gap: 12,
   },
-  consentCardDark: {
-    backgroundColor: "#0F172A",
-    borderColor: "#1E293B",
+  cardDark: {
+    backgroundColor: "#0F1623",
+    borderColor: "rgba(255, 255, 255, 0.08)",
   },
-  consentTitle: {
-    color: "#171715",
-    fontSize: 14,
+  stepEyebrow: {
+    color: "#EA580C",
+    fontSize: 10.5,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+  },
+  stepEyebrowDark: {
+    color: "#FB923C",
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  row: { flexDirection: "row", gap: 12 },
+  col: { flex: 1, gap: 6 },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  label: { color: "#0F172A", fontSize: 13, fontWeight: "700" },
+  labelDark: { color: "#F8FAFC" },
+  counterBadge: {
+    fontSize: 11,
     fontWeight: "700",
+    color: "#64748B",
+    fontVariant: ["tabular-nums"],
   },
-  consentTitleDark: {
+  counterBadgeValid: {
+    color: "#10B981",
+  },
+  hint: { color: "#E11D48", fontSize: 11.5, fontWeight: "600" },
+  input: {
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    minHeight: 44,
+    color: "#0F172A",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  inputMono: {
+    fontVariant: ["tabular-nums"],
+  },
+  inputDark: {
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.10)",
     color: "#F8FAFC",
   },
+  captureBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#EA580C",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 13,
+    minHeight: 46,
+  },
+  captureBtnDark: {
+    backgroundColor: "#EA580C",
+  },
+  captureBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 13.5 },
+  photoCountBadge: {
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  photoCountBadgeDark: {
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.10)",
+  },
+  photoCountBadgeDone: {
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    borderColor: "rgba(16, 185, 129, 0.35)",
+  },
+  photoCountText: {
+    color: "#475569",
+    fontSize: 11.5,
+    fontWeight: "800",
+    fontVariant: ["tabular-nums"],
+  },
+  photoCountTextDark: {
+    color: "#CBD5E1",
+  },
+  photoCountTextDone: {
+    color: "#10B981",
+  },
+  disabled: { opacity: 0.45 },
+  thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 2 },
+  thumbWrap: {
+    position: "relative",
+  },
+  thumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#10B981",
+  },
+  thumbDark: {
+    borderColor: "#34D399",
+  },
+  thumbNumberBadge: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    backgroundColor: "rgba(9, 13, 22, 0.80)",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
+  },
+  thumbNumberText: {
+    color: "#FFFFFF",
+    fontSize: 9.5,
+    fontWeight: "800",
+    fontVariant: ["tabular-nums"],
+  },
   consentBody: {
-    color: "#57534E",
-    fontSize: 12,
+    color: "#475569",
+    fontSize: 12.5,
     lineHeight: 18,
   },
   consentBodyDark: {
@@ -394,24 +476,23 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.06)",
+    borderTopColor: "#F1F5F9",
   },
   consentSwitchRowDark: {
-    borderTopColor: "#1E293B",
+    borderTopColor: "rgba(255, 255, 255, 0.08)",
   },
   termsBtn: {
     alignSelf: "flex-start",
-    backgroundColor: "#F5F5F4",
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.06)",
-    paddingVertical: 6,
+    borderColor: "#E2E8F0",
+    paddingVertical: 7,
     paddingHorizontal: 12,
     borderRadius: 10,
-    marginBottom: 4,
   },
   termsBtnDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.10)",
   },
   termsBtnRow: {
     flexDirection: "row",
@@ -419,8 +500,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   termsBtnText: {
-    color: "#C15F3D",
-    fontSize: 12.5,
+    color: "#EA580C",
+    fontSize: 12,
     fontWeight: "700",
   },
   termsBtnTextDark: {
@@ -428,9 +509,9 @@ const styles = StyleSheet.create({
   },
   consentSwitchLabel: {
     flex: 1,
-    color: "#171715",
+    color: "#0F172A",
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   consentSwitchLabelDark: {
     color: "#F8FAFC",
@@ -444,34 +525,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#065F46",
+    backgroundColor: "#059669",
     width: "100%",
-    maxWidth: 320,
-    paddingVertical: 12,
+    maxWidth: 360,
+    paddingVertical: 13,
     paddingHorizontal: 24,
     borderRadius: 14,
-    minHeight: 46,
-    shadowColor: "#065F46",
-    shadowOpacity: 0.22,
+    minHeight: 48,
+    shadowColor: "#059669",
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
   submitBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 15 },
-  feedback: { fontSize: 13.5, fontWeight: "600", textAlign: "center", marginTop: 4 },
-  feedbackOk: { color: "#059669" },
-  feedbackErr: { color: "#EF4444" },
+  feedback: { fontSize: 13.5, fontWeight: "700", textAlign: "center", marginTop: 4 },
+  feedbackOk: { color: "#10B981" },
+  feedbackErr: { color: "#F43F5E" },
   tipCard: {
-    backgroundColor: "#FFFBEB",
-    borderRadius: 16,
-    padding: 13,
+    backgroundColor: "rgba(245, 158, 11, 0.10)",
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: "rgba(245, 158, 11, 0.25)",
     gap: 4,
   },
   tipCardDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#451A03",
+    backgroundColor: "rgba(245, 158, 11, 0.12)",
+    borderColor: "rgba(245, 158, 11, 0.28)",
   },
   tipHeader: {
     flexDirection: "row",
@@ -480,16 +561,16 @@ const styles = StyleSheet.create({
   },
   tipTitle: {
     color: "#92400E",
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 12.5,
+    fontWeight: "800",
   },
   tipTitleDark: {
     color: "#FDE68A",
   },
   tipBody: {
     color: "#78350F",
-    fontSize: 12.5,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
   tipBodyDark: {
     color: "#FCD34D",

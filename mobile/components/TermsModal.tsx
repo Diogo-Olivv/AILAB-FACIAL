@@ -46,7 +46,7 @@ export function TermsModal({ visible, onClose, isDark = false }: Props) {
                 <MaterialCommunityIcons
                   name="scale-balance"
                   size={22}
-                  color={isDark ? "#F97316" : "#C15F3D"}
+                  color={isDark ? "#F97316" : "#EA580C"}
                 />
               </View>
               <View style={styles.headerTitleGroup}>
@@ -68,7 +68,7 @@ export function TermsModal({ visible, onClose, isDark = false }: Props) {
               <Feather
                 name="x"
                 size={18}
-                color={isDark ? "#94A3B8" : "#706E6A"}
+                color={isDark ? "#94A3B8" : "#64748B"}
               />
             </TouchableOpacity>
           </View>
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#E5E2DC",
+    borderColor: "#E2E8F0",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.16,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   cardDark: {
-    backgroundColor: "#0F172A",
+    backgroundColor: "#0F1623",
     borderColor: "#1E293B",
   },
   header: {
@@ -255,11 +255,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E2DC",
-    backgroundColor: "#FAF9F5",
+    borderBottomColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
   },
   headerDark: {
-    backgroundColor: "#0B0F19",
+    backgroundColor: "#090D16",
     borderBottomColor: "#1E293B",
   },
   headerLeft: {
@@ -275,18 +275,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: "#FAF5F0",
+    backgroundColor: "rgba(234, 88, 12, 0.08)",
     borderWidth: 1,
-    borderColor: "#F0DCD3",
+    borderColor: "rgba(234, 88, 12, 0.24)",
     alignItems: "center",
     justifyContent: "center",
   },
   iconCircleDark: {
-    backgroundColor: "#1E293B",
+    backgroundColor: "#161F30",
     borderColor: "#334155",
   },
   title: {
-    color: "#171715",
+    color: "#0F172A",
     fontSize: 16,
     fontWeight: "700",
     letterSpacing: -0.3,
@@ -324,18 +324,18 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   sectionBox: {
-    backgroundColor: "#FAF5F0",
+    backgroundColor: "rgba(234, 88, 12, 0.08)",
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#F0DCD3",
+    borderColor: "rgba(234, 88, 12, 0.24)",
   },
   sectionBoxDark: {
-    backgroundColor: "#1E293B",
+    backgroundColor: "#161F30",
     borderColor: "#334155",
   },
   sectionTitle: {
-    color: "#C15F3D",
+    color: "#EA580C",
     fontSize: 11.5,
     fontWeight: "700",
     letterSpacing: 0.4,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     color: "#FB923C",
   },
   paragraphHighlight: {
-    color: "#171715",
+    color: "#0F172A",
     fontSize: 13,
     lineHeight: 19,
   },
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   sectionHeading: {
-    color: "#171715",
+    color: "#0F172A",
     fontSize: 13,
     fontWeight: "700",
     letterSpacing: -0.2,
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     color: "#F8FAFC",
   },
   paragraph: {
-    color: "#706E6A",
+    color: "#64748B",
     fontSize: 12.5,
     lineHeight: 18,
   },
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: "700",
-    color: "#171715",
+    color: "#0F172A",
   },
   boldDark: {
     color: "#F8FAFC",
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   bulletItem: {
-    color: "#706E6A",
+    color: "#64748B",
     fontSize: 12,
     lineHeight: 17,
   },
@@ -393,18 +393,18 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
   },
   footerNote: {
-    backgroundColor: "#FAF9F5",
+    backgroundColor: "#F8FAFC",
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#E5E2DC",
+    borderColor: "#E2E8F0",
   },
   footerNoteDark: {
-    backgroundColor: "#1E293B",
+    backgroundColor: "#161F30",
     borderColor: "#334155",
   },
   footerNoteText: {
-    color: "#706E6A",
+    color: "#64748B",
     fontSize: 11.5,
     lineHeight: 16,
   },
@@ -415,12 +415,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderTopWidth: 1,
-    borderTopColor: "#E5E2DC",
-    backgroundColor: "#FAF9F5",
+    borderTopColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
     alignItems: "center",
   },
   footerDark: {
-    backgroundColor: "#0B0F19",
+    backgroundColor: "#090D16",
     borderTopColor: "#1E293B",
   },
   confirmBtn: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#171715",
+    backgroundColor: "#0F1623",
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 6,
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     shadowColor: "#059669",
   },
   confirmBtnText: {
-    color: "#FAF9F5",
+    color: "#F8FAFC",
     fontSize: 14,
     fontWeight: "600",
     letterSpacing: -0.2,

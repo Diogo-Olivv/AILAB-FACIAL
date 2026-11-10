@@ -1,22 +1,31 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useKioskTheme } from "@/lib/theme";
 
 export default function RootLayout() {
+  const { isDark, palette } = useKioskTheme();
+
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: "#FFFFFF" },
-          headerTintColor: "#0F172A",
+          headerStyle: { backgroundColor: palette.surface1 },
+          headerTintColor: palette.textPrimary,
           headerTitleStyle: { fontWeight: "800", fontSize: 17 },
           headerShadowVisible: false,
-          contentStyle: { backgroundColor: "#F6F8FD" },
+          contentStyle: { backgroundColor: palette.canvas },
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="enroll" options={{ title: "Cadastro e Recadastro", presentation: "modal" }} />
+        <Stack.Screen
+          name="enroll"
+          options={{
+            title: "Cadastro e Recadastro",
+            presentation: "modal",
+          }}
+        />
       </Stack>
     </SafeAreaProvider>
   );

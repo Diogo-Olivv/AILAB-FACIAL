@@ -1,3 +1,4 @@
+import { clearTutorToken, getTutorToken, setTutorToken as storeTutorToken } from "@/lib/tutorSession";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -14,24 +15,35 @@ import { RefreshCapture } from "@/components/RefreshCapture";
 import { TutorPinModal } from "@/components/TutorPinModal";
 import { triggerHaptic } from "@/lib/sound";
 import { isEnrollmentWindowActive } from "@/lib/enrollmentWindow";
+import { useKioskTheme } from "@/lib/theme";
 
 type TabMode = "enroll" | "refresh";
 
 export default function Enroll() {
   const router = useRouter();
-  const { tutorToken: initialTutorToken, initialMode, mode, isDark: isDarkParam } = useLocalSearchParams<{
-    tutorToken?: string;
+  const { initialMode, mode } = useLocalSearchParams<{
     initialMode?: TabMode;
     mode?: TabMode;
     isDark?: string;
   }>();
 
-  const [tutorToken, setTutorToken] = useState<string | undefined>(initialTutorToken);
+  const [tutorToken, setTutorTokenState] = useState<string | undefined>(() => getTutorToken());
+  const setTutorToken = (token: string) => {
+    storeTutorToken(token);
+    setTutorTokenState(token);
+  };
+
+  // Ao sair da tela de cadastro, a liberação do tutor é encerrada.
+  useEffect(() => {
+    return () => {
+      void clearTutorToken();
+    };
+  }, []);
   const [pinModalVisible, setPinModalVisible] = useState(false);
 
-  const [isDark, setIsDark] = useState(isDarkParam === "true");
+  const { isDark, toggleTheme: toggleGlobalTheme } = useKioskTheme();
   const [themeTransitionColor, setThemeTransitionColor] = useState(
-    isDarkParam === "true" ? "#FAF9F5" : "#0B0F19"
+    isDark ? "#F8FAFC" : "#090D16"
   );
   const themeFadeAnim = useRef(new Animated.Value(0)).current;
   const [activeTab, setActiveTab] = useState<TabMode>(
@@ -104,13 +116,12 @@ export default function Enroll() {
       contentFadeAnim.setValue(0);
       Animated.timing(contentFadeAnim, {
         toValue: 1,
-        duration: 220,
+        duration: 200,
         useNativeDriver: true,
       }).start();
     }
   };
 
-  // PanResponder fluido para touch com arrasto em tempo real estilo iOS
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
@@ -143,7 +154,6 @@ export default function Enroll() {
     })
   ).current;
 
-  // Suporte a arrasto de ponteiro/mouse na web
   const handlePointerDown = (e: any) => {
     if (e.pointerType === "mouse") {
       isWebDragging.current = true;
@@ -189,25 +199,25 @@ export default function Enroll() {
         options={{
           title: activeTab === "refresh" ? "Recadastro Biométrico" : "Cadastro de Integrante",
           headerStyle: {
-            backgroundColor: isDark ? "#0F172A" : "#FFFFFF",
+            backgroundColor: isDark ? "#0F1623" : "#FFFFFF",
           },
-          headerTintColor: isDark ? "#F8FAFC" : "#171715",
+          headerTintColor: isDark ? "#F8FAFC" : "#0F172A",
           headerShadowVisible: false,
           headerRight: () => (
             <TouchableOpacity
               onPress={() => {
                 triggerHaptic("tap");
                 const nextIsDark = !isDark;
-                setThemeTransitionColor(nextIsDark ? "#0B0F19" : "#FAF9F5");
+                setThemeTransitionColor(nextIsDark ? "#090D16" : "#F8FAFC");
                 Animated.timing(themeFadeAnim, {
                   toValue: 1,
-                  duration: 120,
+                  duration: 110,
                   useNativeDriver: true,
                 }).start(() => {
-                  setIsDark(nextIsDark);
+                  toggleGlobalTheme();
                   Animated.timing(themeFadeAnim, {
                     toValue: 0,
-                    duration: 260,
+                    duration: 220,
                     useNativeDriver: true,
                   }).start();
                 });
@@ -219,8 +229,8 @@ export default function Enroll() {
             >
               <Feather
                 name={isDark ? "sun" : "moon"}
-                size={17}
-                color={isDark ? "#F8FAFC" : "#171715"}
+                size={16}
+                color={isDark ? "#FBBF24" : "#334155"}
               />
             </TouchableOpacity>
           ),
@@ -230,9 +240,13 @@ export default function Enroll() {
       <View style={styles.responsiveWrapper}>
         <Animated.View
           pointerEvents="none"
-          style={[styles.themeTransitionOverlay, { opacity: themeFadeAnim, backgroundColor: themeTransitionColor }]}
+          style={[
+            styles.themeTransitionOverlay,
+            { opacity: themeFadeAnim, backgroundColor: themeTransitionColor },
+          ]}
         />
-        {/* Segmented control Fluido iOS com Arraste (Drag) e Pílula Deslizante */}
+
+        {/* Segmented Control Estilo Linear / Raycast */}
         <View
           style={[styles.tabContainer, isDark && styles.tabContainerDark]}
           onLayout={(e) => {
@@ -249,7 +263,6 @@ export default function Enroll() {
           // @ts-ignore
           onPointerCancel={handlePointerUp}
         >
-          {/* Pílula Deslizante com Física de Mola iOS */}
           {pillWidth > 0 && (
             <Animated.View
               style={[
@@ -270,11 +283,23 @@ export default function Enroll() {
             accessibilityRole="tab"
             aria-selected={activeTab === "enroll"}
           >
+            <Feather
+              name="user-plus"
+              size={14}
+              color={
+                activeTab === "enroll"
+                  ? "#EA580C"
+                  : isDark
+                  ? "#94A3B8"
+                  : "#64748B"
+              }
+            />
             <Text
               style={[
                 styles.tabText,
                 isDark && styles.tabTextDark,
-                activeTab === "enroll" && (isDark ? styles.tabTextActiveDark : styles.tabTextActive),
+                activeTab === "enroll" &&
+                  (isDark ? styles.tabTextActiveDark : styles.tabTextActive),
               ]}
             >
               Novo Cadastro
@@ -288,11 +313,23 @@ export default function Enroll() {
             accessibilityRole="tab"
             aria-selected={activeTab === "refresh"}
           >
+            <Feather
+              name="refresh-cw"
+              size={13}
+              color={
+                activeTab === "refresh"
+                  ? "#EA580C"
+                  : isDark
+                  ? "#94A3B8"
+                  : "#64748B"
+              }
+            />
             <Text
               style={[
                 styles.tabText,
                 isDark && styles.tabTextDark,
-                activeTab === "refresh" && (isDark ? styles.tabTextActiveDark : styles.tabTextActive),
+                activeTab === "refresh" &&
+                  (isDark ? styles.tabTextActiveDark : styles.tabTextActive),
               ]}
             >
               Recadastro
@@ -300,7 +337,6 @@ export default function Enroll() {
           </TouchableOpacity>
         </View>
 
-        {/* Conteúdo com transição animada de fade e slide suave */}
         <Animated.View
           style={[
             styles.contentContainer,
@@ -310,7 +346,7 @@ export default function Enroll() {
                 {
                   translateY: contentFadeAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [8, 0],
+                    outputRange: [6, 0],
                   }),
                 },
               ],
@@ -343,80 +379,85 @@ export default function Enroll() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAF9F5", alignItems: "center" },
+  container: { flex: 1, backgroundColor: "#F8FAFC", alignItems: "center" },
+  containerDark: { backgroundColor: "#090D16" },
   themeTransitionOverlay: {
     ...StyleSheet.absoluteFill,
     zIndex: 100,
   },
-  containerDark: { backgroundColor: "#0B0F19" },
   responsiveWrapper: {
     flex: 1,
     width: "100%",
-    maxWidth: 640,
+    maxWidth: 680,
   },
   contentContainer: {
     flex: 1,
     width: "100%",
   },
   themeToggleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 4,
   },
   themeToggleBtnDark: {
-    backgroundColor: "#1E293B",
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.10)",
   },
   tabContainer: {
     position: "relative",
     flexDirection: "row",
-    backgroundColor: "rgba(0, 0, 0, 0.04)",
+    backgroundColor: "#E2E8F0",
     marginHorizontal: 16,
     marginTop: 14,
-    marginBottom: 8,
-    borderRadius: 16,
+    marginBottom: 6,
+    borderRadius: 14,
     padding: 4,
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.04)",
+    borderColor: "#CBD5E1",
   },
   tabContainerDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.08)",
   },
   slidingPill: {
     position: "absolute",
     top: 4,
     bottom: 4,
     left: 4,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.06)",
-    shadowColor: "#000",
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
   },
   slidingPillDark: {
-    backgroundColor: "#0F172A",
-    borderColor: "#334155",
-    shadowOpacity: 0.3,
+    backgroundColor: "#0F1623",
+    borderColor: "rgba(255, 255, 255, 0.12)",
+    shadowOpacity: 0.4,
   },
   tab: {
     flex: 1,
+    flexDirection: "row",
+    gap: 6,
     paddingVertical: 10,
-    minHeight: 40,
+    minHeight: 42,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
+    borderRadius: 10,
     zIndex: 1,
   },
   tabText: {
-    color: "#78716C",
+    color: "#64748B",
     fontSize: 13.5,
     fontWeight: "600",
   },
@@ -424,7 +465,7 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
   },
   tabTextActive: {
-    color: "#171715",
+    color: "#0F172A",
     fontWeight: "800",
   },
   tabTextActiveDark: {

@@ -17,7 +17,8 @@ import { useRefreshEmbedding } from "@/hooks/useRefreshEmbedding";
 import { SequentialCamera } from "@/components/SequentialCamera";
 import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
 import { TermsModal } from "@/components/TermsModal";
-import { ENROLL_PHOTO_COUNT, getAvatarColor } from "@/lib/config";
+import { KioskAvatar } from "@/components/KioskAvatar";
+import { ENROLL_PHOTO_COUNT } from "@/lib/config";
 import { notifyInteraction } from "@/lib/sound";
 import { isEnrollmentWindowActive, getEnrollmentWindowInfo } from "@/lib/enrollmentWindow";
 
@@ -33,7 +34,6 @@ export function RefreshCapture({ tutorToken, onSuccess, isDark = false }: Props)
   const { refresh, loading: refreshing } = useRefreshEmbedding();
   const insets = useSafeAreaInsets();
 
-  // Janela cadastral temporária: dispensa PIN de tutor entre 28/09 e 02/10/2026
   const windowActive = useMemo(() => isEnrollmentWindowActive(), []);
   const windowInfo = useMemo(() => getEnrollmentWindowInfo(), []);
 
@@ -129,6 +129,7 @@ export function RefreshCapture({ tutorToken, onSuccess, isDark = false }: Props)
         data={badgeData}
         onDismiss={() => setBadgeData(null)}
         autoCloseMs={5000}
+        isDark={isDark}
       />
       <ScrollView
         style={[styles.container, isDark && styles.containerDark]}
@@ -142,127 +143,134 @@ export function RefreshCapture({ tutorToken, onSuccess, isDark = false }: Props)
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── BADGE DE JANELA CADASTRAL ── */}
         {windowActive && (
           <View style={[styles.enrollWindowBadge, isDark && styles.enrollWindowBadgeDark]}>
-            <Feather name="calendar" size={16} color={isDark ? "#FDE68A" : "#92400E"} />
+            <Feather name="calendar" size={16} color={isDark ? "#FBBF24" : "#D97706"} />
             <View style={styles.enrollWindowTextWrap}>
               <Text style={[styles.enrollWindowTitle, isDark && styles.enrollWindowTitleDark]}>
                 Janela de Atualização Cadastral Ativa
               </Text>
               <Text style={[styles.enrollWindowSub, isDark && styles.enrollWindowSubDark]}>
-                Até {windowInfo.windowEnd} — autenticação de tutor dispensada. Atualize sua biometria
-                de forma autônoma.
+                Até {windowInfo.windowEnd} — autenticação de tutor dispensada.
               </Text>
             </View>
           </View>
         )}
 
-        {/* ── SEÇÃO 1: SELEÇÃO DO INTEGRANTE ── */}
-        <Text style={[styles.sectionHeader, isDark && styles.sectionHeaderDark]}>
-          1. Selecione o integrante cadastrado
-        </Text>
+        {/* Seção 1: Seleção do Integrante */}
+        <View style={[styles.card, isDark && styles.cardDark]}>
+          <Text style={[styles.stepEyebrow, isDark && styles.stepEyebrowDark]}>
+            ETAPA 1 · SELECIONE O INTEGRANTE CADASTRADO
+          </Text>
 
-        {selectedProfile ? (
-          <View style={[styles.selectedCard, isDark && styles.selectedCardDark]}>
-            <View style={styles.selectedInfo}>
-              <View
-                style={[
-                  styles.avatarCircle,
-                  { backgroundColor: getAvatarColor(selectedProfile.name).bg },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.avatarInitials,
-                    { color: getAvatarColor(selectedProfile.name).text },
-                  ]}
-                >
-                  {selectedProfile.name
-                    .split(" ")
-                    .map((w) => w[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.selectedMeta}>
-                <Text style={[styles.selectedName, isDark && styles.selectedNameDark]}>
-                  {selectedProfile.name}
-                </Text>
-                <Text style={[styles.selectedMatricula, isDark && styles.selectedMatriculaDark]}>
-                  {selectedProfile.matricula
-                    ? `Matrícula: ${selectedProfile.matricula}`
-                    : "Sem matrícula registrada"}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.changeBtn}
-              onPress={handleResetSelection}
-              disabled={refreshing}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.changeBtnText}>Trocar</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={[styles.searchSection, isDark && styles.searchSectionDark]}>
-            <TextInput
-              style={[styles.searchInput, isDark && styles.searchInputDark]}
-              placeholder="Digite o nome ou matrícula..."
-              placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCorrect={false}
-            />
-
-            {loadingProfiles ? (
-              <View style={styles.centerLoading}>
-                <ActivityIndicator color="#2563EB" size="small" />
-                <Text style={[styles.loadingText, isDark && styles.loadingTextDark]}>
-                  Carregando integrantes...
-                </Text>
-              </View>
-            ) : profilesError ? (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorBoxText}>{profilesError}</Text>
-                <TouchableOpacity onPress={reload} style={styles.retryBtn}>
-                  <Text style={styles.retryBtnText}>Tentar novamente</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.resultsList}>
-                {filteredProfiles.length === 0 ? (
-                  <Text style={[styles.emptyText, isDark && styles.emptyTextDark]}>
-                    Nenhum integrante encontrado.
+          {selectedProfile ? (
+            <View style={[styles.selectedCard, isDark && styles.selectedCardDark]}>
+              <View style={styles.selectedInfo}>
+                <KioskAvatar
+                  name={selectedProfile.name}
+                  uri={selectedProfile.avatar_url}
+                  size={44}
+                  isTutor={Boolean(selectedProfile.is_tutor)}
+                  isDark={isDark}
+                />
+                <View style={styles.selectedMeta}>
+                  <View style={styles.selectedNameRow}>
+                    <Text style={[styles.selectedName, isDark && styles.selectedNameDark]} numberOfLines={1}>
+                      {selectedProfile.name}
+                    </Text>
+                    {selectedProfile.is_tutor && (
+                      <View style={styles.tutorPill}>
+                        <Text style={styles.tutorPillText}>TUTOR</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.selectedMatricula, isDark && styles.selectedMatriculaDark]}>
+                    {selectedProfile.matricula
+                      ? `Matrícula: #${selectedProfile.matricula}`
+                      : "Sem matrícula registrada"}
                   </Text>
-                ) : (
-                  filteredProfiles.map((p) => {
-                    const avatar = getAvatarColor(p.name);
-                    return (
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.changeBtn}
+                onPress={handleResetSelection}
+                disabled={refreshing}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.changeBtnText}>Trocar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.searchBlock}>
+              <View style={[styles.searchInputWrap, isDark && styles.searchInputWrapDark]}>
+                <Feather
+                  name="search"
+                  size={15}
+                  color={isDark ? "#64748B" : "#94A3B8"}
+                />
+                <TextInput
+                  style={[styles.searchInput, isDark && styles.searchInputDark]}
+                  placeholder="Buscar por nome ou matrícula..."
+                  placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCorrect={false}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery("")}>
+                    <Feather name="x" size={15} color={isDark ? "#94A3B8" : "#64748B"} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {loadingProfiles ? (
+                <View style={styles.centerLoading}>
+                  <ActivityIndicator color="#EA580C" size="small" />
+                  <Text style={[styles.loadingText, isDark && styles.loadingTextDark]}>
+                    Carregando integrantes...
+                  </Text>
+                </View>
+              ) : profilesError ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorBoxText}>{profilesError}</Text>
+                  <TouchableOpacity onPress={reload} style={styles.retryBtn}>
+                    <Text style={styles.retryBtnText}>Tentar novamente</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.resultsList}>
+                  {filteredProfiles.length === 0 ? (
+                    <Text style={[styles.emptyText, isDark && styles.emptyTextDark]}>
+                      Nenhum integrante encontrado.
+                    </Text>
+                  ) : (
+                    filteredProfiles.map((p) => (
                       <TouchableOpacity
                         key={p.id}
                         style={[styles.profileRow, isDark && styles.profileRowDark]}
                         onPress={() => handleSelect(p)}
                         activeOpacity={0.7}
                       >
-                        <View style={[styles.rowAvatar, { backgroundColor: avatar.bg }]}>
-                          <Text style={[styles.rowAvatarText, { color: avatar.text }]}>
-                            {p.name
-                              .split(" ")
-                              .map((w) => w[0])
-                              .join("")
-                              .slice(0, 2)
-                              .toUpperCase()}
-                          </Text>
-                        </View>
+                        <KioskAvatar
+                          name={p.name}
+                          uri={p.avatar_url}
+                          size={38}
+                          isTutor={Boolean(p.is_tutor)}
+                          isDark={isDark}
+                        />
                         <View style={styles.rowInfo}>
-                          <Text style={[styles.rowName, isDark && styles.rowNameDark]} numberOfLines={1}>
-                            {p.name}
-                          </Text>
+                          <View style={styles.selectedNameRow}>
+                            <Text style={[styles.rowName, isDark && styles.rowNameDark]} numberOfLines={1}>
+                              {p.name}
+                            </Text>
+                            {p.is_tutor && (
+                              <View style={styles.tutorPill}>
+                                <Text style={styles.tutorPillText}>TUTOR</Text>
+                              </View>
+                            )}
+                          </View>
                           <Text style={[styles.rowMatricula, isDark && styles.rowMatriculaDark]}>
-                            {p.matricula ? `Matrícula: ${p.matricula}` : "Sem matrícula"}
+                            {p.matricula ? `#${p.matricula}` : "Sem matrícula"}
                           </Text>
                         </View>
                         <View style={[styles.selectBadge, isDark && styles.selectBadgeDark]}>
@@ -271,24 +279,42 @@ export function RefreshCapture({ tutorToken, onSuccess, isDark = false }: Props)
                           </Text>
                         </View>
                       </TouchableOpacity>
-                    );
-                  })
-                )}
-              </View>
-            )}
+                    ))
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Seção 2: Captura Biométrica */}
+        <View style={[styles.card, isDark && styles.cardDark]}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.stepEyebrow, isDark && styles.stepEyebrowDark]}>
+              ETAPA 2 · CAPTURA BIOMÉTRICA ({ENROLL_PHOTO_COUNT} FRAMES)
+            </Text>
+            <View
+              style={[
+                styles.photoCountBadge,
+                shots.length === ENROLL_PHOTO_COUNT && styles.photoCountBadgeDone,
+                isDark && styles.photoCountBadgeDark,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.photoCountText,
+                  shots.length === ENROLL_PHOTO_COUNT && styles.photoCountTextDone,
+                  isDark && styles.photoCountTextDark,
+                ]}
+              >
+                {shots.length}/{ENROLL_PHOTO_COUNT} fotos
+              </Text>
+            </View>
           </View>
-        )}
 
-        {/* ── SEÇÃO 2: CAPTURA FACIAL ── */}
-        <Text style={[styles.sectionHeader, isDark && styles.sectionHeaderDark]}>
-          2. Captura biométrica facial
-        </Text>
-
-        <View style={styles.captureRow}>
           <TouchableOpacity
             style={[
               styles.captureBtn,
-              isDark && styles.captureBtnDark,
               (!selectedProfile || refreshing) && styles.disabled,
             ]}
             onPress={openCamera}
@@ -300,42 +326,46 @@ export function RefreshCapture({ tutorToken, onSuccess, isDark = false }: Props)
             <Feather name="camera" size={16} color="#FFFFFF" />
             <Text style={styles.captureBtnText}>
               {shots.length === ENROLL_PHOTO_COUNT
-                ? "Refazer Fotos"
-                : `Tirar ${ENROLL_PHOTO_COUNT} Novas Fotos`}
+                ? "Refazer Captura de Fotos"
+                : `Capturar ${ENROLL_PHOTO_COUNT} Novas Fotos`}
             </Text>
           </TouchableOpacity>
 
-          <View style={[styles.photoCountBadge, isDark && styles.photoCountBadgeDark]}>
-            <Text style={[styles.photoCountText, isDark && styles.photoCountTextDark]}>
-              {shots.length}/{ENROLL_PHOTO_COUNT} fotos
+          {!selectedProfile && (
+            <Text style={[styles.hintNotice, isDark && styles.hintNoticeDark]}>
+              Selecione um integrante na Etapa 1 antes de iniciar a câmera.
+            </Text>
+          )}
+
+          {shots.length > 0 && (
+            <View style={styles.thumbs}>
+              {shots.map((uri, i) => (
+                <View key={i} style={styles.thumbWrap}>
+                  <Image source={{ uri }} style={[styles.thumb, isDark && styles.thumbDark]} />
+                  <View style={styles.thumbNumberBadge}>
+                    <Text style={styles.thumbNumberText}>#{i + 1}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <View style={[styles.tipCard, isDark && styles.tipCardDark]}>
+            <View style={styles.tipHeader}>
+              <Ionicons
+                name="bulb-outline"
+                size={15}
+                color={isDark ? "#FBBF24" : "#D97706"}
+              />
+              <Text style={[styles.tipTitle, isDark && styles.tipTitleDark]}>
+                Preservação Integral do Histórico
+              </Text>
+            </View>
+            <Text style={[styles.tipBody, isDark && styles.tipBodyDark]}>
+              O recadastro apenas recalibra seu vetor facial de 512 dimensões. Todas as suas horas e sessões anteriores permanecem intactas.
             </Text>
           </View>
-        </View>
 
-        {!selectedProfile && (
-          <Text style={[styles.hintNotice, isDark && styles.hintNoticeDark]}>
-            * Selecione um integrante acima antes de iniciar a captura facial.
-          </Text>
-        )}
-
-        {shots.length > 0 && (
-          <View style={styles.thumbs}>
-            {shots.map((uri, i) => (
-              <Image key={i} source={{ uri }} style={[styles.thumb, isDark && styles.thumbDark]} />
-            ))}
-          </View>
-        )}
-
-        {/* ── SEÇÃO 3: TERMO DE RENOVAÇÃO / LGPD ── */}
-        <View style={[styles.infoCard, isDark && styles.infoCardDark]}>
-          <Text style={[styles.infoTitle, isDark && styles.infoTitleDark]}>
-            Atualização do Vetor Biométrico
-          </Text>
-          <Text style={[styles.infoBody, isDark && styles.infoBodyDark]}>
-            O recadastro recalcula as representações biométricas faciais do integrante e
-            atualiza os vetores na base. Todas as sessões anteriores, horas
-            acumuladas e histórico de presença continuam vinculados ao perfil sem qualquer perda.
-          </Text>
           <TouchableOpacity
             onPress={() => setTermsOpen(true)}
             style={[styles.termsBtn, isDark && styles.termsBtnDark]}
@@ -343,7 +373,11 @@ export function RefreshCapture({ tutorToken, onSuccess, isDark = false }: Props)
             accessibilityRole="button"
           >
             <View style={styles.termsBtnRow}>
-              <Feather name="book-open" size={13} color={isDark ? "#FB923C" : "#C15F3D"} />
+              <Feather
+                name="book-open"
+                size={13}
+                color={isDark ? "#FB923C" : "#EA580C"}
+              />
               <Text style={[styles.termsBtnText, isDark && styles.termsBtnTextDark]}>
                 Ler Termos de Privacidade e LGPD
               </Text>
@@ -351,19 +385,7 @@ export function RefreshCapture({ tutorToken, onSuccess, isDark = false }: Props)
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.tipCard, isDark && styles.tipCardDark]}>
-          <View style={styles.tipHeader}>
-            <Ionicons name="bulb-outline" size={16} color={isDark ? "#FDE68A" : "#92400E"} />
-            <Text style={[styles.tipTitle, isDark && styles.tipTitleDark]}>
-              Dica para quem usa óculos ou barba
-            </Text>
-          </View>
-          <Text style={[styles.tipBody, isDark && styles.tipBodyDark]}>
-            Se você começou a usar óculos, mudou a armação ou alterou a barba recentemente, capture algumas fotos com óculos e outras sem para atualizar o reconhecimento em todas as suas variações.
-          </Text>
-        </View>
-
-        {/* ── SEÇÃO 4: BOTÃO DE ENVIO ── */}
+        {/* Botão de Envio */}
         <View style={styles.submitContainer}>
           <TouchableOpacity
             style={[styles.submitBtn, (!canSubmit || refreshing) && styles.disabled]}
@@ -376,8 +398,8 @@ export function RefreshCapture({ tutorToken, onSuccess, isDark = false }: Props)
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Feather name="check" size={17} color="#FFFFFF" />
-                <Text style={styles.submitBtnText}>Atualizar Biometria</Text>
+                <Feather name="check-circle" size={17} color="#FFFFFF" />
+                <Text style={styles.submitBtnText}>Atualizar Biometria Facial</Text>
               </>
             )}
           </TouchableOpacity>
@@ -418,52 +440,64 @@ export function RefreshCapture({ tutorToken, onSuccess, isDark = false }: Props)
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FAF9F5", position: "relative" },
-  rootDark: { backgroundColor: "#0B0F19" },
-  container: { flex: 1, backgroundColor: "#FAF9F5" },
-  containerDark: { backgroundColor: "#0B0F19" },
-  content: { padding: 16, gap: 16, paddingBottom: 48 },
-  sectionHeader: {
-    color: "#171715",
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: -0.2,
-    marginTop: 6,
-  },
-  sectionHeaderDark: {
-    color: "#F8FAFC",
-  },
-  searchSection: {
+  root: { flex: 1, backgroundColor: "#F8FAFC", position: "relative" },
+  rootDark: { backgroundColor: "#090D16" },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  containerDark: { backgroundColor: "#090D16" },
+  content: { padding: 16, gap: 14, paddingBottom: 48 },
+  card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
-    padding: 14,
+    borderColor: "#E2E8F0",
     gap: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
   },
-  searchSectionDark: {
-    backgroundColor: "#0F172A",
-    borderColor: "#1E293B",
+  cardDark: {
+    backgroundColor: "#0F1623",
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  stepEyebrow: {
+    color: "#EA580C",
+    fontSize: 10.5,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+  },
+  stepEyebrowDark: {
+    color: "#FB923C",
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  searchBlock: {
+    gap: 10,
+  },
+  searchInputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    minHeight: 44,
+  },
+  searchInputWrapDark: {
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.10)",
   },
   searchInput: {
-    backgroundColor: "#F5F5F4",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: "#171715",
+    flex: 1,
+    color: "#0F172A",
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
+    paddingVertical: 8,
   },
   searchInputDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
     color: "#F8FAFC",
   },
   centerLoading: {
@@ -472,26 +506,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  loadingText: { color: "#78716C", fontSize: 13, fontWeight: "500" },
+  loadingText: { color: "#64748B", fontSize: 13, fontWeight: "600" },
   loadingTextDark: { color: "#94A3B8" },
   errorBox: {
     padding: 14,
     alignItems: "center",
     gap: 8,
   },
-  errorBoxText: { color: "#EF4444", fontSize: 13, textAlign: "center" },
+  errorBoxText: { color: "#E11D48", fontSize: 13, textAlign: "center" },
   retryBtn: {
-    backgroundColor: "rgba(185,28,28,0.08)",
+    backgroundColor: "rgba(244, 63, 94, 0.12)",
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 10,
   },
-  retryBtnText: { color: "#EF4444", fontWeight: "600", fontSize: 12.5 },
+  retryBtnText: { color: "#E11D48", fontWeight: "700", fontSize: 12.5 },
   resultsList: {
     gap: 8,
   },
   emptyText: {
-    color: "#78716C",
+    color: "#64748B",
     fontSize: 13,
     textAlign: "center",
     paddingVertical: 14,
@@ -502,196 +536,179 @@ const styles = StyleSheet.create({
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    padding: 10,
+    borderRadius: 13,
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
-    gap: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    borderColor: "#E2E8F0",
+    gap: 11,
   },
   profileRowDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.08)",
   },
-  rowAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rowAvatarText: { fontWeight: "700", fontSize: 13.5 },
-  rowInfo: { flex: 1 },
-  rowName: { color: "#171715", fontWeight: "700", fontSize: 14.5 },
+  rowInfo: { flex: 1, gap: 1 },
+  rowName: { color: "#0F172A", fontWeight: "700", fontSize: 14, flexShrink: 1 },
   rowNameDark: { color: "#F8FAFC" },
-  rowMatricula: { color: "#78716C", fontSize: 12.5, marginTop: 1 },
+  rowMatricula: {
+    color: "#64748B",
+    fontSize: 12,
+    fontVariant: ["tabular-nums"],
+  },
   rowMatriculaDark: { color: "#94A3B8" },
   selectBadge: {
-    backgroundColor: "#F5F5F4",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
-    paddingHorizontal: 12,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 11,
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: 9,
   },
   selectBadgeDark: {
-    backgroundColor: "#0F172A",
-    borderColor: "#334155",
+    backgroundColor: "#0F1623",
+    borderColor: "rgba(255, 255, 255, 0.12)",
   },
-  selectBadgeText: { color: "#171715", fontWeight: "700", fontSize: 12 },
+  selectBadgeText: { color: "#0F172A", fontWeight: "700", fontSize: 12 },
   selectBadgeTextDark: { color: "#F8FAFC" },
-
   selectedCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: "rgba(16, 185, 129, 0.08)",
+    borderRadius: 14,
+    padding: 12,
     borderWidth: 1.5,
-    borderColor: "#059669",
+    borderColor: "#10B981",
     gap: 12,
-    shadowColor: "#059669",
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
   },
   selectedCardDark: {
-    backgroundColor: "#0F172A",
-    borderColor: "#059669",
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    borderColor: "#10B981",
   },
   selectedInfo: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  selectedMeta: { flex: 1, gap: 2 },
+  selectedNameRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 6,
   },
-  avatarInitials: { fontWeight: "800", fontSize: 16 },
-  selectedMeta: { flex: 1 },
-  selectedName: { color: "#171715", fontWeight: "800", fontSize: 15.5 },
+  selectedName: {
+    color: "#0F172A",
+    fontWeight: "800",
+    fontSize: 15,
+    flexShrink: 1,
+  },
   selectedNameDark: { color: "#F8FAFC" },
-  selectedMatricula: { color: "#065F46", fontWeight: "600", fontSize: 12.5, marginTop: 2 },
+  selectedMatricula: {
+    color: "#059669",
+    fontWeight: "700",
+    fontSize: 12,
+    fontVariant: ["tabular-nums"],
+  },
   selectedMatriculaDark: { color: "#34D399" },
+  tutorPill: {
+    backgroundColor: "rgba(234, 88, 12, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(234, 88, 12, 0.35)",
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 5,
+  },
+  tutorPillText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#EA580C",
+  },
   changeBtn: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: "rgba(244, 63, 94, 0.14)",
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingVertical: 7,
+    borderRadius: 9,
     minHeight: 36,
     alignItems: "center",
     justifyContent: "center",
   },
-  changeBtnText: { color: "#B91C1C", fontWeight: "700", fontSize: 12.5 },
-
-  captureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
+  changeBtnText: { color: "#E11D48", fontWeight: "800", fontSize: 12 },
   captureBtn: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#171715",
-    paddingVertical: 10,
+    backgroundColor: "#EA580C",
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 14,
-    minHeight: 44,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    borderRadius: 13,
+    minHeight: 46,
   },
-  captureBtnDark: {
-    backgroundColor: "#1E293B",
-    borderWidth: 1,
-    borderColor: "#334155",
-  },
-  captureBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13.5 },
+  captureBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 13.5 },
   photoCountBadge: {
-    backgroundColor: "#F5F5F4",
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 40,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
   },
   photoCountBadgeDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.10)",
+  },
+  photoCountBadgeDone: {
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    borderColor: "rgba(16, 185, 129, 0.35)",
   },
   photoCountText: {
-    color: "#171715",
-    fontSize: 12.5,
-    fontWeight: "700",
+    color: "#475569",
+    fontSize: 11.5,
+    fontWeight: "800",
+    fontVariant: ["tabular-nums"],
   },
   photoCountTextDark: {
-    color: "#F8FAFC",
+    color: "#CBD5E1",
   },
-  hintNotice: { color: "#78716C", fontSize: 12.5, fontStyle: "italic", marginTop: 2 },
+  photoCountTextDone: {
+    color: "#10B981",
+  },
+  hintNotice: { color: "#64748B", fontSize: 12, fontStyle: "italic" },
   hintNoticeDark: { color: "#94A3B8" },
   disabled: { opacity: 0.45 },
-  thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 4 },
+  thumbs: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginTop: 2 },
+  thumbWrap: { position: "relative" },
   thumb: {
-    width: 60,
-    height: 60,
+    width: 64,
+    height: 64,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
+    borderWidth: 1.5,
+    borderColor: "#10B981",
   },
-  thumbDark: {
-    borderColor: "#334155",
+  thumbDark: { borderColor: "#34D399" },
+  thumbNumberBadge: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    backgroundColor: "rgba(9, 13, 22, 0.80)",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
   },
-
-  infoCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
-    gap: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+  thumbNumberText: {
+    color: "#FFFFFF",
+    fontSize: 9.5,
+    fontWeight: "800",
+    fontVariant: ["tabular-nums"],
   },
-  infoCardDark: {
-    backgroundColor: "#0F172A",
-    borderColor: "#1E293B",
-  },
-  infoTitle: { color: "#171715", fontSize: 14, fontWeight: "700" },
-  infoTitleDark: { color: "#F8FAFC" },
-  infoBody: { color: "#57534E", fontSize: 12.5, lineHeight: 19 },
-  infoBodyDark: { color: "#94A3B8" },
   termsBtn: {
     alignSelf: "flex-start",
-    backgroundColor: "#F5F5F4",
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.06)",
-    paddingVertical: 6,
+    borderColor: "#E2E8F0",
+    paddingVertical: 7,
     paddingHorizontal: 12,
     borderRadius: 10,
-    marginTop: 2,
   },
   termsBtnDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.10)",
   },
   termsBtnRow: {
     flexDirection: "row",
@@ -699,14 +716,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   termsBtnText: {
-    color: "#C15F3D",
-    fontSize: 12.5,
+    color: "#EA580C",
+    fontSize: 12,
     fontWeight: "700",
   },
   termsBtnTextDark: {
     color: "#FB923C",
   },
-
   submitContainer: {
     alignItems: "center",
     marginTop: 4,
@@ -716,21 +732,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#065F46",
+    backgroundColor: "#059669",
     width: "100%",
-    maxWidth: 320,
-    paddingVertical: 12,
+    maxWidth: 360,
+    paddingVertical: 13,
     paddingHorizontal: 24,
     borderRadius: 14,
-    minHeight: 46,
-    shadowColor: "#065F46",
-    shadowOpacity: 0.22,
+    minHeight: 48,
+    shadowColor: "#059669",
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
   submitBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 15 },
-
   feedbackCard: {
     padding: 14,
     borderRadius: 14,
@@ -738,27 +753,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   feedbackCardOk: {
-    backgroundColor: "#F0FDF4",
-    borderColor: "#86EFAC",
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    borderColor: "rgba(16, 185, 129, 0.35)",
   },
   feedbackCardErr: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FECACA",
+    backgroundColor: "rgba(244, 63, 94, 0.12)",
+    borderColor: "rgba(244, 63, 94, 0.35)",
   },
-  feedbackText: { fontSize: 14, fontWeight: "600", textAlign: "center" },
-  feedbackTextOk: { color: "#065F46" },
-  feedbackTextErr: { color: "#EF4444" },
+  feedbackText: { fontSize: 13.5, fontWeight: "700", textAlign: "center" },
+  feedbackTextOk: { color: "#10B981" },
+  feedbackTextErr: { color: "#F43F5E" },
   tipCard: {
-    backgroundColor: "#FFFBEB",
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: "rgba(245, 158, 11, 0.10)",
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: "rgba(245, 158, 11, 0.25)",
     gap: 4,
   },
   tipCardDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#451A03",
+    backgroundColor: "rgba(245, 158, 11, 0.12)",
+    borderColor: "rgba(245, 158, 11, 0.28)",
   },
   tipHeader: {
     flexDirection: "row",
@@ -767,36 +782,33 @@ const styles = StyleSheet.create({
   },
   tipTitle: {
     color: "#92400E",
-    fontSize: 13.5,
-    fontWeight: "700",
+    fontSize: 12.5,
+    fontWeight: "800",
   },
   tipTitleDark: {
     color: "#FDE68A",
   },
   tipBody: {
     color: "#78350F",
-    fontSize: 12.5,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
   },
   tipBodyDark: {
     color: "#FCD34D",
   },
-
-  // Janela Cadastral Temporária
   enrollWindowBadge: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    backgroundColor: "#FFFBEB",
-    borderRadius: 16,
+    backgroundColor: "rgba(245, 158, 11, 0.12)",
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: "#F59E0B",
-    padding: 14,
-    marginBottom: 8,
+    padding: 13,
   },
   enrollWindowBadgeDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#F59E0B",
+    backgroundColor: "rgba(245, 158, 11, 0.15)",
+    borderColor: "#FBBF24",
   },
   enrollWindowTextWrap: {
     flex: 1,
@@ -804,9 +816,8 @@ const styles = StyleSheet.create({
   },
   enrollWindowTitle: {
     color: "#92400E",
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: "800",
-    letterSpacing: -0.1,
   },
   enrollWindowTitleDark: {
     color: "#FDE68A",

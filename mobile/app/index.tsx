@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import { setTutorToken } from "@/lib/tutorSession";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Animated,
   Image,
@@ -19,39 +20,57 @@ import { triggerHaptic } from "@/lib/sound";
 import { Feather } from "@expo/vector-icons";
 import { isEnrollmentWindowActive } from "@/lib/enrollmentWindow";
 import { usePresence } from "@/hooks/usePresence";
+import { useKioskTheme } from "@/lib/theme";
 
 const logo = require("../assets/ailab_makers.jpeg");
+
+function formatClock(date: Date): string {
+  return date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isCompact = width < 768;
+  const isUltraCompact = width < 480;
 
-  const [isDark, setIsDark] = useState(false);
-  const [themeTransitionColor, setThemeTransitionColor] = useState("#0B0F19");
+  const { isDark, toggleTheme: toggleGlobalTheme } = useKioskTheme();
+  const [themeTransitionColor, setThemeTransitionColor] = useState("#090D16");
   const themeFadeAnim = React.useRef(new Animated.Value(0)).current;
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [termsVisible, setTermsVisible] = useState(false);
   const [presenceModalVisible, setPresenceModalVisible] = useState(false);
   const [pendingMode, setPendingMode] = useState<"enroll" | "refresh">("enroll");
+  const [clockText, setClockText] = useState<string>(() => formatClock(new Date()));
 
   const { members } = usePresence();
   const activeTutor = useMemo(() => members.find((m) => m.profile?.is_tutor), [members]);
 
+  useEffect(() => {
+    setClockText(formatClock(new Date()));
+    const interval = setInterval(() => {
+      setClockText(formatClock(new Date()));
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleTheme = () => {
     triggerHaptic("tap");
     const nextIsDark = !isDark;
-    setThemeTransitionColor(nextIsDark ? "#0B0F19" : "#FAF9F5");
+    setThemeTransitionColor(nextIsDark ? "#090D16" : "#F8FAFC");
     Animated.timing(themeFadeAnim, {
       toValue: 1,
-      duration: 120,
+      duration: 110,
       useNativeDriver: true,
     }).start(() => {
-      setIsDark(nextIsDark);
+      toggleGlobalTheme();
       Animated.timing(themeFadeAnim, {
         toValue: 0,
-        duration: 260,
+        duration: 220,
         useNativeDriver: true,
       }).start();
     });
@@ -60,7 +79,6 @@ export default function Home() {
   const openTutorAuth = (mode: "enroll" | "refresh") => {
     triggerHaptic("tap");
     if (mode === "refresh" && isEnrollmentWindowActive()) {
-      // Durante a janela temporária de recadastro (28/09 a 02/10), dispensa autorização do tutor
       router.push({
         pathname: "/enroll",
         params: { initialMode: "refresh", mode: "refresh", isDark: String(isDark) },
@@ -75,51 +93,81 @@ export default function Home() {
     <View style={[styles.safe, isDark && styles.safeDark]}>
       <Animated.View
         pointerEvents="none"
-        style={[styles.themeTransitionOverlay, { opacity: themeFadeAnim, backgroundColor: themeTransitionColor }]}
+        style={[
+          styles.themeTransitionOverlay,
+          { opacity: themeFadeAnim, backgroundColor: themeTransitionColor },
+        ]}
       />
-      {/* Faixa Superior de Identidade AILAB Makers (Terracota, Azul Petróleo e Verde Esmeralda) */}
+
+      {/* Faixa Superior Institucional AILAB Makers (Laranja, Esmeralda e Índigo) */}
       <View style={styles.brandStripeContainer}>
-        <View style={[styles.brandStripeSegment, { backgroundColor: "#C15F3D" }]} />
-        <View style={[styles.brandStripeSegment, { backgroundColor: "#009E90" }]} />
-        <View style={[styles.brandStripeSegment, { backgroundColor: "#059669" }]} />
+        <View style={[styles.brandStripeSegment, { backgroundColor: "#EA580C" }]} />
+        <View style={[styles.brandStripeSegment, { backgroundColor: "#10B981" }]} />
+        <View style={[styles.brandStripeSegment, { backgroundColor: "#6366F1" }]} />
       </View>
 
+      {/* Header Executivo do Totem */}
       <View
         style={[
           styles.header,
           isDark && styles.headerDark,
           {
-            paddingTop: insets.top + 10,
-            paddingLeft: insets.left + 16,
-            paddingRight: insets.right + 16,
+            paddingTop: Math.max(insets.top, 8) + 6,
+            paddingLeft: Math.max(insets.left, 14),
+            paddingRight: Math.max(insets.right, 14),
           },
         ]}
       >
+        {/* Esquerda: Marca + Status Ao Vivo + Relógio + Tutor no Lab */}
         <View style={styles.brand}>
-          <Image source={logo} style={styles.brandLogo} />
+          <Image source={logo} style={[styles.brandLogo, isDark && styles.brandLogoDark]} />
           <View style={styles.brandTextGroup}>
-            <Text style={[styles.title, isDark && styles.titleDark]}>AILAB Makers</Text>
+            <View style={styles.titleRow}>
+              <Text style={[styles.title, isDark && styles.titleDark]} numberOfLines={1}>
+                AILAB <Text style={styles.titleAccent}>Makers</Text>
+              </Text>
+              {!isUltraCompact && (
+                <View style={[styles.clockPill, isDark && styles.clockPillDark]}>
+                  <Feather
+                    name="clock"
+                    size={11}
+                    color={isDark ? "#94A3B8" : "#64748B"}
+                  />
+                  <Text style={[styles.clockText, isDark && styles.clockTextDark]}>
+                    {clockText}
+                  </Text>
+                </View>
+              )}
+            </View>
+
             <View style={styles.statusPillsRow}>
-              <View style={styles.statusPill}>
+              <View style={[styles.statusPill, isDark && styles.statusPillDark]}>
                 <View style={styles.statusDot} />
-                <Text style={styles.statusText}>Totem Ativo</Text>
+                <Text style={[styles.statusText, isDark && styles.statusTextDark]}>
+                  Totem Ativo
+                </Text>
               </View>
+
               {activeTutor && (
                 <View style={[styles.tutorHeaderPill, isDark && styles.tutorHeaderPillDark]}>
-                  <View style={styles.tutorPulseDot} />
-                  <Feather name="award" size={11} color={isDark ? "#34D399" : "#059669"} />
-                  <Text style={[styles.tutorHeaderPillText, isDark && styles.tutorHeaderPillTextDark]}>
-                    Tutor no Lab: {activeTutor.profile.name.split(" ")[0]}
+                  <Feather name="award" size={11} color={isDark ? "#FB923C" : "#EA580C"} />
+                  <Text
+                    style={[styles.tutorHeaderPillText, isDark && styles.tutorHeaderPillTextDark]}
+                    numberOfLines={1}
+                  >
+                    Tutor: {activeTutor.profile.name.split(" ")[0]}
                   </Text>
                 </View>
               )}
             </View>
           </View>
         </View>
+
+        {/* Direita: Controles do Quiosque (Alvos de 44px — Lei de Fitts) */}
         <View style={styles.headerActions}>
-          {/* Botão de Alternância de Modo Escuro / Claro */}
+          {/* Alternador de Tema */}
           <TouchableOpacity
-            style={[styles.themeBtn, isDark && styles.themeBtnDark]}
+            style={[styles.iconBtn, isDark && styles.iconBtnDark]}
             onPress={toggleTheme}
             activeOpacity={0.75}
             accessibilityRole="button"
@@ -127,13 +175,17 @@ export default function Home() {
           >
             <Feather
               name={isDark ? "sun" : "moon"}
-              size={17}
-              color={isDark ? "#F8FAFC" : "#171715"}
+              size={16}
+              color={isDark ? "#FBBF24" : "#334155"}
             />
           </TouchableOpacity>
 
+          {/* Termos LGPD */}
           <TouchableOpacity
-            style={[styles.termsBtn, isDark && styles.termsBtnDark]}
+            style={[
+              isUltraCompact ? styles.iconBtn : styles.secondaryBtn,
+              isDark && (isUltraCompact ? styles.iconBtnDark : styles.secondaryBtnDark),
+            ]}
             onPress={() => {
               triggerHaptic("tap");
               setTermsVisible(true);
@@ -142,37 +194,55 @@ export default function Home() {
             accessibilityRole="button"
             accessibilityLabel="Abrir termos de privacidade e LGPD"
           >
-            <Text style={[styles.termsBtnText, isDark && styles.termsBtnTextDark]}>
-              {width < 450 ? "LGPD" : "Termos LGPD"}
-            </Text>
+            <Feather
+              name="shield"
+              size={14}
+              color={isDark ? "#FB923C" : "#EA580C"}
+            />
+            {!isUltraCompact && (
+              <Text style={[styles.secondaryBtnText, isDark && styles.secondaryBtnTextDark]}>
+                LGPD
+              </Text>
+            )}
           </TouchableOpacity>
 
+          {/* Em telas compactas (< 768px): Botão Presentes com Contador Ao Vivo */}
           {isCompact && (
             <TouchableOpacity
-              style={[styles.presenceToggleBtn, isDark && styles.presenceToggleBtnDark]}
+              style={[styles.secondaryBtn, isDark && styles.secondaryBtnDark]}
               onPress={() => {
                 triggerHaptic("tap");
                 setPresenceModalVisible(true);
               }}
               activeOpacity={0.75}
               accessibilityRole="button"
-              accessibilityLabel="Ver integrantes presentes no laboratório"
+              accessibilityLabel={`Ver ${members.length} integrantes presentes no laboratório`}
             >
-              <View style={styles.presenceBtnContent}>
-                <Feather
-                  name="users"
-                  size={14}
-                  color={isDark ? "#F8FAFC" : "#171715"}
-                />
-                <Text style={[styles.presenceToggleBtnText, isDark && styles.presenceToggleBtnTextDark]}>
+              <Feather
+                name="users"
+                size={14}
+                color={isDark ? "#34D399" : "#059669"}
+              />
+              {!isUltraCompact && (
+                <Text style={[styles.secondaryBtnText, isDark && styles.secondaryBtnTextDark]}>
                   Presentes
+                </Text>
+              )}
+              <View style={[styles.countPill, isDark && styles.countPillDark]}>
+                <Text style={[styles.countPillText, isDark && styles.countPillTextDark]}>
+                  {members.length}
                 </Text>
               </View>
             </TouchableOpacity>
           )}
 
+          {!isCompact && (
+            <View style={[styles.headerDivider, isDark && styles.headerDividerDark]} />
+          )}
+
+          {/* Recadastrar */}
           <TouchableOpacity
-            style={[styles.refreshBtn, isDark && styles.refreshBtnDark]}
+            style={[styles.secondaryBtn, isDark && styles.secondaryBtnDark]}
             onPress={() => {
               if (isEnrollmentWindowActive()) {
                 triggerHaptic("tap");
@@ -188,27 +258,48 @@ export default function Home() {
               }
             }}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Recadastrar biometria facial"
           >
-            <Text style={[styles.refreshBtnText, isDark && styles.refreshBtnTextDark]}>Recadastrar</Text>
+            <Feather
+              name="refresh-cw"
+              size={13}
+              color={isDark ? "#CBD5E1" : "#334155"}
+            />
+            {!isUltraCompact && (
+              <Text style={[styles.secondaryBtnText, isDark && styles.secondaryBtnTextDark]}>
+                Recadastrar
+              </Text>
+            )}
           </TouchableOpacity>
+
+          {/* Cadastrar (Ação Primária Institucional) */}
           <TouchableOpacity
-            style={[styles.registerBtn, isDark && styles.registerBtnDark]}
+            style={styles.registerBtn}
             onPress={() => openTutorAuth("enroll")}
-            activeOpacity={0.75}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Cadastrar novo integrante"
           >
+            <Feather name="user-plus" size={14} color="#FFFFFF" />
             <Text style={styles.registerBtnText}>Cadastrar</Text>
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* Corpo Principal: Visor da Câmera + Sidebar de Presentes */}
       <View
         style={[
           styles.body,
-          { paddingLeft: insets.left, paddingRight: insets.right, paddingBottom: insets.bottom },
+          {
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+            paddingBottom: insets.bottom,
+          },
         ]}
       >
-        <View style={styles.cameraColumn}>
-          <RecognitionPanel />
+        <View style={[styles.cameraColumn, isCompact && styles.cameraColumnCompact]}>
+          <RecognitionPanel isDark={isDark} />
         </View>
 
         {!isCompact && <PresenceSidebar isDark={isDark} />}
@@ -221,7 +312,13 @@ export default function Home() {
           animationType="slide"
           onRequestClose={() => setPresenceModalVisible(false)}
         >
-          <View style={[styles.presenceModalContent, isDark && styles.presenceModalContentDark, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 }]}>
+          <View
+            style={[
+              styles.presenceModalContent,
+              isDark && styles.presenceModalContentDark,
+              { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 },
+            ]}
+          >
             <PresenceSidebar
               onClose={() => setPresenceModalVisible(false)}
               style={styles.presenceModalSidebar}
@@ -233,12 +330,13 @@ export default function Home() {
 
       <TutorPinModal
         visible={pinModalVisible}
+        isDark={isDark}
         onSuccess={(token: string) => {
           setPinModalVisible(false);
+          setTutorToken(token);
           router.push({
             pathname: "/enroll",
             params: {
-              tutorToken: token,
               initialMode: pendingMode,
               isDark: isDark ? "true" : "false",
             },
@@ -257,10 +355,25 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FAF9F5" },
+  safe: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+  safeDark: {
+    backgroundColor: "#090D16",
+  },
   themeTransitionOverlay: {
     ...StyleSheet.absoluteFill,
     zIndex: 100,
+  },
+  brandStripeContainer: {
+    height: 3,
+    width: "100%",
+    flexDirection: "row",
+  },
+  brandStripeSegment: {
+    flex: 1,
+    height: "100%",
   },
   header: {
     flexDirection: "row",
@@ -268,38 +381,95 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E2DC",
-    paddingBottom: 13,
-    shadowColor: "#171715",
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    borderBottomColor: "#E2E8F0",
+    paddingBottom: 10,
+    gap: 10,
   },
-  brand: { flexDirection: "row", alignItems: "center", gap: 11 },
+  headerDark: {
+    backgroundColor: "#0F1623",
+    borderBottomColor: "rgba(255, 255, 255, 0.08)",
+  },
+  brand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flexShrink: 1,
+  },
   brandLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E5E2DC",
+    borderColor: "#E2E8F0",
   },
-  brandTextGroup: { gap: 1 },
+  brandLogoDark: {
+    borderColor: "rgba(255, 255, 255, 0.14)",
+  },
+  brandTextGroup: {
+    gap: 2,
+    flexShrink: 1,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   title: {
-    color: "#171715",
-    fontSize: 18,
-    fontWeight: "700",
+    color: "#0F172A",
+    fontSize: 17,
+    fontWeight: "800",
     letterSpacing: -0.4,
+  },
+  titleDark: {
+    color: "#F8FAFC",
+  },
+  titleAccent: {
+    color: "#EA580C",
+  },
+  clockPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  clockPillDark: {
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  clockText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#475569",
+    fontVariant: ["tabular-nums"],
+  },
+  clockTextDark: {
+    color: "#CBD5E1",
   },
   statusPillsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
+    flexWrap: "wrap",
   },
   statusPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
+    backgroundColor: "rgba(16, 185, 129, 0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.25)",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  statusPillDark: {
+    backgroundColor: "rgba(16, 185, 129, 0.14)",
+    borderColor: "rgba(16, 185, 129, 0.30)",
   },
   statusDot: {
     width: 6,
@@ -308,170 +478,152 @@ const styles = StyleSheet.create({
     backgroundColor: "#10B981",
   },
   statusText: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 10.5,
+    fontWeight: "700",
     color: "#059669",
     letterSpacing: 0.1,
+  },
+  statusTextDark: {
+    color: "#34D399",
   },
   tutorHeaderPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4.5,
-    backgroundColor: "#F0FDF4",
+    gap: 4,
+    backgroundColor: "rgba(234, 88, 12, 0.10)",
     borderWidth: 1,
-    borderColor: "#A7F3D0",
+    borderColor: "rgba(234, 88, 12, 0.25)",
     paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 999,
   },
   tutorHeaderPillDark: {
-    backgroundColor: "#064E3B",
-    borderColor: "#059669",
-  },
-  tutorPulseDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: "#059669",
+    backgroundColor: "rgba(249, 115, 22, 0.15)",
+    borderColor: "rgba(249, 115, 22, 0.32)",
   },
   tutorHeaderPillText: {
     fontSize: 10.5,
     fontWeight: "700",
-    color: "#065F46",
-    letterSpacing: 0.1,
+    color: "#C2410C",
   },
   tutorHeaderPillTextDark: {
-    color: "#A7F3D0",
+    color: "#FDBA74",
   },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 9 },
-  termsBtn: {
-    backgroundColor: "#FAF9F5",
-    borderWidth: 1,
-    borderColor: "#E5E2DC",
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    borderRadius: 14,
-    minHeight: 38,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  termsBtnText: { color: "#706E6A", fontWeight: "600", fontSize: 12.5 },
-  presenceToggleBtn: {
-    backgroundColor: "#FAF9F5",
-    borderWidth: 1,
-    borderColor: "#E5E2DC",
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    borderRadius: 14,
-    minHeight: 38,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  presenceToggleBtnText: { color: "#171715", fontWeight: "600", fontSize: 12.5 },
-  presenceBtnContent: {
+  headerActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 7,
   },
-  refreshBtn: {
-    backgroundColor: "#FAF9F5",
+  headerDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: "#E2E8F0",
+    marginHorizontal: 2,
+  },
+  headerDividerDark: {
+    backgroundColor: "rgba(255, 255, 255, 0.10)",
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    minWidth: 40,
+    minHeight: 40,
+    borderRadius: 12,
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: "#E5E2DC",
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 14,
-    minHeight: 38,
+    borderColor: "#E2E8F0",
     alignItems: "center",
     justifyContent: "center",
   },
-  refreshBtnText: { color: "#171715", fontWeight: "600", fontSize: 12.5 },
+  iconBtnDark: {
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.10)",
+  },
+  secondaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    minHeight: 40,
+  },
+  secondaryBtnDark: {
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.10)",
+  },
+  secondaryBtnText: {
+    color: "#0F172A",
+    fontWeight: "700",
+    fontSize: 12.5,
+  },
+  secondaryBtnTextDark: {
+    color: "#F8FAFC",
+  },
+  countPill: {
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 999,
+  },
+  countPillDark: {
+    backgroundColor: "rgba(16, 185, 129, 0.22)",
+  },
+  countPillText: {
+    color: "#059669",
+    fontSize: 11,
+    fontWeight: "800",
+    fontVariant: ["tabular-nums"],
+  },
+  countPillTextDark: {
+    color: "#34D399",
+  },
   registerBtn: {
-    backgroundColor: "#171715",
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 14,
-    minHeight: 38,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    gap: 6,
+    backgroundColor: "#EA580C",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    minHeight: 40,
+    shadowColor: "#EA580C",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    elevation: 3,
   },
-  registerBtnText: { color: "#FAF9F5", fontWeight: "600", fontSize: 12.5 },
-  body: { flex: 1, flexDirection: "row" },
-  cameraColumn: { flex: 1, padding: 16 },
+  registerBtnText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 12.5,
+  },
+  body: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  cameraColumn: {
+    flex: 1,
+    padding: 14,
+  },
+  cameraColumnCompact: {
+    padding: 10,
+  },
   presenceModalContent: {
     flex: 1,
-    backgroundColor: "#FAF9F5",
+    backgroundColor: "#F8FAFC",
   },
   presenceModalContentDark: {
-    backgroundColor: "#0B0F19",
+    backgroundColor: "#090D16",
   },
   presenceModalSidebar: {
     width: "100%",
     flex: 1,
     borderLeftWidth: 0,
-  },
-  brandStripeContainer: {
-    height: 4,
-    width: "100%",
-    flexDirection: "row",
-  },
-  brandStripeSegment: {
-    flex: 1,
-    height: "100%",
-  },
-  themeBtn: {
-    backgroundColor: "#FAF9F5",
-    borderWidth: 1,
-    borderColor: "#E5E2DC",
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  themeBtnDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
-  },
-  themeBtnText: {
-    fontSize: 15,
-  },
-  safeDark: {
-    backgroundColor: "#0B0F19",
-  },
-  headerDark: {
-    backgroundColor: "#0F172A",
-    borderBottomColor: "#1E293B",
-  },
-  titleDark: {
-    color: "#F8FAFC",
-  },
-  termsBtnDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
-  },
-  termsBtnTextDark: {
-    color: "#94A3B8",
-  },
-  presenceToggleBtnDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
-  },
-  presenceToggleBtnTextDark: {
-    color: "#F8FAFC",
-  },
-  refreshBtnDark: {
-    backgroundColor: "#1E293B",
-    borderColor: "#334155",
-  },
-  refreshBtnTextDark: {
-    color: "#F8FAFC",
-  },
-  registerBtnDark: {
-    backgroundColor: "#059669",
   },
 });

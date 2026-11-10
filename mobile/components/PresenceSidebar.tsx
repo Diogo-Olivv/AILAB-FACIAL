@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
-  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -12,7 +11,7 @@ import {
 } from "react-native";
 import { usePresence, type PresentMember } from "@/hooks/usePresence";
 import { useElapsed } from "@/hooks/useElapsed";
-import { getAvatarColor } from "@/lib/config";
+import { KioskAvatar } from "@/components/KioskAvatar";
 import { triggerHaptic } from "@/lib/sound";
 import { Feather } from "@expo/vector-icons";
 
@@ -22,9 +21,37 @@ interface PresenceSidebarProps {
   isDark?: boolean;
 }
 
-const ITEM_HEIGHT = 58;
+const ITEM_HEIGHT = 60;
 const SEPARATOR_HEIGHT = 6;
 const ROW_TOTAL_HEIGHT = ITEM_HEIGHT + SEPARATOR_HEIGHT;
+
+function getCrowdTag(count: number, isDark: boolean) {
+  if (count >= 8) {
+    return {
+      label: "Cheio",
+      bg: isDark ? "rgba(244, 63, 94, 0.16)" : "rgba(244, 63, 94, 0.10)",
+      border: isDark ? "rgba(244, 63, 94, 0.32)" : "rgba(244, 63, 94, 0.25)",
+      text: isDark ? "#FB7185" : "#E11D48",
+      dot: "#F43F5E",
+    };
+  }
+  if (count >= 3) {
+    return {
+      label: "Moderado",
+      bg: isDark ? "rgba(245, 158, 11, 0.16)" : "rgba(245, 158, 11, 0.12)",
+      border: isDark ? "rgba(245, 158, 11, 0.32)" : "rgba(245, 158, 11, 0.28)",
+      text: isDark ? "#FBBF24" : "#D97706",
+      dot: "#F59E0B",
+    };
+  }
+  return {
+    label: "Tranquilo",
+    bg: isDark ? "rgba(16, 185, 129, 0.16)" : "rgba(16, 185, 129, 0.10)",
+    border: isDark ? "rgba(16, 185, 129, 0.32)" : "rgba(16, 185, 129, 0.25)",
+    text: isDark ? "#34D399" : "#059669",
+    dot: "#10B981",
+  };
+}
 
 export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSidebarProps) {
   const { members, loading, error } = usePresence();
@@ -34,9 +61,10 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return members;
-    return members.filter((m) =>
-      (m.profile?.name ? m.profile.name.toLowerCase().includes(q) : false) ||
-      (m.profile?.matricula ? m.profile.matricula.includes(q) : false)
+    return members.filter(
+      (m) =>
+        (m.profile?.name ? m.profile.name.toLowerCase().includes(q) : false) ||
+        (m.profile?.matricula ? m.profile.matricula.includes(q) : false)
     );
   }, [members, search]);
 
@@ -51,7 +79,9 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
   }, [filtered]);
 
   const renderItem = useCallback(
-    ({ item }: { item: PresentMember }) => <MemoizedSidebarRow member={item} isDark={isDark} />,
+    ({ item }: { item: PresentMember }) => (
+      <MemoizedSidebarRow member={item} isDark={isDark} />
+    ),
     [isDark]
   );
 
@@ -69,59 +99,79 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
     onClose?.();
   };
 
+  const crowd = getCrowdTag(members.length, isDark);
+
   return (
     <View style={[styles.container, isDark && styles.containerDark, style]}>
+      {/* Cabeçalho com Contador Tabular + Semáforo de Lotação */}
       <View style={[styles.header, isDark && styles.headerDark]}>
         <View style={styles.headerLeft}>
           <Text style={[styles.title, isDark && styles.titleDark]}>Presentes</Text>
           <View style={[styles.badge, isDark && styles.badgeDark]}>
-            <Text style={[styles.badgeText, isDark && styles.badgeTextDark]}>{members.length}</Text>
+            <Text style={[styles.badgeText, isDark && styles.badgeTextDark]}>
+              {members.length}
+            </Text>
           </View>
         </View>
 
-        {onClose && (
-          <TouchableOpacity
-            onPress={handleClose}
-            style={[styles.closeBtn, isDark && styles.closeBtnDark]}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Fechar lista de presentes"
+        <View style={styles.headerRight}>
+          <View
+            style={[
+              styles.crowdPill,
+              { backgroundColor: crowd.bg, borderColor: crowd.border },
+            ]}
           >
-            <Feather name="x" size={17} color={isDark ? "#94A3B8" : "#706E6A"} />
-          </TouchableOpacity>
-        )}
+            <View style={[styles.crowdDot, { backgroundColor: crowd.dot }]} />
+            <Text style={[styles.crowdText, { color: crowd.text }]}>{crowd.label}</Text>
+          </View>
+
+          {onClose && (
+            <TouchableOpacity
+              onPress={handleClose}
+              style={[styles.closeBtn, isDark && styles.closeBtnDark]}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar lista de presentes"
+            >
+              <Feather name="x" size={17} color={isDark ? "#94A3B8" : "#64748B"} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Banner de Tutor Ativo no Laboratório */}
       {activeTutors.length > 0 && (
         <View style={[styles.tutorBanner, isDark && styles.tutorBannerDark]}>
-          <View style={styles.tutorBannerIconWrap}>
-            <Feather name="award" size={15} color="#059669" />
+          <View style={[styles.tutorBannerIconWrap, isDark && styles.tutorBannerIconWrapDark]}>
+            <Feather name="award" size={14} color={isDark ? "#FB923C" : "#EA580C"} />
           </View>
           <View style={styles.tutorBannerTextWrap}>
             <Text style={[styles.tutorBannerTitle, isDark && styles.tutorBannerTitleDark]}>
               Tutor no Laboratório
             </Text>
-            <Text style={[styles.tutorBannerName, isDark && styles.tutorBannerNameDark]} numberOfLines={1}>
+            <Text
+              style={[styles.tutorBannerName, isDark && styles.tutorBannerNameDark]}
+              numberOfLines={1}
+            >
               {activeTutors.map((t) => t.profile.name).join(", ")}
             </Text>
           </View>
         </View>
       )}
 
-      {/* Busca rápida com ícone e botão de limpar */}
-      {members.length > 3 && (
+      {/* Busca Rápida */}
+      {(members.length >= 2 || search.length > 0) && (
         <View style={styles.searchWrapper}>
           <View style={[styles.searchContainer, isDark && styles.searchContainerDark]}>
             <Feather
               name="search"
-              size={15}
-              color={isDark ? "#64748B" : "#9CA3AF"}
+              size={14}
+              color={isDark ? "#64748B" : "#94A3B8"}
               style={{ marginRight: 6 }}
             />
             <TextInput
-              placeholder="Filtrar por nome ou matrícula..."
-              placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
+              placeholder="Buscar presente..."
+              placeholderTextColor={isDark ? "#64748B" : "#94A3B8"}
               value={search}
               onChangeText={setSearch}
               style={[styles.searchInput, isDark && styles.searchInputDark]}
@@ -138,7 +188,7 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
                 style={styles.clearSearchBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Feather name="x" size={14} color={isDark ? "#94A3B8" : "#706E6A"} />
+                <Feather name="x" size={14} color={isDark ? "#94A3B8" : "#64748B"} />
               </TouchableOpacity>
             )}
           </View>
@@ -147,8 +197,10 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color="#C15F3D" size="small" />
-          <Text style={[styles.loadingText, isDark && styles.loadingTextDark]}>Carregando presenças...</Text>
+          <ActivityIndicator color="#EA580C" size="small" />
+          <Text style={[styles.loadingText, isDark && styles.loadingTextDark]}>
+            Sincronizando presenças...
+          </Text>
         </View>
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
@@ -169,17 +221,20 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
           overScrollMode="never"
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Feather
-                name="coffee"
-                size={28}
-                color={isDark ? "#475569" : "#A8A29E"}
-                style={{ marginBottom: 8 }}
-              />
-              <Text style={[styles.emptyTitle, isDark && styles.emptyTitleDark]}>Ninguém por aqui agora</Text>
+              <View style={[styles.emptyIconBox, isDark && styles.emptyIconBoxDark]}>
+                <Feather
+                  name="coffee"
+                  size={22}
+                  color={isDark ? "#64748B" : "#94A3B8"}
+                />
+              </View>
+              <Text style={[styles.emptyTitle, isDark && styles.emptyTitleDark]}>
+                {search ? "Nenhum resultado" : "Laboratório livre"}
+              </Text>
               <Text style={[styles.emptySubtitle, isDark && styles.emptySubtitleDark]}>
                 {search
-                  ? "Nenhum integrante encontrado para essa busca."
-                  : "Os integrantes aparecerão aqui assim que derem Entrada."}
+                  ? "Nenhum integrante presente corresponde à busca."
+                  : "Os integrantes aparecerão aqui assim que registrarem Entrada."}
               </Text>
             </View>
           }
@@ -189,30 +244,19 @@ export function PresenceSidebar({ onClose, style, isDark = false }: PresenceSide
   );
 }
 
-function SidebarRow({ member, isDark }: { member: PresentMember; isDark?: boolean }) {
+function SidebarRow({ member, isDark = false }: { member: PresentMember; isDark?: boolean }) {
   const elapsed = useElapsed(member.check_in);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 250,
+      duration: 220,
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
 
   const memberName = member.profile?.name || "Integrante";
-  const initials =
-    memberName
-      .split(" ")
-      .filter(Boolean)
-      .map((w) => w[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "IN";
-
-  const avatar = getAvatarColor(memberName);
-
   const isTutor = Boolean(member.profile?.is_tutor);
 
   return (
@@ -221,29 +265,35 @@ function SidebarRow({ member, isDark }: { member: PresentMember; isDark?: boolea
         styles.row,
         isDark && styles.rowDark,
         isTutor && (isDark ? styles.rowTutorDark : styles.rowTutor),
-        {
-          opacity: fadeAnim,
-        },
+        { opacity: fadeAnim },
       ]}
     >
-      {member.profile?.avatar_url ? (
-        <Image
-          source={{ uri: member.profile.avatar_url }}
-          style={[styles.avatar, isTutor && styles.avatarTutor, { backgroundColor: "#E2E8F0" }]}
-        />
-      ) : (
-        <View style={[styles.avatar, isTutor && styles.avatarTutor, { backgroundColor: avatar.bg }]}>
-          <Text style={[styles.initials, { color: avatar.text }]}>{initials}</Text>
-        </View>
-      )}
+      <KioskAvatar
+        name={memberName}
+        uri={member.profile?.avatar_url}
+        size={38}
+        isTutor={isTutor}
+        online={true}
+        isDark={isDark}
+      />
       <View style={styles.info}>
         <View style={styles.nameRow}>
-          <Text style={[styles.name, isDark && styles.nameDark, isTutor && styles.nameTutor]} numberOfLines={1}>
+          <Text
+            style={[styles.name, isDark && styles.nameDark, isTutor && styles.nameTutor]}
+            numberOfLines={1}
+          >
             {memberName}
           </Text>
           {isTutor && (
-          <View style={[styles.tutorBadgePill, isDark && styles.tutorBadgePillDark]}>
-              <Text style={styles.tutorBadgePillText}>TUTOR</Text>
+            <View style={[styles.tutorBadgePill, isDark && styles.tutorBadgePillDark]}>
+              <Text
+                style={[
+                  styles.tutorBadgePillText,
+                  isDark && styles.tutorBadgePillTextDark,
+                ]}
+              >
+                TUTOR
+              </Text>
             </View>
           )}
         </View>
@@ -269,88 +319,179 @@ const MemoizedSidebarRow = React.memo(SidebarRow, (prev, next) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: 290,
+    width: 300,
     backgroundColor: "#FFFFFF",
     borderLeftWidth: 1,
-    borderLeftColor: "#E5E2DC",
-    paddingTop: 16,
+    borderLeftColor: "#E2E8F0",
+    paddingTop: 14,
+  },
+  containerDark: {
+    backgroundColor: "#0F1623",
+    borderLeftColor: "rgba(255, 255, 255, 0.08)",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingHorizontal: 14,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    marginBottom: 10,
+  },
+  headerDark: {
+    borderBottomColor: "rgba(255, 255, 255, 0.06)",
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  closeBtn: {
-    minWidth: 32,
-    minHeight: 32,
+  headerRight: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 999,
-    backgroundColor: "rgba(0, 0, 0, 0.04)",
-  },
-  closeBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#706E6A",
+    gap: 8,
   },
   title: {
-    color: "#171715",
-    fontWeight: "700",
-    fontSize: 17,
+    color: "#0F172A",
+    fontWeight: "800",
+    fontSize: 16,
     letterSpacing: -0.3,
   },
+  titleDark: {
+    color: "#F8FAFC",
+  },
   badge: {
-    backgroundColor: "#FAF5F0",
+    backgroundColor: "#F1F5F9",
     borderRadius: 999,
-    paddingHorizontal: 9,
+    paddingHorizontal: 8,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: "#F0DCD3",
+    borderColor: "#E2E8F0",
+  },
+  badgeDark: {
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.10)",
   },
   badgeText: {
-    color: "#C15F3D",
+    color: "#0F172A",
+    fontWeight: "800",
+    fontSize: 11.5,
+    fontVariant: ["tabular-nums"],
+  },
+  badgeTextDark: {
+    color: "#F8FAFC",
+  },
+  crowdPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  crowdDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  crowdText: {
+    fontSize: 10.5,
+    fontWeight: "800",
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+  },
+  closeBtnDark: {
+    backgroundColor: "#161F30",
+  },
+  tutorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    backgroundColor: "rgba(234, 88, 12, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(234, 88, 12, 0.25)",
+    borderRadius: 12,
+    marginHorizontal: 12,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  tutorBannerDark: {
+    backgroundColor: "rgba(249, 115, 22, 0.12)",
+    borderColor: "rgba(249, 115, 22, 0.30)",
+  },
+  tutorBannerIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(234, 88, 12, 0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tutorBannerIconWrapDark: {
+    backgroundColor: "rgba(249, 115, 22, 0.22)",
+  },
+  tutorBannerTextWrap: {
+    flex: 1,
+    gap: 1,
+  },
+  tutorBannerTitle: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#EA580C",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  tutorBannerTitleDark: {
+    color: "#FB923C",
+  },
+  tutorBannerName: {
+    fontSize: 12.5,
     fontWeight: "700",
-    fontSize: 12,
+    color: "#0F172A",
+  },
+  tutorBannerNameDark: {
+    color: "#F8FAFC",
   },
   searchWrapper: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingBottom: 10,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FAF9F5",
-    borderRadius: 12,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 11,
     borderWidth: 1,
-    borderColor: "#E5E2DC",
+    borderColor: "#E2E8F0",
     paddingHorizontal: 10,
     height: 38,
   },
-  searchIcon: {
-    fontSize: 12,
-    marginRight: 6,
-    opacity: 0.6,
+  searchContainerDark: {
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.08)",
   },
   searchInput: {
     flex: 1,
     fontSize: 12.5,
-    color: "#171715",
+    color: "#0F172A",
     paddingVertical: 0,
+  },
+  searchInputDark: {
+    color: "#F8FAFC",
   },
   clearSearchBtn: {
     padding: 4,
-  },
-  clearSearchText: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    fontWeight: "700",
   },
   center: {
     alignItems: "center",
@@ -359,9 +500,12 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   loadingText: {
-    color: "#706E6A",
+    color: "#64748B",
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
+  },
+  loadingTextDark: {
+    color: "#94A3B8",
   },
   list: {
     paddingHorizontal: 12,
@@ -375,38 +519,67 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 11,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 13,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: "#ECE9E2",
-    shadowColor: "#000",
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    borderColor: "#E2E8F0",
   },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
+  rowDark: {
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.07)",
   },
-  initials: {
-    fontWeight: "700",
-    fontSize: 13,
+  rowTutor: {
+    borderColor: "rgba(234, 88, 12, 0.28)",
+    backgroundColor: "rgba(234, 88, 12, 0.04)",
+  },
+  rowTutorDark: {
+    borderColor: "rgba(249, 115, 22, 0.30)",
+    backgroundColor: "rgba(249, 115, 22, 0.08)",
   },
   info: {
     flex: 1,
     justifyContent: "center",
     gap: 2,
   },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   name: {
-    color: "#171715",
-    fontWeight: "600",
+    color: "#0F172A",
+    fontWeight: "700",
     fontSize: 13,
     letterSpacing: -0.2,
+    flexShrink: 1,
+  },
+  nameDark: {
+    color: "#F8FAFC",
+  },
+  nameTutor: {
+    fontWeight: "800",
+  },
+  tutorBadgePill: {
+    backgroundColor: "rgba(234, 88, 12, 0.12)",
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "rgba(234, 88, 12, 0.28)",
+  },
+  tutorBadgePillDark: {
+    backgroundColor: "rgba(249, 115, 22, 0.18)",
+    borderColor: "rgba(249, 115, 22, 0.35)",
+  },
+  tutorBadgePillText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#EA580C",
+    letterSpacing: 0.4,
+  },
+  tutorBadgePillTextDark: {
+    color: "#FB923C",
   },
   statusRow: {
     flexDirection: "row",
@@ -422,7 +595,11 @@ const styles = StyleSheet.create({
   elapsed: {
     color: "#059669",
     fontSize: 11.5,
-    fontWeight: "600",
+    fontWeight: "700",
+    fontVariant: ["tabular-nums"],
+  },
+  elapsedDark: {
+    color: "#34D399",
   },
   emptyContainer: {
     alignItems: "center",
@@ -431,165 +608,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 6,
   },
-  emptyIcon: {
-    fontSize: 32,
+  emptyIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 4,
   },
+  emptyIconBoxDark: {
+    backgroundColor: "#161F30",
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
   emptyTitle: {
-    color: "#171715",
+    color: "#0F172A",
     fontSize: 13.5,
-    fontWeight: "700",
+    fontWeight: "800",
     textAlign: "center",
+  },
+  emptyTitleDark: {
+    color: "#F8FAFC",
   },
   emptySubtitle: {
-    color: "#706E6A",
+    color: "#64748B",
     fontSize: 12,
     textAlign: "center",
-    lineHeight: 16,
+    lineHeight: 17,
+  },
+  emptySubtitleDark: {
+    color: "#94A3B8",
   },
   error: {
-    color: "#DC2626",
+    color: "#E11D48",
     fontSize: 12.5,
     textAlign: "center",
     marginTop: 24,
     paddingHorizontal: 12,
   },
-  containerDark: {
-    backgroundColor: "#0B0F19",
-    borderLeftColor: "#1E293B",
-  },
-  headerDark: {
-    borderBottomColor: "#1E293B",
-  },
-  titleDark: {
-    color: "#F8FAFC",
-  },
-  badgeDark: {
-    backgroundColor: "#1E293B",
-  },
-  badgeTextDark: {
-    color: "#F8FAFC",
-  },
-  closeBtnDark: {
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-  },
-  closeBtnTextDark: {
-    color: "#F8FAFC",
-  },
-  searchContainerDark: {
-    backgroundColor: "#111827",
-    borderColor: "#1E293B",
-  },
-  searchInputDark: {
-    color: "#F8FAFC",
-  },
-  clearSearchTextDark: {
-    color: "#94A3B8",
-  },
-  loadingTextDark: {
-    color: "#94A3B8",
-  },
-  rowDark: {
-    backgroundColor: "#111827",
-    borderColor: "#1E293B",
-  },
-  nameDark: {
-    color: "#F8FAFC",
-  },
-  elapsedDark: {
-    color: "#34D399",
-  },
-  emptyTitleDark: {
-    color: "#F8FAFC",
-  },
-  emptySubtitleDark: {
-    color: "#94A3B8",
-  },
-  // ── Estilos de Tutoria (AILAB Makers) ──
-  tutorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-    backgroundColor: "#F0FDF4",
-    borderWidth: 1.5,
-    borderColor: "#059669",
-    borderRadius: 14,
-    marginHorizontal: 12,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  tutorBannerDark: {
-    backgroundColor: "#064E3B",
-    borderColor: "#10B981",
-  },
-  tutorBannerIconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    backgroundColor: "rgba(5, 150, 105, 0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tutorBannerTextWrap: {
-    flex: 1,
-    gap: 1,
-  },
-  tutorBannerTitle: {
-    fontSize: 10.5,
-    fontWeight: "800",
-    color: "#059669",
-    letterSpacing: 0.2,
-    textTransform: "uppercase",
-  },
-  tutorBannerTitleDark: {
-    color: "#34D399",
-  },
-  tutorBannerName: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#064E3B",
-  },
-  tutorBannerNameDark: {
-    color: "#F8FAFC",
-  },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  nameTutor: {
-    fontWeight: "700",
-  },
-  tutorBadgePill: {
-    backgroundColor: "#FEF3C7",
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#F59E0B",
-  },
-  tutorBadgePillDark: {
-    backgroundColor: "#78350F",
-    borderColor: "#D97706",
-  },
-  tutorBadgePillText: {
-    fontSize: 9.5,
-    fontWeight: "800",
-    color: "#92400E",
-    letterSpacing: 0.3,
-  },
-  avatarTutor: {
-    borderWidth: 2,
-    borderColor: "#059669",
-  },
-  rowTutor: {
-    borderColor: "#A7F3D0",
-    backgroundColor: "#F9FEFA",
-  },
-  rowTutorDark: {
-    borderColor: "#065F46",
-    backgroundColor: "#06281E",
-  },
 });
-

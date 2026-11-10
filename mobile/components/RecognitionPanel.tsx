@@ -17,7 +17,11 @@ import { notifyInteraction, triggerHaptic } from "@/lib/sound";
 import { enqueueOfflineAttendance, getOfflineQueueCount } from "@/lib/offlineQueue";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
-export function RecognitionPanel() {
+interface RecognitionPanelProps {
+  isDark?: boolean;
+}
+
+export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const { recognize, loading } = useRecognize();
   const cameraRef = useRef<CameraView>(null);
@@ -70,7 +74,7 @@ export function RecognitionPanel() {
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.035,
+          toValue: 1.03,
           duration: 1100,
           useNativeDriver: true,
         }),
@@ -135,7 +139,6 @@ export function RecognitionPanel() {
         // Segundo frame com pulso fotométrico ativo (3D Flash Liveness - ISO/IEC 30107-3)
         if (uris.length > 0 && cameraRef.current) {
           try {
-            // Emite pulso luminoso na tela para análise de reflexo especular na face
             setFlashPulseActive(true);
             await new Promise((r) => setTimeout(r, 85));
             const photo2 = await cameraRef.current.takePictureAsync({
@@ -235,7 +238,6 @@ export function RecognitionPanel() {
                 res.message || "Similaridade parcial. Olhe diretamente para a lente e mantenha boa iluminação.",
             });
           } else {
-            // Rosto não encontrado na base
             setBadgeData({
               type: "not_recognized",
               title: "Não Reconhecido",
@@ -245,7 +247,6 @@ export function RecognitionPanel() {
             });
           }
         } else {
-          // Sucesso no reconhecimento
           lastSuccessTimeRef.current = Date.now();
           kioskState.current = "SUCCESS";
           setTimeout(() => {
@@ -297,7 +298,7 @@ export function RecognitionPanel() {
               name: res.name,
               isTutor: Boolean(res.is_tutor),
               title: "Usuário Já Presente",
-              message: "Sua entrada já está ativa. Caso deseje sair, clique no botão 'Saída'.",
+              message: "Sua entrada já está ativa. Caso deseje sair, toque no botão 'Saída'.",
             });
           } else if (evtAction === "not_in") {
             notifyInteraction("warning");
@@ -306,7 +307,7 @@ export function RecognitionPanel() {
               name: res.name,
               isTutor: Boolean(res.is_tutor),
               title: "Entrada Não Encontrada",
-              message: "Você ainda não deu entrada no laboratório hoje. Clique em 'Entrada'.",
+              message: "Você ainda não deu entrada no laboratório hoje. Toque em 'Entrada'.",
             });
           } else if (evtAction === "debounced") {
             notifyInteraction("warning");
@@ -327,7 +328,6 @@ export function RecognitionPanel() {
       } catch (err: any) {
         startCooldown();
         console.error("[RecognitionPanel] Erro ao registrar biometria:", err);
-        // Em caso de falha de conexão, salva no buffer offline
         try {
           await enqueueOfflineAttendance({
             timestamp: new Date().toISOString(),
@@ -366,19 +366,17 @@ export function RecognitionPanel() {
       !permission?.granted ||
       kioskState.current !== "IDLE" ||
       busyRef.current
-    ) return;
+    )
+      return;
 
     kioskState.current = "PROCESSING";
     capture(null).finally(() => {
-      // capture() vai setBusy(false) no finally — se der erro vira COOLDOWN
-      // O estado SUCCESS/COOLDOWN é definido dentro do capture baseado no resultado
       if (kioskState.current === "PROCESSING") {
         kioskState.current = "IDLE";
       }
     });
   }, [isHandsFree, active, permission?.granted, capture]);
 
-  // Scheduler da FSM para modo mãos-livres: dispara apenas se estado for rigorosamente IDLE
   useEffect(() => {
     if (!isHandsFree || !active || !permission?.granted) return;
 
@@ -389,7 +387,6 @@ export function RecognitionPanel() {
     return () => clearInterval(interval);
   }, [isHandsFree, active, permission?.granted, handleFaceDetected]);
 
-  // Limpa timer de cooldown ao desmontar
   useEffect(() => {
     return () => {
       if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
@@ -400,20 +397,35 @@ export function RecognitionPanel() {
 
   if (!permission.granted) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <Text style={styles.permText}>Câmera necessária para o reconhecimento facial.</Text>
-        <TouchableOpacity style={styles.permBtn} onPress={requestPermission}>
-          <Text style={styles.permBtnText}>Permitir acesso</Text>
+      <View style={[styles.container, styles.permCard, isDark && styles.permCardDark]}>
+        <View style={styles.permIconCircle}>
+          <Feather name="camera" size={26} color="#EA580C" />
+        </View>
+        <Text style={[styles.permTitle, isDark && styles.permTitleDark]}>
+          Permissão de Câmera Necessária
+        </Text>
+        <Text style={[styles.permText, isDark && styles.permTextDark]}>
+          O totem utiliza a câmera frontal exclusivamente para extrair o vetor biométrico em memória RAM e confirmar sua presença.
+        </Text>
+        <TouchableOpacity style={styles.permBtn} onPress={requestPermission} activeOpacity={0.85}>
+          <Feather name="check-circle" size={16} color="#FFFFFF" />
+          <Text style={styles.permBtnText}>Habilitar Câmera do Totem</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   const disabled = busy || loading;
+  const cornerBracketColor =
+    cooldownRemaining > 0
+      ? "#F59E0B"
+      : isHandsFree
+      ? "#10B981"
+      : "rgba(255, 255, 255, 0.72)";
 
   return (
     <View style={styles.container}>
-      <View style={styles.cameraWrapper}>
+      <View style={[styles.cameraWrapper, isDark && styles.cameraWrapperDark]}>
         {active && (
           <CameraView
             key={cameraKey}
@@ -424,7 +436,7 @@ export function RecognitionPanel() {
           />
         )}
 
-        {/* Barra superior de status do Kiosk: Modo Mãos-Livres e Buffer Offline */}
+        {/* Barra Superior de Telemetria do Visor: Modo Mãos-Livres + Status IA/Offline */}
         <View style={styles.topStatusRow}>
           <TouchableOpacity
             style={[styles.handsFreeToggle, isHandsFree && styles.handsFreeToggleActive]}
@@ -432,49 +444,36 @@ export function RecognitionPanel() {
               triggerHaptic("tap");
               setIsHandsFree((prev) => !prev);
             }}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
             accessibilityRole="switch"
             accessibilityLabel="Alternar modo mãos-livres"
           >
             <Ionicons
               name={isHandsFree ? "sparkles" : "hand-left-outline"}
               size={14}
-              color={isHandsFree ? "#065F46" : "#57534E"}
-              style={{ marginRight: 6 }}
+              color="#FFFFFF"
             />
-            <Text style={[styles.handsFreeText, isHandsFree && styles.handsFreeTextActive]}>
-              {isHandsFree ? "Mãos-Livres: Ativo" : "Manual"}
+            <Text style={styles.handsFreeText}>
+              {isHandsFree ? "Auto-Scan: Ativo" : "Modo Manual"}
             </Text>
           </TouchableOpacity>
 
-          {pendingOfflineCount > 0 && (
-            <View style={[styles.offlineBadge, { flexDirection: "row", alignItems: "center", gap: 4 }]}>
+          {pendingOfflineCount > 0 ? (
+            <View style={styles.offlineBadge}>
               <Feather name="zap" size={11} color="#FFFFFF" />
               <Text style={styles.offlineBadgeText}>
                 {pendingOfflineCount} offline
               </Text>
             </View>
+          ) : (
+            <View style={styles.telemetryPill}>
+              <View style={styles.telemetryDot} />
+              <Text style={styles.telemetryText}>ArcFace 512-D · Liveness</Text>
+            </View>
           )}
         </View>
 
-        {/* Banner com Instruções Claras para o Usuário */}
-        <View style={styles.guideBanner} pointerEvents="none">
-          <Text style={styles.guideText}>
-            {isHandsFree
-              ? "Mãos-livres: Centralize o rosto para registro automático"
-              : "Alinhe seu rosto no centro e selecione Entrada ou Saída"}
-          </Text>
-        </View>
-
-        {/* Contador regressivo de cooldown */}
-        {cooldownRemaining > 0 && (
-          <View style={styles.cooldownOverlay} pointerEvents="none">
-            <Text style={styles.cooldownText}>{cooldownRemaining}s</Text>
-            <Text style={styles.cooldownSub}>Aguarde para nova tentativa</Text>
-          </View>
-        )}
-
-        {/* Guia Oval de Posicionamento Facial com Feedback Inteligente */}
+        {/* Guia Biométrico Central com Cantoneiras Técnicas (HUD) */}
         {!disabled && (
           <Animated.View
             style={[
@@ -483,26 +482,65 @@ export function RecognitionPanel() {
             ]}
             pointerEvents="none"
           >
-            <View style={[styles.idleOval, isHandsFree && styles.idleOvalHandsFree]} />
+            <View style={styles.reticleFrame}>
+              <View style={[styles.corner, styles.cTL, { borderColor: cornerBracketColor }]} />
+              <View style={[styles.corner, styles.cTR, { borderColor: cornerBracketColor }]} />
+              <View style={[styles.corner, styles.cBL, { borderColor: cornerBracketColor }]} />
+              <View style={[styles.corner, styles.cBR, { borderColor: cornerBracketColor }]} />
+
+              <View
+                style={[
+                  styles.idleOval,
+                  isHandsFree && styles.idleOvalHandsFree,
+                  cooldownRemaining > 0 && styles.idleOvalCooldown,
+                ]}
+              />
+            </View>
           </Animated.View>
+        )}
+
+        {/* Contador Regressivo de Cooldown */}
+        {cooldownRemaining > 0 && (
+          <View style={styles.cooldownOverlay} pointerEvents="none">
+            <Text style={styles.cooldownText}>{cooldownRemaining}s</Text>
+            <Text style={styles.cooldownSub}>Aguarde para nova leitura</Text>
+          </View>
+        )}
+
+        {/* Barra Inferior de Instrução Contextual (Zero colisão com FeedbackBadge no topo) */}
+        {!disabled && cooldownRemaining === 0 && (
+          <View style={styles.bottomGuideBar} pointerEvents="none">
+            <View style={styles.guidePill}>
+              <Feather
+                name={isHandsFree ? "eye" : "user-check"}
+                size={13}
+                color={isHandsFree ? "#34D399" : "#F8FAFC"}
+              />
+              <Text style={styles.guideText}>
+                {isHandsFree
+                  ? "Olhe para a câmera — leitura automática em andamento"
+                  : "Alinhe o rosto no guia central e toque em Entrada ou Saída"}
+              </Text>
+            </View>
+          </View>
         )}
 
         {/* HUD Fluido de Escaneamento Biométrico */}
         {disabled && <BiometricScanHUD action={currentAction} />}
 
         {/* Pulso Fotométrico de Tela para Vivacidade Ativa (3D Flash Liveness PAD) */}
-        {flashPulseActive && (
-          <View style={styles.flashOverlay} pointerEvents="none" />
-        )}
+        {flashPulseActive && <View style={styles.flashOverlay} pointerEvents="none" />}
 
         {/* Badge Animada de Notificação Flutuante */}
         <FeedbackBadge
           data={badgeData}
           onDismiss={() => setBadgeData(null)}
           autoCloseMs={4500}
+          isDark={isDark}
         />
       </View>
 
+      {/* Botões de Ação Tátil de Quiosque (Lei de Fitts: minHeight 64) */}
       <View style={styles.actions}>
         <SmoothActionButton
           label="Entrada"
@@ -530,7 +568,7 @@ export function RecognitionPanel() {
   );
 }
 
-/** Botão Premium com feedback tátil suave e física de mola */
+/** Botão Tátil de Quiosque com física de mola */
 function SmoothActionButton({
   label,
   sublabel,
@@ -556,7 +594,7 @@ function SmoothActionButton({
   const handlePressIn = () => {
     triggerHaptic("tap");
     Animated.spring(scaleAnim, {
-      toValue: 0.95,
+      toValue: 0.96,
       friction: 6,
       tension: 180,
       useNativeDriver: true,
@@ -575,7 +613,7 @@ function SmoothActionButton({
   useEffect(() => {
     Animated.timing(opacityAnim, {
       toValue: disabled && !busy ? 0.65 : 1,
-      duration: 200,
+      duration: 180,
       useNativeDriver: true,
     }).start();
   }, [disabled, busy]);
@@ -608,19 +646,21 @@ function SmoothActionButton({
         {busy ? (
           <View style={styles.buttonBusy}>
             <ActivityIndicator color="#FFFFFF" size="small" />
-            <Text style={styles.actionText}>Verificando...</Text>
+            <Text style={styles.actionText}>Verificando biometria...</Text>
           </View>
         ) : (
-          <View style={styles.buttonContent}>
-            <View style={styles.buttonLabelRow}>
-              {type === "entrada" ? (
-                <Feather name="check" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-              ) : (
-                <Feather name="clock" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-              )}
-              <Text style={styles.actionText}>{label}</Text>
+          <View style={styles.buttonRow}>
+            <View style={styles.buttonIconTile}>
+              <Feather
+                name={type === "entrada" ? "log-in" : "log-out"}
+                size={20}
+                color="#FFFFFF"
+              />
             </View>
-            {sublabel && <Text style={styles.sublabelText}>{sublabel}</Text>}
+            <View style={styles.buttonContent}>
+              <Text style={styles.actionText}>{label}</Text>
+              {sublabel && <Text style={styles.sublabelText}>{sublabel}</Text>}
+            </View>
           </View>
         )}
       </TouchableOpacity>
@@ -628,7 +668,7 @@ function SmoothActionButton({
   );
 }
 
-/** HUD Suave com Retículo e Varredura sem corte de vídeo */
+/** HUD de Varredura Biométrica */
 function BiometricScanHUD({ action }: { action: "check_in" | "check_out" | null }) {
   const scanAnim = useRef(new Animated.Value(0)).current;
 
@@ -637,12 +677,12 @@ function BiometricScanHUD({ action }: { action: "check_in" | "check_out" | null 
       Animated.sequence([
         Animated.timing(scanAnim, {
           toValue: 1,
-          duration: 900,
+          duration: 850,
           useNativeDriver: true,
         }),
         Animated.timing(scanAnim, {
           toValue: 0,
-          duration: 900,
+          duration: 850,
           useNativeDriver: true,
         }),
       ])
@@ -653,21 +693,19 @@ function BiometricScanHUD({ action }: { action: "check_in" | "check_out" | null 
 
   const translateY = scanAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 170],
+    outputRange: [0, 180],
   });
 
-  const accentColor = action === "check_in" ? "#10B981" : "#3B82F6";
+  const accentColor = action === "check_in" ? "#10B981" : "#EA580C";
 
   return (
     <View style={styles.hudOverlay} pointerEvents="none">
-      {/* Moldura de Foco Biométrico */}
-      <View style={[styles.reticle, { borderColor: "rgba(255, 255, 255, 0.35)" }]}>
+      <View style={[styles.reticle, { borderColor: "rgba(255, 255, 255, 0.32)" }]}>
         <View style={[styles.corner, styles.cTL, { borderColor: accentColor }]} />
         <View style={[styles.corner, styles.cTR, { borderColor: accentColor }]} />
         <View style={[styles.corner, styles.cBL, { borderColor: accentColor }]} />
         <View style={[styles.corner, styles.cBR, { borderColor: accentColor }]} />
 
-        {/* Linha de Varredura Suave */}
         <Animated.View
           style={[
             styles.scanLaser,
@@ -680,11 +718,14 @@ function BiometricScanHUD({ action }: { action: "check_in" | "check_out" | null 
         />
       </View>
 
-      {/* Pílula de Status Inferior */}
       <View style={styles.hudPill}>
         <ActivityIndicator color="#FFFFFF" size="small" />
         <Text style={styles.hudText}>
-          {action === "check_in" ? "Verificando Entrada..." : "Verificando Saída..."}
+          {action === "check_in"
+            ? "Verificando Entrada..."
+            : action === "check_out"
+            ? "Verificando Saída..."
+            : "Analisando Biometria..."}
         </Text>
       </View>
     </View>
@@ -692,23 +733,207 @@ function BiometricScanHUD({ action }: { action: "check_in" | "check_out" | null 
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, gap: 16 },
-  center: { alignItems: "center", justifyContent: "center", gap: 16 },
+  container: { flex: 1, gap: 12 },
+  permCard: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 28,
+  },
+  permCardDark: {
+    backgroundColor: "#0F1623",
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  permIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: "rgba(234, 88, 12, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(234, 88, 12, 0.28)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  permTitle: {
+    color: "#0F172A",
+    fontSize: 18,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  permTitleDark: {
+    color: "#F8FAFC",
+  },
+  permText: {
+    color: "#64748B",
+    fontSize: 13.5,
+    lineHeight: 20,
+    textAlign: "center",
+    maxWidth: 420,
+  },
+  permTextDark: {
+    color: "#94A3B8",
+  },
+  permBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#EA580C",
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 14,
+    minHeight: 46,
+    marginTop: 4,
+  },
+  permBtnText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+    fontSize: 14,
+  },
   cameraWrapper: {
     flex: 1,
-    borderRadius: 28,
+    borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: "#0F172A",
+    backgroundColor: "#090D16",
     position: "relative",
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    borderColor: "#CBD5E1",
+  },
+  cameraWrapperDark: {
+    borderColor: "rgba(255, 255, 255, 0.12)",
   },
   camera: { flex: 1 },
+  topStatusRow: {
+    position: "absolute",
+    top: 14,
+    left: 14,
+    right: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    zIndex: 20,
+  },
+  handsFreeToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(9, 13, 22, 0.78)",
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    minHeight: 36,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.18)",
+  },
+  handsFreeToggleActive: {
+    backgroundColor: "rgba(5, 150, 105, 0.88)",
+    borderColor: "rgba(52, 211, 153, 0.6)",
+  },
+  handsFreeText: {
+    color: "#FFFFFF",
+    fontSize: 11.5,
+    fontWeight: "700",
+  },
+  telemetryPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(9, 13, 22, 0.72)",
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+  },
+  telemetryDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#10B981",
+  },
+  telemetryText: {
+    color: "#E2E8F0",
+    fontSize: 10.5,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  offlineBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(217, 119, 6, 0.90)",
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(251, 191, 36, 0.55)",
+  },
+  offlineBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+    fontVariant: ["tabular-nums"],
+  },
+  idleOvalContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reticleFrame: {
+    width: 224,
+    height: 268,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  idleOval: {
+    width: 192,
+    height: 238,
+    borderRadius: 98,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "rgba(255, 255, 255, 0.50)",
+  },
+  idleOvalHandsFree: {
+    borderColor: "rgba(16, 185, 129, 0.88)",
+    borderWidth: 2.5,
+    borderStyle: "solid",
+  },
+  idleOvalCooldown: {
+    borderColor: "rgba(245, 158, 11, 0.85)",
+  },
+  bottomGuideBar: {
+    position: "absolute",
+    bottom: 14,
+    left: 14,
+    right: 14,
+    alignItems: "center",
+    zIndex: 15,
+  },
+  guidePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(9, 13, 22, 0.80)",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.14)",
+  },
+  guideText: {
+    color: "#F8FAFC",
+    fontSize: 12.5,
+    fontWeight: "700",
+    textAlign: "center",
+  },
   hudOverlay: {
     position: "absolute",
     top: 0,
@@ -717,7 +942,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(15, 23, 42, 0.22)",
+    backgroundColor: "rgba(9, 13, 22, 0.28)",
   },
   reticle: {
     width: 220,
@@ -733,10 +958,10 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
   },
-  cTL: { top: 0, left: 0, borderTopWidth: 3.5, borderLeftWidth: 3.5, borderTopLeftRadius: 18 },
-  cTR: { top: 0, right: 0, borderTopWidth: 3.5, borderRightWidth: 3.5, borderTopRightRadius: 18 },
-  cBL: { bottom: 0, left: 0, borderBottomWidth: 3.5, borderLeftWidth: 3.5, borderBottomLeftRadius: 18 },
-  cBR: { bottom: 0, right: 0, borderBottomWidth: 3.5, borderRightWidth: 3.5, borderBottomRightRadius: 18 },
+  cTL: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: 16 },
+  cTR: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 16 },
+  cBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 16 },
+  cBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 16 },
   scanLaser: {
     width: "90%",
     height: 2.5,
@@ -748,134 +973,41 @@ const styles = StyleSheet.create({
   },
   hudPill: {
     position: "absolute",
-    bottom: 24,
+    bottom: 18,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "rgba(15, 23, 42, 0.85)",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: "rgba(9, 13, 22, 0.88)",
+    paddingHorizontal: 18,
+    paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.18)",
   },
   hudText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: "700",
-    letterSpacing: 0.2,
   },
-  topStatusRow: {
-    position: "absolute",
-    top: 14,
-    left: 16,
-    right: 16,
+  actions: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    zIndex: 20,
+    gap: 12,
   },
-  handsFreeToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(15, 23, 42, 0.75)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+  actionWrapper: {
+    flex: 1,
   },
-  handsFreeToggleActive: {
-    backgroundColor: "rgba(5, 150, 105, 0.85)",
-    borderColor: "rgba(16, 185, 129, 0.5)",
-  },
-  handsFreeIcon: {
-    fontSize: 13,
-  },
-  handsFreeText: {
-    color: "#E2E8F0",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  handsFreeTextActive: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
-  offlineBadge: {
-    backgroundColor: "rgba(217, 119, 6, 0.85)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(245, 158, 11, 0.5)",
-  },
-  offlineBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  guideBanner: {
-    position: "absolute",
-    top: 50,
-    left: 16,
-    right: 16,
-    alignItems: "center",
-    zIndex: 10,
-  },
-  guideText: {
-    backgroundColor: "rgba(15, 23, 42, 0.76)",
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "700",
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: 999,
-    overflow: "hidden",
-    textAlign: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
-  },
-  idleOvalContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  idleOval: {
-    width: 200,
-    height: 250,
-    borderRadius: 100,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: "rgba(255, 255, 255, 0.45)",
-  },
-  idleOvalHandsFree: {
-    borderColor: "rgba(16, 185, 129, 0.8)",
-    borderWidth: 2.5,
-    borderStyle: "solid",
-    shadowColor: "#10B981",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-  },
-  actions: { flexDirection: "row", gap: 14 },
-  actionWrapper: { flex: 1 },
   action: {
     width: "100%",
-    minHeight: 56,
+    minHeight: 64,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.2,
     shadowRadius: 10,
-    elevation: 3,
+    elevation: 4,
     borderWidth: 1,
   },
   buttonBusy: {
@@ -883,37 +1015,48 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  buttonContent: {
-    alignItems: "center",
-    gap: 2,
-  },
-  buttonLabelRow: {
+  buttonRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 12,
   },
-  buttonIcon: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
+  buttonIconTile: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: "rgba(255, 255, 255, 0.16)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonContent: {
+    alignItems: "flex-start",
+    gap: 1,
   },
   entrada: {
     backgroundColor: "#059669",
-    borderColor: "rgba(16, 185, 129, 0.45)",
+    borderColor: "rgba(52, 211, 153, 0.45)",
     shadowColor: "#059669",
   },
   saida: {
-    backgroundColor: "#C15F3D",
-    borderColor: "rgba(193, 95, 61, 0.45)",
-    shadowColor: "#C15F3D",
+    backgroundColor: "#EA580C",
+    borderColor: "rgba(251, 146, 60, 0.45)",
+    shadowColor: "#EA580C",
   },
   actionBusy: {
-    backgroundColor: "#334155",
-    borderColor: "rgba(255, 255, 255, 0.30)",
+    backgroundColor: "#1E293B",
+    borderColor: "rgba(255, 255, 255, 0.22)",
   },
-  disabled: { opacity: 0.65 },
-  actionText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16, letterSpacing: -0.2 },
-  sublabelText: { color: "rgba(255, 255, 255, 0.72)", fontSize: 11, fontWeight: "500" },
+  actionText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+    fontSize: 16,
+    letterSpacing: -0.2,
+  },
+  sublabelText: {
+    color: "rgba(255, 255, 255, 0.80)",
+    fontSize: 11.5,
+    fontWeight: "600",
+  },
   flashOverlay: {
     position: "absolute",
     top: 0,
@@ -924,40 +1067,30 @@ const styles = StyleSheet.create({
     opacity: 0.88,
     zIndex: 999,
   },
-  permText: { color: "#171715", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
-  permBtn: {
-    backgroundColor: "#171715",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  permBtnText: { color: "#FAF9F5", fontWeight: "600" },
   cooldownOverlay: {
-    position: 'absolute',
-    bottom: 80,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(220, 38, 38, 0.88)',
-    borderRadius: 20,
-    paddingHorizontal: 20,
+    position: "absolute",
+    bottom: 62,
+    alignSelf: "center",
+    backgroundColor: "rgba(15, 22, 35, 0.90)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(245, 158, 11, 0.55)",
+    paddingHorizontal: 18,
     paddingVertical: 8,
-    alignItems: 'center',
-    gap: 2,
+    alignItems: "center",
+    gap: 1,
   },
   cooldownText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '900',
+    color: "#FBBF24",
+    fontSize: 24,
+    fontWeight: "900",
     letterSpacing: -0.5,
-    lineHeight: 32,
+    lineHeight: 28,
+    fontVariant: ["tabular-nums"],
   },
   cooldownSub: {
-    color: 'rgba(255,255,255,0.85)',
+    color: "#F8FAFC",
     fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    fontWeight: "600",
   },
 });
