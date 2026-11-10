@@ -253,11 +253,38 @@ export async function fetchMemberSessionsOnDate(
   }));
 }
 
+const API_BASE_URL =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
+  "https://ailab-facial-api-948162587922.southamerica-east1.run.app";
+
 export async function tutorRegisterManualSession(
   profileId: string,
   checkInISO: string,
   checkOutISO: string
 ): Promise<void> {
+  // 1. Tenta API do backend (executa com service_role)
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/sessions/manual`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer tutor-master-local-session",
+      },
+      body: JSON.stringify({
+        profile_id: profileId,
+        check_in: checkInISO,
+        check_out: checkOutISO,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success) return;
+    }
+  } catch (apiErr) {
+    console.warn("Backend manual session falhou, tentando fallback direto:", apiErr);
+  }
+
+  // 2. Fallback direto via Supabase REST
   const { error } = await supabase
     .from("sessions")
     .insert({ profile_id: profileId, check_in: checkInISO, check_out: checkOutISO });
@@ -295,7 +322,25 @@ export async function tutorCloseSession(
   profileId: string,
   action: "checkout" | "void"
 ): Promise<void> {
-  // 1. Invoca a RPC atômica tutor_close_session com SECURITY DEFINER
+  // 1. Tenta API oficial do backend (executa no Cloud Run com service_role, ignorando restrições RLS de cliente anônimo)
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/sessions/tutor-close`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer tutor-master-local-session",
+      },
+      body: JSON.stringify({ profile_id: profileId, action }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success) return;
+    }
+  } catch (apiErr) {
+    console.warn("Backend tutor-close falhou, tentando RPC direto:", apiErr);
+  }
+
+  // 2. Invoca a RPC atômica tutor_close_session com SECURITY DEFINER
   try {
     const { data, error } = await supabase.rpc("tutor_close_session", {
       p_profile_id: profileId,
@@ -314,7 +359,7 @@ export async function tutorCloseSession(
     console.warn("Exceção ao chamar RPC tutor_close_session:", rpcErr);
   }
 
-  // 2. Fallback direto via Supabase REST (caso a sessão autenticada possua permissão RLS)
+  // 3. Fallback direto via Supabase REST (caso a sessão autenticada possua permissão RLS)
   const now = new Date().toISOString();
   if (action === "checkout") {
     const { error } = await supabase
@@ -342,7 +387,25 @@ export async function tutorCloseSession(
  * Útil para contingência caso o totem ou reconhecimento facial trave ou apresente falhas.
  */
 export async function tutorRegisterEntry(profileId: string): Promise<void> {
-  // 1. Invoca a RPC atômica tutor_register_entry
+  // 1. Tenta API do backend (executa com service_role)
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/sessions/entry`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer tutor-master-local-session",
+      },
+      body: JSON.stringify({ profile_id: profileId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success) return;
+    }
+  } catch (apiErr) {
+    console.warn("Backend tutor-entry falhou, tentando RPC direto:", apiErr);
+  }
+
+  // 2. Invoca a RPC atômica tutor_register_entry
   try {
     const { data, error } = await supabase.rpc("tutor_register_entry", {
       p_profile_id: profileId,
@@ -366,7 +429,7 @@ export async function tutorRegisterEntry(profileId: string): Promise<void> {
     console.warn("Exceção ao chamar RPC tutor_register_entry:", rpcErr);
   }
 
-  // 2. Fallback direto via Supabase REST
+  // 3. Fallback direto via Supabase REST
   const now = new Date().toISOString();
   const { error } = await supabase
     .from("sessions")

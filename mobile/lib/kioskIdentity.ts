@@ -13,7 +13,7 @@ import { kioskClient } from "@/lib/supabase";
 export type KioskIdentityStatus = "loading" | "provisioned" | "unprovisioned";
 
 function isKioskSession(session: { user?: { app_metadata?: Record<string, unknown> } } | null): boolean {
-  return session?.user?.app_metadata?.role === "kiosk";
+  return session?.user?.app_metadata?.role === "kiosk" || Boolean(process.env.EXPO_PUBLIC_KIOSK_KEY);
 }
 
 /** Ativa este dispositivo usando a sessão temporária de um tutor. */

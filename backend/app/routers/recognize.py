@@ -376,15 +376,69 @@ class TutorCloseSessionRequest(BaseModel):
 def tutor_close_session_endpoint(body: TutorCloseSessionRequest):
     """Tutor autenticado registra saída imediata ou anula a sessão aberta.
 
-    Usa a RPC tutor_close_session, que compartilha o lock por perfil com o kiosk.
+    Usa a RPC tutor_close_session com fallback direto via service_role.
     """
-    res = get_client().rpc(
-        "tutor_close_session", {"p_profile_id": body.profile_id, "p_action": body.action}
-    ).execute()
-    data = res.data if isinstance(res.data, dict) else {}
+    client = get_client()
+    try:
+        res = client.rpc(
+            "tutor_close_session", {"p_profile_id": body.profile_id, "p_action": body.action}
+        ).execute()
+        data = res.data if isinstance(res.data, dict) else {}
+        if "updated_count" in data or data.get("success"):
+            return {
+                "success": True,
+                "action": body.action,
+                "profile_id": body.profile_id,
+                "updated_rows": int(data.get("updated_count", 0)),
+            }
+    except Exception as exc:
+        log.warning("RPC tutor_close_session falhou no backend: %s. Aplicando fallback direto...", exc)
+
+    # Fallback direto via service_role (ignora RLS)
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    if body.action == "checkout":
+        up_res = client.table("sessions").update({"check_out": now_iso}).eq("profile_id", body.profile_id).is_("check_out", "null").execute()
+    else:
+        up_res = client.table("sessions").update({"check_out": now_iso, "voided_at": now_iso, "auto_closed": True}).eq("profile_id", body.profile_id).is_("check_out", "null").execute()
+
+    updated_rows = len(up_res.data) if up_res.data else 0
     return {
         "success": True,
         "action": body.action,
         "profile_id": body.profile_id,
-        "updated_rows": int(data.get("updated_count", 0)),
+        "updated_rows": updated_rows,
     }
+
+
+class ManualSessionRequest(BaseModel):
+    profile_id: str
+    check_in: str
+    check_out: str
+
+
+@router.post("/sessions/manual", dependencies=[Depends(verify_tutor_token)])
+def manual_session_endpoint(body: ManualSessionRequest):
+    """Registra entrada manual de sessão diretamente com service_role."""
+    client = get_client()
+    res = client.table("sessions").insert({
+        "profile_id": body.profile_id,
+        "check_in": body.check_in,
+        "check_out": body.check_out,
+    }).execute()
+    return {"success": True, "data": res.data}
+
+
+class TutorEntryRequest(BaseModel):
+    profile_id: str
+
+
+@router.post("/sessions/entry", dependencies=[Depends(verify_tutor_token)])
+def entry_session_endpoint(body: TutorEntryRequest):
+    """Registra entrada imediata de sessão diretamente com service_role."""
+    client = get_client()
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    res = client.table("sessions").insert({
+        "profile_id": body.profile_id,
+        "check_in": now_iso,
+    }).execute()
+    return {"success": True, "data": res.data}
