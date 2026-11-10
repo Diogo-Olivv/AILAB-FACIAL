@@ -1,4 +1,4 @@
-import type { Member, SessionRecord } from "./reports";
+import type { Member, PublicBucket, SessionRecord } from "./reports";
 
 /**
  * Retorna true se a data cair em dia útil (Segunda a Sexta-feira).
@@ -302,10 +302,10 @@ export function calculateOccupancyInsights(
   sessions: SessionRecord[],
   presentCount: number,
   now: Date,
-  maxCapacity: number = DEFAULT_LAB_CAPACITY
+  maxCapacity: number = DEFAULT_LAB_CAPACITY,
+  buckets?: PublicBucket[]
 ): OccupancyInsights {
   const weekdaySessions = filterWeekdaySessions(sessions).filter((s) => s.voidedAt == null);
-  const hasSufficientSamples = weekdaySessions.length >= 3;
 
   let morningSec = 0;
   let morningCount = 0;
@@ -325,39 +325,78 @@ export function calculateOccupancyInsights(
     hourlyMap.set(h, { seconds: 0, count: 0 });
   }
 
-  for (const s of weekdaySessions) {
-    const sec = sessionSeconds(s, now);
-    const date = new Date(s.checkIn);
-    const h = date.getHours();
-    const day = date.getDay();
+  if (weekdaySessions.length > 0) {
+    for (const s of weekdaySessions) {
+      const sec = sessionSeconds(s, now);
+      const date = new Date(s.checkIn);
+      const h = date.getHours();
+      const day = date.getDay();
 
-    if (h < 12) {
-      morningSec += sec;
-      morningCount++;
-    } else if (h < 18) {
-      afternoonSec += sec;
-      afternoonCount++;
-    } else {
-      eveningSec += sec;
-      eveningCount++;
-    }
+      if (h < 12) {
+        morningSec += sec;
+        morningCount++;
+      } else if (h < 18) {
+        afternoonSec += sec;
+        afternoonCount++;
+      } else {
+        eveningSec += sec;
+        eveningCount++;
+      }
 
-    if (day >= 1 && day <= 5) {
-      const entry = weekdaySecMap.get(day);
-      if (entry) {
-        entry.seconds += sec;
-        entry.count++;
+      if (day >= 1 && day <= 5) {
+        const entry = weekdaySecMap.get(day);
+        if (entry) {
+          entry.seconds += sec;
+          entry.count++;
+        }
+      }
+
+      if (h >= 8 && h <= 20) {
+        const hEntry = hourlyMap.get(h);
+        if (hEntry) {
+          hEntry.seconds += sec;
+          hEntry.count++;
+        }
       }
     }
+  } else if (buckets && buckets.length > 0) {
+    for (const b of buckets) {
+      const sec = b.seconds;
+      const count = b.sessions;
+      const h = b.hour;
+      const day = b.dow; // 1 = Seg ... 5 = Sex
 
-    if (h >= 8 && h <= 20) {
-      const hEntry = hourlyMap.get(h);
-      if (hEntry) {
-        hEntry.seconds += sec;
-        hEntry.count++;
+      if (h < 12) {
+        morningSec += sec;
+        morningCount += count;
+      } else if (h < 18) {
+        afternoonSec += sec;
+        afternoonCount += count;
+      } else {
+        eveningSec += sec;
+        eveningCount += count;
+      }
+
+      if (day >= 1 && day <= 5) {
+        const entry = weekdaySecMap.get(day);
+        if (entry) {
+          entry.seconds += sec;
+          entry.count += count;
+        }
+      }
+
+      if (h >= 8 && h <= 20) {
+        const hEntry = hourlyMap.get(h);
+        if (hEntry) {
+          hEntry.seconds += sec;
+          hEntry.count += count;
+        }
       }
     }
   }
+
+  const hasSufficientSamples =
+    weekdaySessions.length >= 3 || morningCount + afternoonCount + eveningCount >= 3;
 
   const shiftDefs = [
     { name: "Manhã" as const, hoursDescription: "08h às 12h", seconds: morningSec, sessionsCount: morningCount },

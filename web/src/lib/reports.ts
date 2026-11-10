@@ -40,24 +40,89 @@ export interface PublicLabStats {
 }
 
 export async function fetchPublicLabStats(days = 28): Promise<PublicLabStats> {
-  const { data, error } = await supabase.rpc("public_lab_stats", { p_days: days });
-  if (error) throw error;
-  const raw = data as {
-    present_now?: number;
-    window_days?: number;
-    total_sessions?: number;
-    buckets?: Array<{ dow: number; hour: number; sessions: number; seconds: number }>;
-    timezone?: string;
-    generated_at?: string;
-  };
-  return {
-    presentNow: raw?.present_now ?? 0,
-    windowDays: raw?.window_days ?? days,
-    totalSessions: raw?.total_sessions ?? 0,
-    buckets: raw?.buckets ?? [],
-    timezone: raw?.timezone ?? "America/Sao_Paulo",
-    generatedAt: raw?.generated_at ?? new Date().toISOString(),
-  };
+  // 1. Tenta RPC nativo public_lab_stats (quando migração 23 está aplicada no backend)
+  try {
+    const { data, error } = await supabase.rpc("public_lab_stats", { p_days: days });
+    if (!error && data) {
+      const raw = data as {
+        present_now?: number;
+        window_days?: number;
+        total_sessions?: number;
+        buckets?: Array<{ dow: number; hour: number; sessions: number; seconds: number }>;
+        timezone?: string;
+        generated_at?: string;
+      };
+      return {
+        presentNow: raw?.present_now ?? 0,
+        windowDays: raw?.window_days ?? days,
+        totalSessions: raw?.total_sessions ?? 0,
+        buckets: raw?.buckets ?? [],
+        timezone: raw?.timezone ?? "America/Sao_Paulo",
+        generatedAt: raw?.generated_at ?? new Date().toISOString(),
+      };
+    }
+  } catch {
+    // RPC não disponível no schema do Supabase remoto, fallback gracioso
+  }
+
+  // 2. Fallback de alta disponibilidade: agrega sessões anonimamente sem expor PII (DP-1)
+  try {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const [pRes, sRes] = await Promise.all([
+      supabase
+        .from("sessions")
+        .select("id", { count: "exact", head: true })
+        .is("check_out", null)
+        .is("voided_at", null),
+      supabase
+        .from("sessions")
+        .select("check_in, check_out, duration_s")
+        .is("voided_at", null)
+        .gte("check_in", since.toISOString()),
+    ]);
+
+    const presentNow = pRes.count ?? 0;
+    const rawSessions = sRes.data ?? [];
+    const bucketsMap = new Map<string, { dow: number; hour: number; sessions: number; seconds: number }>();
+
+    for (const s of rawSessions) {
+      if (!s.check_in) continue;
+      const d = new Date(s.check_in);
+      const rawDow = d.getDay();
+      const dow = rawDow === 0 ? 7 : rawDow;
+      const hour = d.getHours();
+      const key = `${dow}_${hour}`;
+      let dur = typeof s.duration_s === "number" && s.duration_s > 0 ? s.duration_s : 0;
+      if (dur === 0 && s.check_in) {
+        const outTime = s.check_out ? new Date(s.check_out).getTime() : Date.now();
+        dur = Math.max(0, Math.floor((outTime - d.getTime()) / 1000));
+        if (dur > 36000) dur = 36000;
+      }
+      const b = bucketsMap.get(key) ?? { dow, hour, sessions: 0, seconds: 0 };
+      b.sessions += 1;
+      b.seconds += dur;
+      bucketsMap.set(key, b);
+    }
+
+    return {
+      presentNow,
+      windowDays: days,
+      totalSessions: rawSessions.length,
+      buckets: Array.from(bucketsMap.values()),
+      timezone: "America/Sao_Paulo",
+      generatedAt: new Date().toISOString(),
+    };
+  } catch (err) {
+    console.warn("[AILAB] Não foi possível carregar estatísticas agregadas do laboratório:", err);
+    return {
+      presentNow: 0,
+      windowDays: days,
+      totalSessions: 0,
+      buckets: [],
+      timezone: "America/Sao_Paulo",
+      generatedAt: new Date().toISOString(),
+    };
+  }
 }
 
 export async function fetchMembers(): Promise<Member[]> {
@@ -204,7 +269,8 @@ export async function fetchPresentIds(): Promise<string[]> {
     const { data, error } = await supabase
       .from("sessions")
       .select("profile_id")
-      .is("check_out", null);
+      .is("check_out", null)
+      .is("voided_at", null);
     if (error) {
       if (error.code === "42501" || error.message?.includes("permission denied")) {
         return [];

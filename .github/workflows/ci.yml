@@ -31,7 +31,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Execute Full Test Suite (Unit, E2E, Mutation & Property-Based)
         run: npm run test
@@ -61,7 +61,7 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Run Expo Doctor (21 Quality & Compatibility Checks)
         run: npx expo-doctor

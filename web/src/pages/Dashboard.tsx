@@ -373,11 +373,15 @@ export function Dashboard() {
         }
         setLastRefreshed(new Date());
       } catch (e: any) {
-        setError(
+        const msg =
           e instanceof Error
             ? e.message
-            : "Falha ao sincronizar telemetria. Tente novamente."
-        );
+            : typeof e === "object" && e?.message
+            ? String(e.message)
+            : typeof e === "string"
+            ? e
+            : "Falha ao sincronizar telemetria. Tente novamente.";
+        setError(msg);
       } finally {
         setLoading(false);
         setIsRefreshing(false);
@@ -387,11 +391,11 @@ export function Dashboard() {
   );
 
   useEffect(() => {
-    if (members.length === 0) {
+    if (user && members.length === 0) {
       setLoading(true);
     }
     refreshData(false);
-  }, [refreshData, members.length]);
+  }, [refreshData, user, members.length]);
 
   // Polling a cada 30 segundos
   useEffect(() => {
@@ -491,8 +495,14 @@ export function Dashboard() {
   }, [members, weekdaySessions, now]);
 
   const occupancyInsights = useMemo(() => {
-    return calculateOccupancyInsights(sessions, presentCount, now, DEFAULT_LAB_CAPACITY);
-  }, [sessions, presentCount, now]);
+    return calculateOccupancyInsights(
+      sessions,
+      presentCount,
+      now,
+      DEFAULT_LAB_CAPACITY,
+      publicStats?.buckets
+    );
+  }, [sessions, presentCount, now, publicStats]);
 
   const crowd = CROWD_STYLES[occupancyInsights.currentCrowdLevel];
   const shiftSegments = [

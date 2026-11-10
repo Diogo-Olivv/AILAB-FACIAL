@@ -8,8 +8,9 @@ import {
   isWeekday,
   filterWeekdaySessions,
   calculateTutorInsights,
+  calculateOccupancyInsights,
 } from "./aggregate.ts";
-import type { Member, SessionRecord } from "./reports.ts";
+import type { Member, PublicBucket, SessionRecord } from "./reports.ts";
 
 test("formatDuration formata segundos em formato legível de horas e minutos", () => {
   assert.strictEqual(formatDuration(0), "0h 00m");
@@ -273,6 +274,36 @@ test("groupByDay: preserva a tag isTutor vinculada ao perfil do membro", () => {
 
   assert.strictEqual(tutorEntry?.isTutor, true, "Sessão do tutor deve manter isTutor: true");
   assert.strictEqual(regularEntry?.isTutor, false, "Sessão do aluno regular deve ter isTutor: false");
+});
+
+test("calculateOccupancyInsights: computa métricas a partir de buckets anonimizados (DP-1) quando sessões individuais estão vazias", () => {
+  const buckets: PublicBucket[] = [
+    // Quarta-feira (dow = 3): 10h (manhã) com 10 presenças, 36000s
+    { dow: 3, hour: 10, sessions: 10, seconds: 36000 },
+    // Quarta-feira (dow = 3): 14h (tarde) com 5 presenças, 18000s
+    { dow: 3, hour: 14, sessions: 5, seconds: 18000 },
+    // Terça-feira (dow = 2): 19h (noite) com 2 presenças, 7200s
+    { dow: 2, hour: 19, sessions: 2, seconds: 7200 },
+  ];
+
+  const now = new Date("2026-09-17T12:00:00Z");
+  const insights = calculateOccupancyInsights([], 3, now, 20, buckets);
+
+  // Turno de pico deve ser Manhã (36000s vs 18000s tarde vs 7200s noite)
+  assert.strictEqual(insights.peakShift.name, "Manhã");
+  assert.strictEqual(insights.peakShift.sessionsCount, 10);
+
+  // Turno mais tranquilo deve ser Noite (7200s)
+  assert.strictEqual(insights.quietShift.name, "Noite");
+
+  // Hora de pico (10h às 11h)
+  assert.strictEqual(insights.peakHour?.hour, 10);
+  assert.strictEqual(insights.peakHour?.sessionsCount, 10);
+
+  // Distribuição percentual de turnos
+  const totalSec = 36000 + 18000 + 7200; // 61200
+  const expectedMorningPct = Math.round((36000 / totalSec) * 100);
+  assert.strictEqual(insights.shiftsSummary.morning.percent, expectedMorningPct);
 });
 
 

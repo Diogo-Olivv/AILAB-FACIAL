@@ -5,7 +5,7 @@ export interface AuthState {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signIn: (password: string, email?: string) => Promise<void>;
+  signIn: (emailOrPassword: string, passwordOrEmail?: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateTutorCredentials: (newEmail: string, newPassword: string) => Promise<void>;
   updateTutorAvatar: (avatarUrl: string | null) => Promise<void>;

@@ -55,10 +55,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session,
       user: session?.user ?? null,
       loading,
-      signIn: async (password: string, email?: string) => {
-        const cleanEmail = (
-          email && email.trim().length > 0 ? email.trim() : VIEWER_EMAIL
-        ).toLowerCase();
+      signIn: async (arg1: string, arg2?: string) => {
+        let cleanEmail: string;
+        let cleanPassword: string;
+
+        if (arg1.includes("@")) {
+          cleanEmail = arg1.trim().toLowerCase();
+          cleanPassword = arg2 ?? "";
+        } else if (arg2 && arg2.includes("@")) {
+          cleanEmail = arg2.trim().toLowerCase();
+          cleanPassword = arg1;
+        } else {
+          cleanEmail = VIEWER_EMAIL.toLowerCase();
+          cleanPassword = arg1;
+        }
 
         if (!cleanEmail.includes("@")) {
           throw new Error("Informe o e-mail completo com domínio institucional.");
@@ -67,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Autenticação oficial no Supabase Auth (GoTrue)
         const { data, error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
-          password,
+          password: cleanPassword,
         });
 
         if (error) {
