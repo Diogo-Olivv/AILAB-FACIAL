@@ -30,6 +30,21 @@ class BiometricUnavailable(RuntimeError):
     """A verificação não pôde ser executada (modelo ausente/falho). Nunca vira aprovação."""
 
 
+# SHA-256 esperado do artefato PAD auditado (mesmo valor de scripts/download_models.py).
+# Um arquivo com hash diferente NÃO é carregado.
+PAD_MODEL_SHA256 = "d7b3cd9ba8a7ceb13baa8c4720902e27ca3112eff52f926c08804af6b6eecc7b"
+
+
+def _file_sha256(path: str) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def pad_model_loaded() -> bool:
     return _init_onnx_pad() is not None
 
@@ -53,6 +68,9 @@ def _init_onnx_pad():
         for p in model_paths:
             if os.path.exists(p) and os.path.getsize(p) > 100_000:
                 try:
+                    if _file_sha256(p) != PAD_MODEL_SHA256:
+                        log.error("Modelo PAD com hash divergente foi ignorado (integridade não confirmada).")
+                        continue
                     import onnxruntime as ort  # type: ignore
 
                     opts = ort.SessionOptions()

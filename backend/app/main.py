@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.db.schema_check import validate_schema
-from app.routers import enroll, health, maintenance, profiles, recognize
+from app.routers import enroll, health, kiosks, maintenance, profiles, recognize
 from app.services.face_service import warmup
 from app.upload_guard import UploadGuardMiddleware
 
@@ -72,5 +72,6 @@ app.include_router(health.router)
 app.include_router(recognize.router)
 app.include_router(enroll.router)
 app.include_router(profiles.router)
+app.include_router(kiosks.router)
 app.include_router(maintenance.router)
 

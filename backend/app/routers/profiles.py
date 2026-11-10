@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
 
 from app.config import settings
 from app.db.supabase_client import get_client
@@ -36,11 +36,46 @@ def get_profile(profile_id: str):
     return res.data[0]
 
 
+MULTIPART_FRAMES_SCHEMA = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "required": ["frames"],
+                    "properties": {
+                        "frames": {"type": "array", "items": {"type": "string", "format": "binary"}},
+                    },
+                }
+            }
+        },
+    }
+}
+
+
 @router.post(
     "/{profile_id}/refresh-embedding",
     response_model=EnrollResponse,
-    dependencies=[Depends(require_tutor_or_window)],
+    openapi_extra=MULTIPART_FRAMES_SCHEMA,
 )
+async def refresh_embedding_endpoint(
+    profile_id: str,
+    request: Request,
+    response: Response,
+    identity: dict = Depends(require_tutor_or_window),
+):
+    """Recadastro biométrico. O corpo só é lido após validar a identidade e o limite de taxa."""
+    from app.routers.enroll import read_frames_form
+    from app.routers.recognize import check_rate_limit
+
+    check_rate_limit(identity["user_id"], limit=settings.upload_rate_limit_per_minute, bucket="refresh")
+    _, frames = await read_frames_form(request, settings.max_enroll_frames, max_fields=4)
+    if not frames:
+        raise HTTPException(422, "Campo 'frames' é obrigatório.")
+    return await refresh_embedding_route(profile_id=profile_id, frames=frames, response=response)
+
+
 async def refresh_embedding_route(
     profile_id: str,
     frames: list[UploadFile] = File(...),  # noqa: B008

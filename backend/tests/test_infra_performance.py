@@ -22,17 +22,29 @@ from app.services.face_service import (
 
 
 def test_health_liveness_and_readiness():
-    """Testa endpoints de liveness (health) e readiness (readiness)."""
+    """Liveness sempre responde; a prontidão só é 200 com modelos, PAD e banco disponíveis."""
+    import json
+
     res_live = health()
     assert res_live == {"status": "ok"}
 
-    with patch("app.routers.health.is_model_loaded", return_value=True):
+    with (
+        patch("app.routers.health.is_model_loaded", return_value=True),
+        patch("app.routers.health.pad_model_loaded", return_value=True),
+        patch("app.routers.health._database_reachable", return_value=True),
+    ):
         res_ready = readiness()
-        assert res_ready == {"status": "ready", "models_loaded": True}
+        assert res_ready.status_code == 200
+        assert json.loads(res_ready.body) == {"status": "ready", "models_loaded": True}
 
-    with patch("app.routers.health.is_model_loaded", return_value=False):
+    with (
+        patch("app.routers.health.is_model_loaded", return_value=False),
+        patch("app.routers.health.pad_model_loaded", return_value=True),
+        patch("app.routers.health._database_reachable", return_value=True),
+    ):
         res_warming = readiness()
-        assert res_warming == {"status": "warming_up", "models_loaded": False}
+        assert res_warming.status_code == 503
+        assert json.loads(res_warming.body) == {"status": "warming_up", "models_loaded": False}
 
 
 def test_warmup_pipeline_execution():

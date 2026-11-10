@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import asyncio
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 try:
     from postgrest.exceptions import APIError
@@ -16,6 +17,7 @@ except ImportError:
 from app.config import settings
 from app.deps import validate_image, verify_tutor_token
 from app.routers.contracts import EnrollResponse
+from app.routers.recognize import check_rate_limit
 from app.services.enroll_service import EnrollError, enroll
 
 router = APIRouter(prefix="/api/v1", tags=["enroll"])
@@ -26,7 +28,65 @@ def _postgrest_detail(exc: APIError) -> str:
     return " | ".join(parts) or "Erro ao persistir no banco."
 
 
-@router.post("/enroll", response_model=EnrollResponse, dependencies=[Depends(verify_tutor_token)])
+_TRUE_VALUES = {"true", "1", "on", "yes", "t", "y"}
+_FALSE_VALUES = {"false", "0", "off", "no", "f", "n"}
+
+MULTIPART_ENROLL_SCHEMA = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "required": ["name", "consent", "frames"],
+                    "properties": {
+                        "name": {"type": "string"},
+                        "consent": {"type": "boolean"},
+                        "matricula": {"type": "string", "default": ""},
+                        "frames": {"type": "array", "items": {"type": "string", "format": "binary"}},
+                    },
+                }
+            }
+        },
+    }
+}
+
+
+def parse_bool_field(value: object, field: str) -> bool:
+    text = str(value).strip().lower() if value is not None else ""
+    if text in _TRUE_VALUES:
+        return True
+    if text in _FALSE_VALUES:
+        return False
+    raise HTTPException(422, f"Campo '{field}' inválido.")
+
+
+async def read_frames_form(request: Request, max_frames: int, max_fields: int):
+    """Lê o multipart DEPOIS da autenticação e do rate limit, com teto de partes."""
+    form = await request.form(max_files=max_frames + 1, max_fields=max_fields)
+    frames = [f for f in form.getlist("frames") if isinstance(f, StarletteUploadFile)]
+    return form, frames
+
+
+@router.post("/enroll", response_model=EnrollResponse, openapi_extra=MULTIPART_ENROLL_SCHEMA)
+async def enroll_endpoint(request: Request, tutor: dict = Depends(verify_tutor_token)):
+    """Cadastro biométrico. O corpo só é lido após validar o tutor e o limite de taxa."""
+    check_rate_limit(tutor["user_id"], limit=settings.upload_rate_limit_per_minute, bucket="enroll")
+    form, frames = await read_frames_form(request, settings.max_enroll_frames, max_fields=8)
+    name = form.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise HTTPException(422, "Campo 'name' é obrigatório.")
+    if form.get("consent") is None:
+        raise HTTPException(422, "Campo 'consent' é obrigatório.")
+    consent = parse_bool_field(form.get("consent"), "consent")
+    matricula = form.get("matricula")
+    if not frames:
+        raise HTTPException(422, "Campo 'frames' é obrigatório.")
+    return await enroll_route(
+        name=name, consent=consent, matricula=matricula if isinstance(matricula, str) else "", frames=frames
+    )
+
+
 async def enroll_route(
     name: str = Form(...),
     consent: bool = Form(...),
