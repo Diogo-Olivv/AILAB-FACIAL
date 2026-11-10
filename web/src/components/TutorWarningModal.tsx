@@ -801,9 +801,17 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                   <Square className="h-4 w-4 text-slate-400 shrink-0" />
                 )}
                 <span>
-                  {selectedMemberIds.length === underTargetStudents.length && underTargetStudents.length > 0
-                    ? "Desmarcar todos"
-                    : `Selecionar todos em débito (${underTargetStudents.length})`}
+                  {selectedMemberIds.length === underTargetStudents.length && underTargetStudents.length > 0 ? (
+                    <>
+                      <span className="hidden sm:inline">Desmarcar todos</span>
+                      <span className="sm:hidden">Desmarcar</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">Selecionar todos em débito ({underTargetStudents.length})</span>
+                      <span className="sm:hidden">Selecionar débitos ({underTargetStudents.length})</span>
+                    </>
+                  )}
                 </span>
               </button>
 
@@ -828,12 +836,14 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
               {isCompactView ? (
                 <>
                   <LayoutList className="h-3.5 w-3.5 shrink-0 transition-transform duration-300 rotate-180" />
-                  <span>Modo Detalhado</span>
+                  <span className="hidden sm:inline">Modo Detalhado</span>
+                  <span className="sm:hidden">Detalhado</span>
                 </>
               ) : (
                 <>
                   <LayoutGrid className="h-3.5 w-3.5 shrink-0 transition-transform duration-300" />
-                  <span>Modo Compacto (50+ alunos)</span>
+                  <span className="hidden sm:inline">Modo Compacto (50+ alunos)</span>
+                  <span className="sm:hidden">Compacto</span>
                 </>
               )}
             </button>
@@ -1030,8 +1040,8 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                       </div>
                     </div>
 
-                    {/* Badge ou Ação em Desktop */}
-                    <div className="hidden sm:flex items-center gap-2 shrink-0">
+                    {/* Badge ou Ação em Desktop / Tablets Maiores */}
+                    <div className="hidden md:flex items-center gap-2 shrink-0">
                       {!item.metTarget ? (
                         !item.isJustified ? (
                           <>
@@ -1148,53 +1158,106 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                     </div>
                   </div>
 
-                  {/* Botão de Ação em Largura Total no Celular */}
-                  <div className="sm:hidden pt-1">
+                  {/* Botões de Ação Otimizados para Celular e Telas Médias */}
+                  <div className="md:hidden pt-2 border-t border-slate-100 dark:border-slate-800/80">
                     {!item.metTarget ? (
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleSendEmailNotice(item)}
-                          className={`flex-1 rounded-2xl py-3.5 px-3 text-xs sm:text-sm font-extrabold transition-all shadow-claude cursor-pointer min-h-[48px] inline-flex items-center justify-center gap-1.5 active:scale-98 ${
-                            isEmailPrepared
-                              ? "bg-emerald-600 text-white"
-                              : "bg-gradient-to-r from-amber-600 to-orange-600 text-white"
-                          }`}
-                        >
-                          {isEmailPrepared ? (
-                            <>
-                              <Check className="h-4 w-4" />
-                              <span>E-mail preparado!</span>
-                            </>
-                          ) : (
-                            <>
-                              <BellRing className="h-4 w-4" />
-                              <span>Advertir</span>
-                            </>
+                      !item.isJustified ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSendEmailNotice(item)}
+                              className={`rounded-xl py-2 px-1 text-xs font-bold transition-all shadow-2xs cursor-pointer min-h-[40px] inline-flex items-center justify-center gap-1 active:scale-95 ${
+                                isEmailPrepared
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-700 hover:to-orange-700"
+                              }`}
+                            >
+                              {isEmailPrepared ? (
+                                <>
+                                  <Check className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="truncate">Preparado!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <BellRing className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="truncate">Advertir</span>
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedJustifyMember({
+                                  member: item.member,
+                                  totalSeconds: item.totalSeconds,
+                                  justification: null,
+                                })
+                              }
+                              className="rounded-xl border border-amber-600/30 dark:border-amber-600/40 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 py-2 px-1 text-xs font-bold transition-all shadow-2xs cursor-pointer min-h-[40px] inline-flex items-center justify-center gap-1 active:scale-95"
+                            >
+                              <FileCheck2 className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                              <span className="truncate">Justificar</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenWhatsApp(item)}
+                              title="Abrir no WhatsApp"
+                              className="rounded-xl border border-emerald-600/30 dark:border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 py-2 px-1 text-xs font-bold transition-all shadow-2xs cursor-pointer min-h-[40px] inline-flex items-center justify-center gap-1 active:scale-95"
+                            >
+                              <Send className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                              <span className="truncate">WhatsApp</span>
+                            </button>
+                          </div>
+                          {warning && (
+                            <div className="flex items-center justify-between text-2xs pt-1 px-1">
+                              <span className="text-amber-700 dark:text-amber-400 font-medium">
+                                Advertido em {warning.date}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeWarning(item.member.id)}
+                                className="text-slate-400 dark:text-slate-500 hover:text-amber-700 dark:hover:text-amber-300 underline font-medium cursor-pointer inline-flex items-center gap-1"
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                                <span>Desfazer</span>
+                              </button>
+                            </div>
                           )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenWhatsApp(item)}
-                          title="Abrir no WhatsApp"
-                          className="rounded-2xl py-3.5 px-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-600/30 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm font-extrabold min-h-[48px] inline-flex items-center justify-center gap-1 active:scale-98"
-                        >
-                          <Send className="h-4 w-4" />
-                          <span>WhatsApp</span>
-                        </button>
-                        {warning && (
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 px-3 py-2 text-xs font-bold text-amber-800 dark:text-amber-300 min-h-[40px]">
+                            <FileCheck2 className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <span className="truncate">Semana Justificada</span>
+                          </span>
                           <button
                             type="button"
-                            onClick={() => removeWarning(item.member.id)}
-                            className="rounded-2xl border border-slate-200/90 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-3 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-amber-800 min-h-[48px] flex items-center justify-center"
-                            title="Desfazer"
+                            onClick={() =>
+                              setSelectedJustifyMember({
+                                member: item.member,
+                                totalSeconds: item.totalSeconds,
+                                justification: item.justification,
+                              })
+                            }
+                            className="rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 px-3.5 py-2 text-xs font-bold min-h-[40px] transition-colors shrink-0"
                           >
-                            <RotateCcw className="h-4 w-4" />
+                            Ver / Revogar
                           </button>
-                        )}
-                      </div>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenWhatsApp(item)}
+                            title="Abrir no WhatsApp"
+                            className="rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-800 px-3.5 py-2 text-xs font-bold min-h-[40px] flex items-center justify-center shrink-0"
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )
                     ) : (
-                      <div className="w-full text-center py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1.5">
+                      <div className="w-full text-center py-2 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1.5">
                         <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                         <span>Aluno regularizado com a meta de 4 horas</span>
                       </div>
