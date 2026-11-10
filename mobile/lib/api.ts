@@ -1,12 +1,24 @@
 import { Platform } from "react-native";
 import { File as ExpoFile } from "expo-file-system";
-import { ApiError } from "@/lib/errors";
+import { ApiError, KioskNotProvisionedError, NetworkTimeoutError } from "@/lib/errors";
 import { getKioskAccessToken } from "@/lib/supabase";
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ??
   process.env.EXPO_PUBLIC_API_URL ??
   "http://localhost:8000";
+
+/** Tempo máximo de uma requisição comum e de um upload de frames. */
+const DEFAULT_TIMEOUT_MS = 12_000;
+const UPLOAD_TIMEOUT_MS = 25_000;
+
+/**
+ * Repetição do reconhecimento: SEMPRE o mesmo desafio e os mesmos frames (em
+ * memória), para que o servidor trate como a mesma requisição e não gere um
+ * segundo registro. Orçamento total bem abaixo da retenção do servidor (5 min).
+ */
+const RECOGNIZE_MAX_RETRIES = 2;
+const RECOGNIZE_BACKOFF_MS = [1000, 2000];
 
 async function appendUpload(form: FormData, field: string, upload: UploadFile) {
   if (Platform.OS === "web") {
@@ -18,40 +30,93 @@ async function appendUpload(form: FormData, field: string, upload: UploadFile) {
   }
 }
 
-/**
- * Realiza uma requisição HTTP autenticada para o backend.
- *
- * @param path - Caminho da API (ex: "/api/v1/recognize")
- * @param options - Opções do fetch (method, body, headers...)
- * @param tutorToken - Bearer JWT do Supabase Auth para rotas administrativas.
- *   Quando fornecido, usa a sessão de tutor. Quando omitido, usa a identidade por dispositivo do kiosk.
- */
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-  tutorToken?: string
-): Promise<T> {
-  const token = tutorToken || (await getKioskAccessToken());
-  const authHeaders: Record<string, string> = token
-    ? { Authorization: `Bearer ${token}` }
-    : {};
-
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      ...authHeaders,
-      ...(options.headers ?? {}),
-    },
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        const abortError = new Error("Aborted");
+        abortError.name = "AbortError";
+        reject(abortError);
+      },
+      { once: true }
+    );
   });
+}
+
+interface RequestConfig extends RequestInit {
+  timeoutMs?: number;
+}
+
+/**
+ * Requisição autenticada ao backend.
+ *
+ * - `tutorToken` informado → rota administrativa com a sessão temporária do tutor.
+ * - omitido → identidade própria do dispositivo (kiosk). Sem identidade, a
+ *   chamada nem é enviada: lança KioskNotProvisionedError.
+ *
+ * Toda requisição tem prazo. Estouro de prazo ou falha de rede viram
+ * NetworkTimeoutError (resultado desconhecido). Cancelamento pelo chamador
+ * continua sendo AbortError.
+ */
+async function request<T>(path: string, config: RequestConfig = {}, tutorToken?: string): Promise<T> {
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, signal: callerSignal, headers, ...init } = config;
+
+  const token = tutorToken || (await getKioskAccessToken());
+  if (!token) {
+    throw new KioskNotProvisionedError();
+  }
+
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const onCallerAbort = () => controller.abort();
+  if (callerSignal) {
+    if (callerSignal.aborted) controller.abort();
+    else callerSignal.addEventListener("abort", onCallerAbort, { once: true });
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...((headers as Record<string, string> | undefined) ?? {}),
+      },
+    });
+  } catch (err: any) {
+    if (timedOut) throw new NetworkTimeoutError();
+    if (err?.name === "AbortError") throw err;
+    throw new NetworkTimeoutError("Falha de rede.");
+  } finally {
+    clearTimeout(timer);
+    callerSignal?.removeEventListener("abort", onCallerAbort);
+  }
+
   if (!res.ok) {
-    const body = await res.text();
-    console.warn(`API ${res.status} ${path}: ${body}`);
-    throw new ApiError(res.status, body);
+    const body = await res.text().catch(() => "");
+    const retryAfterRaw = res.headers.get("Retry-After");
+    const retryAfter = retryAfterRaw ? Number.parseInt(retryAfterRaw, 10) : NaN;
+    // Só o status vai para o console: corpo e credenciais nunca são registrados.
+    console.warn(`API ${res.status} ${path}`);
+    throw new ApiError(
+      res.status,
+      body,
+      Number.isFinite(retryAfter) ? retryAfter : null,
+      res.headers.get("X-Recognition-State")
+    );
   }
   return res.json() as Promise<T>;
 }
 
-// ── Tipos ────────────────────────────────────────────────────────────────────
+// ── Tipos ────────────────────────────────────────────────
 
 export interface UploadFile {
   uri: string;
@@ -105,9 +170,16 @@ export interface EnrollResult {
   photos_used: number;
 }
 
-// ── Endpoints ─────────────────────────────────────────────────────────────────
+export interface KioskCredential {
+  kiosk_id: string;
+  label: string;
+  email: string;
+  password: string;
+}
 
-/** POST /recognize/challenge — solicita token de desafio temporal anti-injeção. */
+// ── Endpoints ──────────────────────────────────────────────
+
+/** POST /recognize/challenge — desafio temporal vinculado a este dispositivo. */
 export async function getRecognizeChallenge(signal?: AbortSignal): Promise<ChallengeResponse> {
   return request<ChallengeResponse>("/api/v1/recognize/challenge", {
     method: "POST",
@@ -115,42 +187,76 @@ export async function getRecognizeChallenge(signal?: AbortSignal): Promise<Chall
   });
 }
 
-/** POST /recognize — usa kiosk key (sem tutorToken) e anexa challenge_id de vivacidade temporal. */
+function isRetryableRecognizeError(err: unknown): boolean {
+  if (err instanceof NetworkTimeoutError) return true;
+  if (err instanceof ApiError) {
+    if (err.status === 409) return err.recognitionState === "processing";
+    return err.status >= 500;
+  }
+  return false;
+}
+
+/**
+ * POST /recognize — identidade do kiosk + desafio.
+ *
+ * O desafio e o formulário são montados UMA vez. Em timeout, falha de rede, 5xx
+ * ou "em processamento", a MESMA requisição é reenviada: se o servidor já tinha
+ * registrado a presença, ele devolve a resposta original em vez de registrar de novo.
+ * Erros de validação (4xx) não são repetidos — exigem nova captura.
+ */
 export async function recognizeFrame(
   frameOrFrames: UploadFile | UploadFile[],
   action?: "check_in" | "check_out" | null,
   signal?: AbortSignal
 ): Promise<RecognizeResult> {
-  // 1. Obtém desafio efêmero de vivacidade temporal antes do upload
   const challenge = await getRecognizeChallenge(signal);
 
-  const form = new FormData();
-  form.append("challenge_id", challenge.challenge_id);
+  const buildForm = async () => {
+    const form = new FormData();
+    form.append("challenge_id", challenge.challenge_id);
+    if (Array.isArray(frameOrFrames)) {
+      if (frameOrFrames.length > 0) {
+        await appendUpload(form, "frame", frameOrFrames[0]);
+      }
+      for (const f of frameOrFrames) {
+        await appendUpload(form, "frames", f);
+      }
+    } else {
+      await appendUpload(form, "frame", frameOrFrames);
+      await appendUpload(form, "frames", frameOrFrames);
+    }
+    if (action) form.append("action", action);
+    return form;
+  };
 
-  if (Array.isArray(frameOrFrames)) {
-    if (frameOrFrames.length > 0) {
-      await appendUpload(form, "frame", frameOrFrames[0]);
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= RECOGNIZE_MAX_RETRIES; attempt++) {
+    try {
+      // Mesmo conteúdo e mesma ordem a cada tentativa (o servidor compara a impressão digital).
+      const form = await buildForm();
+      return await request<RecognizeResult>("/api/v1/recognize", {
+        method: "POST",
+        body: form,
+        headers: {
+          "X-Challenge-Token": challenge.challenge_id,
+          "X-Challenge-Id": challenge.challenge_id,
+        },
+        signal,
+        timeoutMs: UPLOAD_TIMEOUT_MS,
+      });
+    } catch (err) {
+      lastError = err;
+      if (attempt === RECOGNIZE_MAX_RETRIES || !isRetryableRecognizeError(err)) {
+        throw err;
+      }
+      const serverHint = err instanceof ApiError && err.retryAfter ? err.retryAfter * 1000 : 0;
+      await sleep(Math.min(Math.max(RECOGNIZE_BACKOFF_MS[attempt], serverHint), 5000), signal);
     }
-    for (const f of frameOrFrames) {
-      await appendUpload(form, "frames", f);
-    }
-  } else {
-    await appendUpload(form, "frame", frameOrFrames);
-    await appendUpload(form, "frames", frameOrFrames);
   }
-  if (action) form.append("action", action);
-  return request<RecognizeResult>("/api/v1/recognize", {
-    method: "POST",
-    body: form,
-    headers: {
-      "X-Challenge-Token": challenge.challenge_id,
-      "X-Challenge-Id": challenge.challenge_id,
-    },
-    signal,
-  });
+  throw lastError;
 }
 
-/** GET /sessions/stats/:id — usa kiosk key. */
+/** GET /sessions/stats/:id — identidade do kiosk. */
 export async function getSessionStats(
   profileId: string,
   year?: number,
@@ -163,7 +269,7 @@ export async function getSessionStats(
   return request<SessionStats>(`/api/v1/sessions/stats/${profileId}${qs}`);
 }
 
-/** POST /enroll — requer tutorToken (Supabase Auth, role=tutor). */
+/** POST /enroll — requer tutorToken (Supabase Auth, papel tutor). */
 export async function enrollStudent(
   name: string,
   matricula: string,
@@ -180,12 +286,15 @@ export async function enrollStudent(
   }
   return request<EnrollResult>(
     "/api/v1/enroll",
-    { method: "POST", body: form },
+    { method: "POST", body: form, timeoutMs: UPLOAD_TIMEOUT_MS },
     tutorToken
   );
 }
 
-/** POST /profiles/:id/refresh-embedding — requer tutorToken (exceto durante janela cadastral ativa). */
+/**
+ * POST /profiles/:id/refresh-embedding — tutorToken; durante a janela cadastral,
+ * a identidade do kiosk também é aceita.
+ */
 export async function refreshEmbedding(
   profileId: string,
   frames: UploadFile[],
@@ -197,7 +306,7 @@ export async function refreshEmbedding(
   }
   return request<EnrollResult>(
     `/api/v1/profiles/${profileId}/refresh-embedding`,
-    { method: "POST", body: form },
+    { method: "POST", body: form, timeoutMs: UPLOAD_TIMEOUT_MS },
     tutorToken
   );
 }
@@ -222,6 +331,22 @@ export async function deleteProfile(
   return request(
     `/api/v1/profiles/${profileId}`,
     { method: "DELETE" },
+    tutorToken
+  );
+}
+
+/**
+ * POST /kiosks — um tutor ativa este dispositivo.
+ * A credencial devolvida é usada uma vez para iniciar a sessão do kiosk e descartada.
+ */
+export async function provisionKiosk(label: string, tutorToken: string): Promise<KioskCredential> {
+  return request<KioskCredential>(
+    "/api/v1/kiosks",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label }),
+    },
     tutorToken
   );
 }

@@ -1,4 +1,6 @@
-import { setTutorToken } from "@/lib/tutorSession";
+import { clearTutorToken, setTutorToken } from "@/lib/tutorSession";
+import { useKioskIdentity } from "@/lib/kioskIdentity";
+import { KioskProvisionModal } from "@/components/KioskProvisionModal";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Animated,
@@ -44,7 +46,9 @@ export default function Home() {
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [termsVisible, setTermsVisible] = useState(false);
   const [presenceModalVisible, setPresenceModalVisible] = useState(false);
-  const [pendingMode, setPendingMode] = useState<"enroll" | "refresh">("enroll");
+  const [pendingMode, setPendingMode] = useState<"enroll" | "refresh" | "provision">("enroll");
+  const [provisionToken, setProvisionToken] = useState<string | null>(null);
+  const kioskStatus = useKioskIdentity();
   const [clockText, setClockText] = useState<string>(() => formatClock(new Date()));
 
   const { members } = usePresence();
@@ -299,7 +303,41 @@ export default function Home() {
         ]}
       >
         <View style={[styles.cameraColumn, isCompact && styles.cameraColumnCompact]}>
-          <RecognitionPanel isDark={isDark} />
+          {kioskStatus === "provisioned" ? (
+            <RecognitionPanel isDark={isDark} />
+          ) : (
+            <View
+              style={[styles.activationCard, isDark && styles.activationCardDark]}
+              accessibilityRole="summary"
+            >
+              <Feather name="tablet" size={34} color={isDark ? "#FB923C" : "#EA580C"} />
+              <Text style={[styles.activationTitle, isDark && styles.activationTitleDark]}>
+                {kioskStatus === "loading" ? "Verificando o dispositivo…" : "Totem não ativado"}
+              </Text>
+              {kioskStatus === "unprovisioned" && (
+                <>
+                  <Text style={[styles.activationText, isDark && styles.activationTextDark]}>
+                    Este dispositivo ainda não tem autorização para registrar presença.
+                    Um tutor precisa ativá-lo.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.activationBtn}
+                    onPress={() => {
+                      triggerHaptic("tap");
+                      setPendingMode("provision");
+                      setPinModalVisible(true);
+                    }}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Ativar este totem com login de tutor"
+                  >
+                    <Feather name="key" size={16} color="#FFFFFF" />
+                    <Text style={styles.activationBtnText}>Sou tutor — ativar totem</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
         </View>
 
         {!isCompact && <PresenceSidebar isDark={isDark} />}
@@ -333,6 +371,11 @@ export default function Home() {
         isDark={isDark}
         onSuccess={(token: string) => {
           setPinModalVisible(false);
+          if (pendingMode === "provision") {
+            // Ativação do totem: o token do tutor fica só neste estado, em memória.
+            setProvisionToken(token);
+            return;
+          }
           setTutorToken(token);
           router.push({
             pathname: "/enroll",
@@ -345,6 +388,20 @@ export default function Home() {
         onCancel={() => setPinModalVisible(false)}
       />
 
+      <KioskProvisionModal
+        visible={provisionToken !== null}
+        tutorToken={provisionToken}
+        isDark={isDark}
+        onDone={() => {
+          setProvisionToken(null);
+          void clearTutorToken();
+        }}
+        onCancel={() => {
+          setProvisionToken(null);
+          void clearTutorToken();
+        }}
+      />
+
       <TermsModal
         visible={termsVisible}
         onClose={() => setTermsVisible(false)}
@@ -355,6 +412,33 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  activationCard: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 14,
+    padding: 28,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
+  },
+  activationCardDark: { backgroundColor: "#0F1623", borderColor: "rgba(255, 255, 255, 0.08)" },
+  activationTitle: { fontSize: 22, fontWeight: "800", color: "#0F172A", textAlign: "center" },
+  activationTitleDark: { color: "#F8FAFC" },
+  activationText: { fontSize: 15, lineHeight: 22, color: "#475569", textAlign: "center", maxWidth: 420 },
+  activationTextDark: { color: "#CBD5E1" },
+  activationBtn: {
+    minHeight: 64,
+    paddingHorizontal: 26,
+    borderRadius: 16,
+    backgroundColor: "#EA580C",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  activationBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
   safe: {
     flex: 1,
     backgroundColor: "#F8FAFC",

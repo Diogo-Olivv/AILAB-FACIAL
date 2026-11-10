@@ -14,7 +14,7 @@ import { triggerPresenceRefresh } from "@/hooks/usePresence";
 import { FeedbackBadge, type FeedbackBadgeData } from "@/components/FeedbackBadge";
 import { extractErrorMessage, GENERIC_ERROR_MESSAGE } from "@/lib/errors";
 import { notifyInteraction, triggerHaptic } from "@/lib/sound";
-import { enqueueOfflineAttendance, getOfflineQueueCount } from "@/lib/offlineQueue";
+import { classifyRecognitionFailure, RECOGNITION_FAILURE_COPY } from "@/lib/errors";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 interface RecognitionPanelProps {
@@ -32,7 +32,6 @@ export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
 
   // Estados Hands-Free e Resiliência Offline
   const [isHandsFree, setIsHandsFree] = useState(false);
-  const [pendingOfflineCount, setPendingOfflineCount] = useState(0);
   const [flashPulseActive, setFlashPulseActive] = useState(false);
   const lastSuccessTimeRef = useRef<number>(0);
   const busyRef = useRef(false);
@@ -89,25 +88,6 @@ export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
     return () => pulse.stop();
   }, [pulseAnim]);
 
-  // Monitora contagem de presenças offline pendentes de sincronização
-  useEffect(() => {
-    let mounted = true;
-    const checkQueue = async () => {
-      try {
-        const count = await getOfflineQueueCount();
-        if (mounted) setPendingOfflineCount(count);
-      } catch {
-        // ignora
-      }
-    };
-    checkQueue();
-    const interval = setInterval(checkQueue, 8000);
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
-  }, []);
-
   const capture = useCallback(
     async (action?: "check_in" | "check_out" | null) => {
       if (!cameraRef.current || busy || loading) return;
@@ -136,7 +116,7 @@ export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
           }
         }
 
-        // Segundo frame com pulso fotométrico ativo (3D Flash Liveness - ISO/IEC 30107-3)
+        // Segundo frame com pulso fotométrico ativo (segundo frame com a tela mais clara; heurística do servidor)
         if (uris.length > 0 && cameraRef.current) {
           try {
             setFlashPulseActive(true);
@@ -171,13 +151,7 @@ export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
         const res = await recognize(captured, action);
 
         if (!res) {
-          startCooldown();
-          notifyInteraction("error");
-          setBadgeData({
-            type: "error",
-            title: "Sem Conexão",
-            message: "Sem conexão — não foi possível confirmar o registro. Tente novamente ou procure um tutor.",
-          });
+          // Chamada cancelada por outra mais recente: nada a informar.
         } else if (!res.recognized || !res.event) {
           startCooldown();
           if (res.status === "spoof_detected") {
@@ -309,14 +283,15 @@ export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
             });
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         startCooldown();
-        console.error("[RecognitionPanel] Erro ao registrar biometria:", err);
+        const kind = classifyRecognitionFailure(err);
+        console.warn(`[RecognitionPanel] Falha no registro (${kind}).`);
         notifyInteraction("error");
         setBadgeData({
           type: "error",
-          title: "Sem Conexão",
-          message: "Sem conexão — não foi possível confirmar o registro. Tente novamente ou procure um tutor.",
+          title: RECOGNITION_FAILURE_COPY[kind].title,
+          message: RECOGNITION_FAILURE_COPY[kind].message,
         });
       } finally {
         setBusy(false);
@@ -426,19 +401,10 @@ export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
             </Text>
           </TouchableOpacity>
 
-          {pendingOfflineCount > 0 ? (
-            <View style={styles.offlineBadge}>
-              <Feather name="zap" size={11} color="#FFFFFF" />
-              <Text style={styles.offlineBadgeText}>
-                {pendingOfflineCount} offline
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.telemetryPill}>
-              <View style={styles.telemetryDot} />
-              <Text style={styles.telemetryText}>Reconhecimento Ativo</Text>
-            </View>
-          )}
+          <View style={styles.telemetryPill}>
+            <View style={styles.telemetryDot} />
+            <Text style={styles.telemetryText}>Reconhecimento Ativo</Text>
+          </View>
         </View>
 
         {/* Guia Biométrico Central com Cantoneiras Técnicas (HUD) */}
@@ -496,7 +462,7 @@ export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
         {/* HUD Fluido de Escaneamento Biométrico */}
         {disabled && <BiometricScanHUD action={currentAction} />}
 
-        {/* Pulso Fotométrico de Tela para Vivacidade Ativa (3D Flash Liveness PAD) */}
+        {/* Pulso Fotométrico de Tela para Vivacidade Ativa (clareia a tela no segundo frame) */}
         {flashPulseActive && <View style={styles.flashOverlay} pointerEvents="none" />}
 
         {/* Badge Animada de Notificação Flutuante */}

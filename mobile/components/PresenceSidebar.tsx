@@ -25,31 +25,18 @@ const ITEM_HEIGHT = 60;
 const SEPARATOR_HEIGHT = 6;
 const ROW_TOTAL_HEIGHT = ITEM_HEIGHT + SEPARATOR_HEIGHT;
 
+/**
+ * Indicador de ocupação do totem.
+ * A capacidade real do laboratório não está definida, então NÃO há classificação
+ * (tranquilo/moderado/cheio): o indicador mostra apenas a contagem real.
+ */
 function getCrowdTag(count: number, isDark: boolean) {
-  if (count >= 8) {
-    return {
-      label: "Cheio",
-      bg: isDark ? "rgba(244, 63, 94, 0.16)" : "rgba(244, 63, 94, 0.10)",
-      border: isDark ? "rgba(244, 63, 94, 0.32)" : "rgba(244, 63, 94, 0.25)",
-      text: isDark ? "#FB7185" : "#E11D48",
-      dot: "#F43F5E",
-    };
-  }
-  if (count >= 3) {
-    return {
-      label: "Moderado",
-      bg: isDark ? "rgba(245, 158, 11, 0.16)" : "rgba(245, 158, 11, 0.12)",
-      border: isDark ? "rgba(245, 158, 11, 0.32)" : "rgba(245, 158, 11, 0.28)",
-      text: isDark ? "#FBBF24" : "#D97706",
-      dot: "#F59E0B",
-    };
-  }
   return {
-    label: "Tranquilo",
-    bg: isDark ? "rgba(16, 185, 129, 0.16)" : "rgba(16, 185, 129, 0.10)",
-    border: isDark ? "rgba(16, 185, 129, 0.32)" : "rgba(16, 185, 129, 0.25)",
-    text: isDark ? "#34D399" : "#059669",
-    dot: "#10B981",
+    label: `${count} ${count === 1 ? "presente" : "presentes"}`,
+    bg: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(100, 116, 139, 0.10)",
+    border: isDark ? "rgba(148, 163, 184, 0.28)" : "rgba(100, 116, 139, 0.22)",
+    text: isDark ? "#CBD5E1" : "#475569",
+    dot: count > 0 ? "#10B981" : "#94A3B8",
   };
 }
 
