@@ -1,19 +1,19 @@
-fastapi>=0.141.1,<1
+fastapi>=0.143.0,<1
 uvicorn[standard]>=0.54.0,<1
 python-multipart>=0.0.32
 pydantic-settings>=2.15.0,<3
 
 # Supabase
-supabase>=2.31.0,<3
+supabase>=2.32.0,<3
 
 # Face recognition
-insightface>=2.0
-onnxruntime>=1.30.0,<2
+insightface>=2.1
+onnxruntime>=1.31.0,<2
 Pillow>=12.3.0,<13
 numpy>=2.5.3,<3
 
 # Cloud Scheduler & GCP Auth
-google-auth>=2.58.1
+google-auth>=2.61.0
 
 # Testing & Client
 httpx>=0.28.1
