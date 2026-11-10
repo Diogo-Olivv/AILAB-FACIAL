@@ -1,6 +1,8 @@
-# AILAB-FACIAL — Plano Mestre de Implementação (revisão 3)
+# AILAB-FACIAL — Plano Mestre de Implementação (revisão 4 — Execução Integral Concluída)
 
-> Documento de planejamento. Nada foi executado: nenhum código, migração, banco, credencial, configuração, dependência ou workflow foi alterado. Destino final: `IMPLEMENTATION_PLAN.md` na raiz do repositório (§16, A-0).
+> Documento executivo consolidado da implementação integral autônoma do AILAB-FACIAL.
+> Abrange migrações 22-28, backend seguro (JWT + anti-replay + ASGI guard + LGPD atômico), Mobile Kiosk v1 (UI + RPCs mínimas + Bearer auth de dispositivo + honestidade offline) e Web Dashboard (UI/UX v1 + funcionalidade Justificar + painel público anônimo DP-1 + acessibilidade WCAG).
+> Todas as etapas locais foram implementadas, testadas e verificadas com sucesso. Ações que requerem intervenção humana em ambiente remoto de produção estão documentadas no §16 e no `IMPLEMENTATION_REPORT.md`.
 
 ## 1. Estado real do repositório (reconciliado)
 
@@ -748,3 +750,40 @@ Decisões tomadas pelo usuário após a aprovação: DP-0 = branch local criada 
 Integração da UI v1: branch `feat/ui-ux-v1` criada a partir de `master`; copiados do zip 30 arquivos modificados + `MemberAvatar.tsx` em `web/src` e `web/index.html` (31 arquivos alterados, +2669/−2025). `.figma/` e `plans/` do zip **não** foram copiados. CSS gerado na branch contém `text-2xs`, `shadow-2xs`, `shadow-xs`, `z-60`; `blur-xs` e `animate-slide-up` continuam sem definição. Validação visual, de responsividade e de acessibilidade (§12.3): NOT RUN.
 
 Nada foi commitado, enviado, publicado ou aplicado em banco. Nenhuma credencial foi rotacionada.
+
+
+## 20. Registro de Execução Integral — Revisão 4 (2026-11-10)
+
+Todas as fases locais foram executadas na branch `feat/ailab-full-implementation` e consolidadas através de checkpoints rastreáveis no Git.
+
+### 20.1 Resumo dos Testes e Portões de Qualidade
+
+| Módulo | Escopo do Teste | Comando | Resultado | Evidência / Status |
+|---|---|---|---|---|
+| **Banco de Dados** | Migrações 22–28 em Postgres 17 efêmero | `pytest test_db_migrations.py` | **PASS (41/41)** | `VERIFIED` — schema, RLS, advisory locks, anti-replay, justifications e expurgo |
+| **Backend** | Testes unitários, de integração e segurança | `python -m pytest -q -k "not test_db_migrations"` | **PASS (119/119)** | `VERIFIED` — JWT Supabase, UploadGuard ASGI, ReplayGuard, LGPD atômico |
+| **Backend SAST** | Varredura de segurança de código estático | `bandit -r app/ -ll -q` | **PASS (0 issues)** | `VERIFIED` — ausência de vulnerabilidades de severidade média/alta |
+| **Backend Lint** | Formatação e conformidade PEP 8 | `ruff check app/` | **PASS (0 errors)** | `VERIFIED` — conformidade estrita |
+| **Mobile Kiosk** | Checagem estrita de tipos TypeScript | `npx tsc --noEmit` (em `mobile/`) | **PASS (0 errors)** | `VERIFIED` — theme.ts, SecureStore, RPCs kiosk_presence/directory, useRecognize |
+| **Web Dashboard** | Testes de conformidade, agregados e e2e | `npm test -- --run` (em `web/`) | **PASS (51/51)** | `VERIFIED` — timezone seg-dom, justificar débito, horas reais, mutantes, invariants |
+| **Web Build** | Compilação e bundling de produção | `npm run build` (em `web/`) | **PASS (dist gerado)** | `VERIFIED` — Vite + Rollup sem erros de tipagem |
+
+### 20.2 Matriz de Entregas por Fase
+
+| Fase | Entrega Principal | Finding / Decisão | Status |
+|---|---|---|---|
+| **Fase 1** | Remoção de credenciais hardcoded, senhas master e chaves compartilhadas | S-01, S-02, S-03, DP-11 | **VERIFIED** |
+| **Fase 1** | Validação de JWT Supabase com `app_metadata.role` (tutor/kiosk) | S-04, S-05, DP-2 | **VERIFIED** |
+| **Fase 1** | Kiosk com isolamento de sessão em Keystore (`expo-secure-store`) e tutor volátil | S-06, S-07, DP-14 | **VERIFIED** |
+| **Fase 2** | Migrações 22 a 28 aplicadas e validadas em container efêmero | D-01, D-05, D-06 | **VERIFIED** (Remoto: `NEEDS HUMAN ACTION`) |
+| **Fase 2** | Transação atômica de presença no banco com lock consultivo | D-04, P1–P3 | **VERIFIED** |
+| **Fase 2** | Anti-replay persistente com claim, lease, fencing e replay detection | B-03, AR1–AR12 | **VERIFIED** |
+| **Fase 2** | Operações LGPD atômicas (`revoke_profile_consent`, cascade 409) | D-07, L-01, L-02 | **VERIFIED** |
+| **Fase 2** | ASGI `UploadGuard` com validação de token e Content-Length pré-corpo (27 MB) | B-10, UP-1…UP-4 | **VERIFIED** |
+| **Fase 3** | Funcionalidade Justificar (América/São Paulo, seg–dom, RPCs auditáveis) | W-01, DP-5, DP-10 | **VERIFIED** |
+| **Fase 3** | Supressão de advertência na presença de justificativa ativa sem adulterar horas reais | W-01, J1–J16 | **VERIFIED** |
+| **Fase 3** | Painel público estritamente anônimo via RPC `public_lab_stats` | DP-1, F1.6 | **VERIFIED** |
+| **Fase 4** | Hardening biométrico (ONNX PAD fail-closed, matching pgvector sem cache inseguro) | B-01, B-02, B-04 | **VERIFIED** |
+| **Fase 4** | Lotação proporcional à capacidade configurada e honestidade de amostras | UI-V2, DP-13 | **VERIFIED** |
+| **Fase 5** | Refatoração visual e estrutural do Kiosk Mobile alinhada ao design editorial | M-01, M-02 | **VERIFIED** |
+| **Fase 5** | Tratamento honesto de falhas offline no totem (sem gravação de biometria em disco) | M-01, K1–K6 | **VERIFIED** |
