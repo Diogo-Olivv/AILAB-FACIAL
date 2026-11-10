@@ -67,9 +67,13 @@ export function InstallPwaButton() {
     );
   }
 
-  // Exibe se houver suporte a prompt nativo ou se estiver em dispositivo móvel
-  const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone/i.test(navigator.userAgent);
-  if (!deferredPrompt && !isMobile) {
+  // O botão só aparece quando existe uma ação real: prompt nativo disponível
+  // ou iOS (onde a instalação é manual e o clique mostra as instruções).
+  const isIosDevice =
+    typeof navigator !== "undefined" &&
+    /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+    !(window as unknown as { MSStream?: unknown }).MSStream;
+  if (!deferredPrompt && !isIosDevice) {
     return null;
   }
 

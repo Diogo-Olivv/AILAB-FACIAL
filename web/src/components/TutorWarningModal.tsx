@@ -1,3 +1,4 @@
+import { WEEKLY_TARGET_SECONDS } from "../lib/attendanceTarget";
 import { useEffect, useMemo, useState, useRef, type PointerEvent } from "react";
 import { JustifyModal } from "./JustifyModal";
 import {
@@ -207,7 +208,7 @@ export function TutorWarningModal({
       secondsMap.set(s.profileId, current + sessionSeconds(s, effectiveNow));
     }
 
-    const TARGET_SECONDS = 4 * 3600; // 4 horas = 14.400s
+    const TARGET_SECONDS = WEEKLY_TARGET_SECONDS;
 
     return members.map((member) => {
       const totalSeconds = secondsMap.get(member.id) ?? 0;

@@ -1,4 +1,5 @@
 import type { Member, PublicBucket, SessionRecord } from "./reports";
+import { WEEKLY_TARGET_SECONDS } from "./attendanceTarget.ts";
 
 /**
  * Retorna true se a data cair em dia útil (Segunda a Sexta-feira).
@@ -222,7 +223,7 @@ export function calculateTutorInsights(
     }
   }
 
-  const TARGET_SECONDS = 4 * 3600;
+  const TARGET_SECONDS = WEEKLY_TARGET_SECONDS;
   const studentsAtRisk: StudentAtRisk[] = [];
 
   for (const m of members) {
@@ -288,7 +289,7 @@ export interface OccupancyInsights {
     seconds: number;
     sessionsCount: number;
   } | null;
-  currentCrowdLevel: "Tranquilo" | "Moderado" | "Movimentado";
+  currentCrowdLevel: CrowdLevel;
   shiftsSummary: {
     morning: { seconds: number; count: number; percent: number };
     afternoon: { seconds: number; count: number; percent: number };
@@ -296,13 +297,30 @@ export interface OccupancyInsights {
   };
 }
 
-export const DEFAULT_LAB_CAPACITY = 20;
+/**
+ * Nível de lotação. "Indefinido" quando a capacidade do laboratório não foi
+ * configurada: sem capacidade real não há base para classificar, e a interface
+ * mostra apenas a contagem.
+ */
+export type CrowdLevel = "Tranquilo" | "Moderado" | "Movimentado" | "Indefinido";
+
+/** Frações da capacidade configurada a partir das quais o nível muda. */
+export const CROWD_MODERATE_RATIO = 0.35;
+export const CROWD_BUSY_RATIO = 0.7;
+
+export function classifyCrowd(presentCount: number, maxCapacity: number | null | undefined): CrowdLevel {
+  if (!maxCapacity || !Number.isFinite(maxCapacity) || maxCapacity <= 0) return "Indefinido";
+  const ratio = presentCount / maxCapacity;
+  if (ratio >= CROWD_BUSY_RATIO) return "Movimentado";
+  if (ratio >= CROWD_MODERATE_RATIO) return "Moderado";
+  return "Tranquilo";
+}
 
 export function calculateOccupancyInsights(
   sessions: SessionRecord[],
   presentCount: number,
   now: Date,
-  maxCapacity: number = DEFAULT_LAB_CAPACITY,
+  maxCapacity: number | null = null,
   buckets?: PublicBucket[]
 ): OccupancyInsights {
   const weekdaySessions = filterWeekdaySessions(sessions).filter((s) => s.voidedAt == null);
@@ -484,13 +502,7 @@ export function calculateOccupancyInsights(
         }
       : null;
 
-  const occupancyRatio = maxCapacity > 0 ? presentCount / maxCapacity : 0;
-  let currentCrowdLevel: "Tranquilo" | "Moderado" | "Movimentado" = "Tranquilo";
-  if (occupancyRatio >= 0.7 || presentCount >= 14) {
-    currentCrowdLevel = "Movimentado";
-  } else if (occupancyRatio >= 0.35 || presentCount >= 7) {
-    currentCrowdLevel = "Moderado";
-  }
+  const currentCrowdLevel = classifyCrowd(presentCount, maxCapacity);
 
   return {
     peakShift,

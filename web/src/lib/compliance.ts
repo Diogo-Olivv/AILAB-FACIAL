@@ -12,8 +12,10 @@
 
 import { supabase } from "./supabase.ts";
 import { getSundayOfWeek } from "./tz.ts";
+import { WEEKLY_TARGET_SECONDS } from "./attendanceTarget.ts";
 
-export const WEEKLY_TARGET_SECONDS = 4 * 3600; // 14.400s (4 horas)
+export { WEEKLY_TARGET_SECONDS };
+
 
 export type JustificationCategory =
   | "saude"
@@ -159,22 +161,33 @@ export async function listAttendanceJustifications(
   profileId?: string,
   includeRevoked = true
 ): Promise<AttendanceJustification[]> {
-  const { data, error } = await supabase.rpc("list_attendance_justifications", {
-    p_from: fromMonday,
-    p_to: toSunday,
-    p_profile_id: profileId || null,
-    p_include_revoked: includeRevoked,
-    p_limit: 200,
-  });
+  // O servidor entrega no máximo 100 linhas por página; segue o cursor até o fim.
+  // Uma falha é propagada: lista vazia por erro faria um justificado aparecer como débito.
+  const all: AttendanceJustification[] = [];
+  let cursor: unknown = null;
+  for (let page = 0; page < MAX_JUSTIFICATION_PAGES; page++) {
+    const { data, error } = await supabase.rpc("list_attendance_justifications", {
+      p_from: fromMonday,
+      p_to: toSunday,
+      p_profile_id: profileId || null,
+      p_include_revoked: includeRevoked,
+      p_limit: 100,
+      p_cursor: cursor,
+    });
 
-  if (error) {
-    console.warn("Erro ao listar justificativas via RPC:", error.message);
-    return [];
+    if (error) {
+      throw new Error(error.message || "Falha ao carregar justificativas.");
+    }
+
+    const items: any[] = Array.isArray(data?.items) ? data.items : [];
+    all.push(...items.map(mapJustificationRow));
+    cursor = data?.next_cursor ?? null;
+    if (!cursor) break;
   }
-
-  const items: any[] = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-  return items.map(mapJustificationRow);
+  return all;
 }
+
+const MAX_JUSTIFICATION_PAGES = 20;
 
 function mapJustificationRow(row: any): AttendanceJustification {
   return {

@@ -12,6 +12,17 @@ import {
 import type { MemberTotal } from "../lib/aggregate";
 import { formatDuration } from "../lib/aggregate";
 import type { DateRange } from "../lib/reports";
+import { WEEKLY_TARGET_SECONDS } from "../lib/attendanceTarget";
+
+/** Escapa texto para interpolação em HTML (o relatório é montado como string). */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 interface OfficialReportModalProps {
   isOpen: boolean;
@@ -34,7 +45,7 @@ export function OfficialReportModal({
 
   const totalSeconds = rows.reduce((acc, r) => acc + r.totalSeconds, 0);
   const totalHours = (totalSeconds / 3600).toFixed(1);
-  const compliantCount = rows.filter((r) => r.totalSeconds >= 14400).length;
+  const compliantCount = rows.filter((r) => r.totalSeconds >= WEEKLY_TARGET_SECONDS).length;
   const complianceRate = rows.length > 0 ? Math.round((compliantCount / rows.length) * 100) : 0;
 
   const fromStr = range.from.toLocaleDateString("pt-BR", {
@@ -70,7 +81,7 @@ export function OfficialReportModal({
         const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
         if (active) setChecksum(hashHex);
       } catch {
-        if (active) setChecksum("E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855");
+        if (active) setChecksum("INDISPONÍVEL NESTE NAVEGADOR");
       }
     };
 
@@ -79,6 +90,18 @@ export function OfficialReportModal({
       active = false;
     };
   }, [isOpen, range, rows, totalSeconds, tutorEmail]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -93,8 +116,8 @@ export function OfficialReportModal({
         ? `<tr><td colspan="5" style="text-align: center; padding: 24px; color: #64748B;">Nenhum registro encontrado para o período selecionado.</td></tr>`
         : rows
             .map((row, idx) => {
-              const isCompliant = row.totalSeconds >= 14400;
-              const isWarning = row.totalSeconds > 0 && row.totalSeconds < 14400;
+              const isCompliant = row.totalSeconds >= WEEKLY_TARGET_SECONDS;
+              const isWarning = row.totalSeconds > 0 && row.totalSeconds < WEEKLY_TARGET_SECONDS;
               const badgeBg = isCompliant ? "#DCFCE7" : isWarning ? "#FEF3C7" : "#FEE2E2";
               const badgeColor = isCompliant ? "#166534" : isWarning ? "#92400E" : "#991B1B";
               const badgeText = isCompliant ? "Regular (≥4h)" : isWarning ? "Parcial (<4h)" : "Sem Horas (0h)";
@@ -102,8 +125,8 @@ export function OfficialReportModal({
 
               return `
                 <tr style="background-color: ${rowBg}; page-break-inside: avoid; break-inside: avoid;">
-                  <td style="padding: 7px 10px; font-weight: 600; color: #0F172A; border-bottom: 1px solid #E2E8F0;">${row.member.name}</td>
-                  <td style="padding: 7px 10px; font-family: monospace; font-size: 11px; color: #64748B; border-bottom: 1px solid #E2E8F0;">${row.member.matricula || "—"}</td>
+                  <td style="padding: 7px 10px; font-weight: 600; color: #0F172A; border-bottom: 1px solid #E2E8F0;">${escapeHtml(row.member.name)}</td>
+                  <td style="padding: 7px 10px; font-family: monospace; font-size: 11px; color: #64748B; border-bottom: 1px solid #E2E8F0;">${escapeHtml(row.member.matricula || "—")}</td>
                   <td style="padding: 7px 10px; text-align: right; font-family: monospace; font-weight: 700; color: #0F172A; border-bottom: 1px solid #E2E8F0;">${formatDuration(row.totalSeconds)}</td>
                   <td style="padding: 7px 10px; text-align: center; font-family: monospace; font-size: 11px; color: #475569; border-bottom: 1px solid #E2E8F0;">${row.sessionCount}</td>
                   <td style="padding: 7px 10px; text-align: center; border-bottom: 1px solid #E2E8F0;">
@@ -400,7 +423,7 @@ export function OfficialReportModal({
   };
 
   return (
-    <div className="report-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-label="Relatório oficial de frequência" className="report-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/60 backdrop-blur-sm animate-fade-in">
       <style>{`
         @media print {
           /* Setup da Página A4 */
@@ -651,8 +674,8 @@ export function OfficialReportModal({
                     </tr>
                   ) : (
                     rows.map((row) => {
-                      const isCompliant = row.totalSeconds >= 14400;
-                      const isWarning = row.totalSeconds > 0 && row.totalSeconds < 14400;
+                      const isCompliant = row.totalSeconds >= WEEKLY_TARGET_SECONDS;
+                      const isWarning = row.totalSeconds > 0 && row.totalSeconds < WEEKLY_TARGET_SECONDS;
                       return (
                         <tr key={row.member.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                           <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-slate-100">

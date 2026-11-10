@@ -1,3 +1,5 @@
+import { LAB_CAPACITY } from "../lib/config";
+import { WEEKLY_TARGET_SECONDS } from "../lib/attendanceTarget";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   GraduationCap,
@@ -41,7 +43,6 @@ import {
   totalsByMember,
   filterWeekdaySessions,
   calculateOccupancyInsights,
-  DEFAULT_LAB_CAPACITY,
 } from "../lib/aggregate";
 import { Header } from "../components/Header";
 import { PeriodSelector } from "../components/PeriodSelector";
@@ -491,7 +492,7 @@ export function Dashboard() {
       if (s.voidedAt != null) continue;
       map.set(s.profileId, (map.get(s.profileId) ?? 0) + sessionSeconds(s, now));
     }
-    return members.filter((m) => (map.get(m.id) ?? 0) < 4 * 3600).length;
+    return members.filter((m) => (map.get(m.id) ?? 0) < WEEKLY_TARGET_SECONDS).length;
   }, [members, weekdaySessions, now]);
 
   const occupancyInsights = useMemo(() => {
@@ -499,7 +500,7 @@ export function Dashboard() {
       sessions,
       presentCount,
       now,
-      DEFAULT_LAB_CAPACITY,
+      LAB_CAPACITY,
       publicStats?.buckets
     );
   }, [sessions, presentCount, now, publicStats]);
@@ -1333,10 +1334,21 @@ export function Dashboard() {
 
 // ── Configuração Semafórica de Lotação (Seção 3.1 & 4.2) ──────────────────────
 const CROWD_STYLES = {
+  Indefinido: {
+    label: "Sem classificação",
+    level: 0,
+    hint: "Capacidade do laboratório não configurada · exibindo apenas a contagem",
+    dot: "bg-slate-400",
+    ping: "bg-transparent",
+    bar: "bg-slate-400",
+    text: "text-slate-600 dark:text-slate-300",
+    tile: "bg-slate-500/10 ring-1 ring-slate-500/20 text-slate-600 dark:text-slate-300",
+    badge: "bg-slate-500/10 ring-1 ring-slate-500/20",
+  },
   Tranquilo: {
     label: "Tranquilo",
     level: 1,
-    hint: "Espaço calmo · Excelente para leitura, pesquisa e foco individual",
+    hint: "Ocupação baixa em relação à capacidade do laboratório",
     dot: "bg-emerald-500",
     ping: "bg-emerald-500",
     bar: "bg-emerald-500",
@@ -1347,7 +1359,7 @@ const CROWD_STYLES = {
   Moderado: {
     label: "Moderado",
     level: 2,
-    hint: "Movimento equilibrado · Ideal para trabalho em dupla e projetos",
+    hint: "Ocupação intermediária em relação à capacidade do laboratório",
     dot: "bg-amber-500",
     ping: "bg-amber-500",
     bar: "bg-amber-500",
@@ -1358,7 +1370,7 @@ const CROWD_STYLES = {
   Movimentado: {
     label: "Cheio",
     level: 3,
-    hint: "Alta ocupação · Equipes ativas em bancadas e reuniões",
+    hint: "Ocupação alta em relação à capacidade do laboratório",
     dot: "bg-rose-500",
     ping: "bg-rose-500",
     bar: "bg-rose-500",

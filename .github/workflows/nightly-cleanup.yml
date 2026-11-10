@@ -6,13 +6,28 @@ on:
     - cron: "59 2 * * *"  # 23:59 horário de Brasília (virada da noite)
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   cleanup:
     name: Run Stale Sessions & LGPD Purge
     runs-on: ubuntu-latest
     steps:
       - name: Trigger maintenance cleanup
+        # A chave administrativa é um segredo exclusivo de operação. Ela NUNCA é
+        # escrita neste arquivo nem distribuída a kiosks, apps ou navegadores.
+        # Configure em: Settings → Secrets and variables → Actions
+        #   secret   ADMIN_API_KEY   (mesmo valor de ADMIN_API_KEY no backend)
+        #   variable BACKEND_URL     (URL base do serviço, sem barra final)
+        env:
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
         run: |
-          curl -f -i -X POST https://ailab-facial-api-948162587922.southamerica-east1.run.app/api/v1/maintenance/cleanup \
-            -H "X-API-Key: noPromptEngAllowed@42" \
+          if [ -z "$ADMIN_API_KEY" ] || [ -z "$BACKEND_URL" ]; then
+            echo "::error::Configure o secret ADMIN_API_KEY e a variável BACKEND_URL." >&2
+            exit 1
+          fi
+          curl --fail --silent --show-error --max-time 60 -o /dev/null -w "HTTP %{http_code}\n" \
+            -X POST "$BACKEND_URL/api/v1/maintenance/cleanup" \
+            -H "X-Admin-Key: $ADMIN_API_KEY" \
             -H "Content-Length: 0"

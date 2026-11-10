@@ -12,6 +12,7 @@ import {
 import type { MemberTotal } from "../lib/aggregate";
 import { formatDuration } from "../lib/aggregate";
 import { MemberAvatar } from "./MemberAvatar";
+import { WEEKLY_TARGET_SECONDS } from "../lib/attendanceTarget";
 
 export { getAvatarStyle } from "./MemberAvatar";
 
@@ -87,7 +88,7 @@ export function TotalsTable({
       all: rows.length,
       present: rows.filter((r) => r.present).length,
       tutors: rows.filter((r) => r.member.isTutor).length,
-      goalMet: rows.filter((r) => r.totalSeconds >= 4 * 3600).length,
+      goalMet: rows.filter((r) => r.totalSeconds >= WEEKLY_TARGET_SECONDS).length,
     };
   }, [rows]);
 
@@ -98,7 +99,7 @@ export function TotalsTable({
       case "tutors":
         return rows.filter((r) => r.member.isTutor);
       case "goalMet":
-        return rows.filter((r) => r.totalSeconds >= 4 * 3600);
+        return rows.filter((r) => r.totalSeconds >= WEEKLY_TARGET_SECONDS);
       default:
         return rows;
     }
@@ -130,8 +131,8 @@ export function TotalsTable({
 
   // Maior tempo para barra proporcional de permanência
   const maxSeconds = useMemo(() => {
-    const highest = Math.max(...rows.map((r) => r.totalSeconds), 4 * 3600);
-    return highest > 0 ? highest : 4 * 3600;
+    const highest = Math.max(...rows.map((r) => r.totalSeconds), WEEKLY_TARGET_SECONDS);
+    return highest > 0 ? highest : WEEKLY_TARGET_SECONDS;
   }, [rows]);
 
   const universeTotal = typeof totalCount === "number" ? totalCount : rows.length;
@@ -169,7 +170,7 @@ export function TotalsTable({
             [
               { id: "all", label: "Todos", count: filterCounts.all },
               { id: "present", label: "Ao Vivo", count: filterCounts.present, dot: "bg-emerald-500" },
-              { id: "goalMet", label: "Meta ≥ 4h", count: filterCounts.goalMet },
+              { id: "goalMet", label: "≥ 4h no período", count: filterCounts.goalMet },
               { id: "tutors", label: "Tutores", count: filterCounts.tutors },
             ] as const
           ).map((chip) => {
@@ -340,7 +341,7 @@ export function TotalsTable({
               <tbody className="divide-y divide-slate-200/60 dark:divide-white/[0.05]">
                 {sortedRows.map((row, idx) => {
                   const pct = Math.min(100, Math.round((row.totalSeconds / maxSeconds) * 100));
-                  const metFourHours = row.totalSeconds >= 4 * 3600;
+                  const metFourHours = row.totalSeconds >= WEEKLY_TARGET_SECONDS;
                   return (
                     <tr
                       key={row.member.id}

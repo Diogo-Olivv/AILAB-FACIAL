@@ -93,8 +93,8 @@ export function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProps) {
                 <span>2. Anti-Spoofing (MiniFASNet)</span>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                Redes neurais de vivacidade inspecionam microtexturas e reflexos especulares para bloquear
-                tentativas com fotos impressas, vídeos ou telas de celular.
+                Um modelo de detecção de ataque de apresentação avalia a textura do rosto capturado para
+                reduzir tentativas com fotos impressas ou telas. É uma barreira adicional, não uma garantia absoluta.
               </p>
             </div>
 
@@ -132,8 +132,9 @@ export function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProps) {
               <span>Princípio da Minimização de Dados (LGPD Art. 6º, III e Art. 11)</span>
             </span>
             <p className="text-emerald-800/90 dark:text-emerald-200/85 leading-relaxed">
-              Nenhuma fotografia facial é salva em disco ou banco de dados. Os vetores matemáticos são
-              irreversíveis e utilizados exclusivamente para auditoria de frequência acadêmica.
+              Nenhuma fotografia facial é salva em disco ou banco de dados. O sistema guarda apenas vetores
+              matemáticos derivados do rosto, tratados como dado biométrico sensível e usados exclusivamente
+              para o registro de frequência acadêmica.
             </p>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { escapeCsvField } from "../lib/csv";
 import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import type { MemberTotal } from "../lib/aggregate";
@@ -18,13 +19,6 @@ function formatDateForFilename(date: Date): string {
       year: "numeric",
     })
     .replace(/\//g, "-");
-}
-
-function escapeCsvField(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }
 
 export function ExportButton({ rows, range, period }: Props) {

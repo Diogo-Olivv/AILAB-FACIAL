@@ -19,6 +19,15 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
     }
     return "tutor";
   });
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onClose]);
+
   const [matricula, setMatricula] = useState("");
   const [linkedStudentName, setLinkedStudentName] = useState<string | null>(null);
   const [linkFeedback, setLinkFeedback] = useState<string | null>(null);

@@ -41,7 +41,7 @@ export function Header({
     connected: {
       badge: "bg-emerald-500/10 ring-emerald-500/20 text-emerald-800 dark:text-emerald-300",
       dot: "bg-emerald-500",
-      label: "Sincronizado",
+      label: "Atualizado",
       ping: false,
     },
     updating: {
