@@ -46,12 +46,7 @@ export function usePresence() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchOpen = useCallback(async () => {
-    const { data, error: err } = await supabase
-      .from("sessions")
-      .select("id, check_in, profiles(id, name, matricula, avatar_url, is_tutor)")
-      .is("check_out", null)
-      .is("voided_at", null)
-      .order("check_in", { ascending: true });
+    const { data, error: err } = await supabase.rpc("kiosk_presence");
 
     if (err) {
       console.warn(`Presence fetch failed: ${err.message}`);
@@ -60,29 +55,17 @@ export function usePresence() {
     }
 
     setMembers(
-      (data ?? []).map((s: any) => {
-        const raw = s.profiles;
-        const p = Array.isArray(raw) ? raw[0] : raw;
-        return {
-          session_id: s.id,
-          check_in: s.check_in,
-          profile: p
-            ? {
-                id: p.id,
-                name: p.name ?? "Desconhecido",
-                matricula: p.matricula ?? null,
-                avatar_url: p.avatar_url ?? null,
-                is_tutor: Boolean(p.is_tutor),
-              }
-            : {
-                id: "",
-                name: "Desconhecido",
-                matricula: null,
-                avatar_url: null,
-                is_tutor: false,
-              },
-        };
-      })
+      (data ?? []).map((row: any) => ({
+        session_id: row.session_id,
+        check_in: row.check_in,
+        profile: {
+          id: row.profile_id ?? "",
+          name: row.name ?? "Desconhecido",
+          matricula: null,
+          avatar_url: row.avatar_url ?? null,
+          is_tutor: Boolean(row.is_tutor),
+        },
+      }))
     );
     setLoading(false);
     setError(null);

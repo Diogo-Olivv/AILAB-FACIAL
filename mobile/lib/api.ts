@@ -1,15 +1,12 @@
 import { Platform } from "react-native";
 import { File as ExpoFile } from "expo-file-system";
 import { ApiError } from "@/lib/errors";
+import { getKioskAccessToken } from "@/lib/supabase";
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ??
   process.env.EXPO_PUBLIC_API_URL ??
   "http://localhost:8000";
-
-// Separação de privilégios: kiosks usam KIOSK_KEY apenas para inferência.
-// Operações administrativas (enroll, refresh, revoke, delete) exigem tutorToken JWT.
-const KIOSK_KEY = process.env.EXPO_PUBLIC_KIOSK_KEY ?? "";
 
 async function appendUpload(form: FormData, field: string, upload: UploadFile) {
   if (Platform.OS === "web") {
@@ -27,16 +24,17 @@ async function appendUpload(form: FormData, field: string, upload: UploadFile) {
  * @param path - Caminho da API (ex: "/api/v1/recognize")
  * @param options - Opções do fetch (method, body, headers...)
  * @param tutorToken - Bearer JWT do Supabase Auth para rotas administrativas.
- *   Quando fornecido, usa Authorization: Bearer. Quando omitido, usa X-Kiosk-Key.
+ *   Quando fornecido, usa a sessão de tutor. Quando omitido, usa a identidade por dispositivo do kiosk.
  */
 async function request<T>(
   path: string,
   options: RequestInit = {},
   tutorToken?: string
 ): Promise<T> {
-  const authHeaders: Record<string, string> = tutorToken
-    ? { Authorization: `Bearer ${tutorToken}` }
-    : { "X-Kiosk-Key": KIOSK_KEY };
+  const token = tutorToken || (await getKioskAccessToken());
+  const authHeaders: Record<string, string> = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
 
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,

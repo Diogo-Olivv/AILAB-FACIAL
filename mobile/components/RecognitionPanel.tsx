@@ -172,28 +172,12 @@ export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
 
         if (!res) {
           startCooldown();
-          try {
-            await enqueueOfflineAttendance({
-              timestamp: new Date().toISOString(),
-              action: action || null,
-            });
-            const count = await getOfflineQueueCount();
-            setPendingOfflineCount(count);
-            notifyInteraction("warning");
-            setBadgeData({
-              type: "warning",
-              title: "Presença Salva Offline",
-              message:
-                "Sem conexão com o servidor. A presença foi armazenada no tablet e será sincronizada assim que a internet retornar.",
-            });
-          } catch {
-            notifyInteraction("error");
-            setBadgeData({
-              type: "error",
-              title: "Falha de Conexão",
-              message: "Não foi possível comunicar com o servidor do laboratório.",
-            });
-          }
+          notifyInteraction("error");
+          setBadgeData({
+            type: "error",
+            title: "Sem Conexão",
+            message: "Sem conexão — não foi possível confirmar o registro. Tente novamente ou procure um tutor.",
+          });
         } else if (!res.recognized || !res.event) {
           startCooldown();
           if (res.status === "spoof_detected") {
@@ -328,28 +312,12 @@ export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
       } catch (err: any) {
         startCooldown();
         console.error("[RecognitionPanel] Erro ao registrar biometria:", err);
-        try {
-          await enqueueOfflineAttendance({
-            timestamp: new Date().toISOString(),
-            action: action || null,
-          });
-          const count = await getOfflineQueueCount();
-          setPendingOfflineCount(count);
-          notifyInteraction("warning");
-          setBadgeData({
-            type: "warning",
-            title: "Presença Salva Offline",
-            message:
-              "Rede instável. Presença registrada localmente no totem para sincronização posterior.",
-          });
-        } catch {
-          notifyInteraction("error");
-          setBadgeData({
-            type: "error",
-            title: "Erro de Comunicação",
-            message: extractErrorMessage(err) || GENERIC_ERROR_MESSAGE,
-          });
-        }
+        notifyInteraction("error");
+        setBadgeData({
+          type: "error",
+          title: "Sem Conexão",
+          message: "Sem conexão — não foi possível confirmar o registro. Tente novamente ou procure um tutor.",
+        });
       } finally {
         setBusy(false);
         setCurrentAction(null);
@@ -468,7 +436,7 @@ export function RecognitionPanel({ isDark = false }: RecognitionPanelProps) {
           ) : (
             <View style={styles.telemetryPill}>
               <View style={styles.telemetryDot} />
-              <Text style={styles.telemetryText}>ArcFace 512-D · Liveness</Text>
+              <Text style={styles.telemetryText}>Reconhecimento Ativo</Text>
             </View>
           )}
         </View>

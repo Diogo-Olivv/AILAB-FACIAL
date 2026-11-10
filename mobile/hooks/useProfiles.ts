@@ -18,12 +18,7 @@ export function useProfiles() {
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error: err } = await supabase
-        .from("profiles")
-        .select("id, name, matricula, avatar_url, is_tutor")
-        .eq("active", true)
-        .is("consent_revoked_at", null)
-        .order("name", { ascending: true });
+      const { data, error: err } = await supabase.rpc("kiosk_directory");
 
       if (err) {
         console.warn(`Failed to fetch profiles for re-enrollment: ${err.message}`);
