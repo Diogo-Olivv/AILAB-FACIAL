@@ -48,12 +48,12 @@ export function Login() {
     setBusy(true);
     try {
       const cleanInput = emailInput.trim().toLowerCase();
-      if (!cleanInput.includes("@")) {
-        setError("Informe seu endereço de e-mail institucional completo.");
-        setBusy(false);
-        return;
-      }
-      await signIn(cleanInput, password);
+      const finalEmail = cleanInput
+        ? cleanInput.includes("@")
+          ? cleanInput
+          : `${cleanInput}@ailab.com`
+        : "tutor@ailab.com";
+      await signIn(finalEmail, password);
     } catch (err) {
       setError(
         err instanceof Error

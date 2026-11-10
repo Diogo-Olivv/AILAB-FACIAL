@@ -46,29 +46,77 @@ export function usePresence() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchOpen = useCallback(async () => {
-    const { data, error: err } = await supabase.rpc("kiosk_presence");
-
-    if (err) {
-      console.warn(`Presence fetch failed: ${err.message}`);
-      setError(GENERIC_ERROR_MESSAGE);
-      return;
+    // 1. Tenta RPC kiosk_presence
+    try {
+      const { data, error: err } = await supabase.rpc("kiosk_presence");
+      if (!err && data) {
+        setMembers(
+          (data ?? []).map((row: any) => ({
+            session_id: row.session_id,
+            check_in: row.check_in,
+            profile: {
+              id: row.profile_id ?? "",
+              name: row.name ?? "Desconhecido",
+              matricula: null,
+              avatar_url: row.avatar_url ?? null,
+              is_tutor: Boolean(row.is_tutor),
+            },
+          }))
+        );
+        setLoading(false);
+        setError(null);
+        return;
+      }
+    } catch {
+      // Fallback
     }
 
-    setMembers(
-      (data ?? []).map((row: any) => ({
-        session_id: row.session_id,
-        check_in: row.check_in,
-        profile: {
-          id: row.profile_id ?? "",
-          name: row.name ?? "Desconhecido",
-          matricula: null,
-          avatar_url: row.avatar_url ?? null,
-          is_tutor: Boolean(row.is_tutor),
-        },
-      }))
-    );
-    setLoading(false);
-    setError(null);
+    // 2. Fallback direto via Supabase REST
+    try {
+      const { data, error: err } = await supabase
+        .from("sessions")
+        .select("id, check_in, profiles(id, name, matricula, avatar_url, is_tutor)")
+        .is("check_out", null)
+        .is("voided_at", null)
+        .order("check_in", { ascending: true });
+
+      if (err) {
+        console.warn(`Presence fetch direct failed: ${err.message}`);
+        setError(GENERIC_ERROR_MESSAGE);
+        return;
+      }
+
+      setMembers(
+        (data ?? []).map((s: any) => {
+          const raw = s.profiles;
+          const p = Array.isArray(raw) ? raw[0] : raw;
+          return {
+            session_id: s.id,
+            check_in: s.check_in,
+            profile: p
+              ? {
+                  id: p.id,
+                  name: p.name ?? "Desconhecido",
+                  matricula: p.matricula ?? null,
+                  avatar_url: p.avatar_url ?? null,
+                  is_tutor: Boolean(p.is_tutor),
+                }
+              : {
+                  id: "",
+                  name: "Desconhecido",
+                  matricula: null,
+                  avatar_url: null,
+                  is_tutor: false,
+                },
+          };
+        })
+      );
+      setLoading(false);
+      setError(null);
+    } catch (e: any) {
+      console.warn(`Presence fetch fallback exception: ${e?.message}`);
+      setError(GENERIC_ERROR_MESSAGE);
+    }
   }, []);
 
   useEffect(() => {
@@ -91,22 +139,32 @@ export function usePresence() {
     });
 
     // 5. Supabase Realtime — re-busca em qualquer mutação de sessions
-    const channel = supabase
-      .channel("presence_updates")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "sessions" },
-        () => {
-          fetchOpen();
-        }
-      )
-      .subscribe();
+    const channelName = `presence_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    let channel: any = null;
+    try {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "sessions" },
+          () => {
+            fetchOpen();
+          }
+        )
+        .subscribe();
+    } catch (e: any) {
+      console.warn("Failed to subscribe to presence realtime:", e?.message);
+    }
 
     return () => {
       listeners.delete(fetchOpen);
       clearInterval(intervalId);
       appStateSub.remove();
-      supabase.removeChannel(channel);
+      if (channel) {
+        try {
+          supabase.removeChannel(channel);
+        } catch {}
+      }
     };
   }, [fetchOpen]);
 

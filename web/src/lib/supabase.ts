@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
-const env = (import.meta as any)?.env ?? {};
-const url = env.VITE_SUPABASE_URL;
-const anonKey = env.VITE_SUPABASE_ANON_KEY;
+const env =
+  (typeof import.meta !== "undefined" ? (import.meta as any).env : null) ??
+  ((globalThis as any).process?.env ?? {});
+const url = import.meta.env ? import.meta.env.VITE_SUPABASE_URL : env.VITE_SUPABASE_URL;
+const anonKey = import.meta.env ? import.meta.env.VITE_SUPABASE_ANON_KEY : env.VITE_SUPABASE_ANON_KEY;
 
 // Guarda de configuração: sem as variáveis VITE_SUPABASE_* o createClient lança
 // "supabaseUrl is required." no carregamento do módulo e derruba todo o app

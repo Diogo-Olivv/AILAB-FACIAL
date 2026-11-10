@@ -20,13 +20,27 @@ export function useProfiles() {
     try {
       const { data, error: err } = await supabase.rpc("kiosk_directory");
 
-      if (err) {
-        console.warn(`Failed to fetch profiles for re-enrollment: ${err.message}`);
+      if (!err && data) {
+        setProfiles(data);
+        setError(null);
+        return;
+      }
+
+      // Fallback direto via profiles
+      const { data: directData, error: directErr } = await supabase
+        .from("profiles")
+        .select("id, name, matricula, avatar_url, is_tutor")
+        .eq("active", true)
+        .is("consent_revoked_at", null)
+        .order("name", { ascending: true });
+
+      if (directErr) {
+        console.warn(`Failed to fetch profiles for re-enrollment: ${directErr.message}`);
         setError(GENERIC_ERROR_MESSAGE);
         return;
       }
 
-      setProfiles(data ?? []);
+      setProfiles(directData ?? []);
       setError(null);
     } catch (exc: any) {
       console.warn(`Unexpected error fetching profiles: ${exc?.message}`);

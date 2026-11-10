@@ -48,6 +48,7 @@ mobile/.env.local
 # Web
 web/.env
 web/.env.local
+.playwright-mcp/
 web/dist/
 web/node_modules/
 

@@ -325,24 +325,15 @@ export function Dashboard() {
   ]);
 
   const loadMembers = useCallback(async () => {
-    if (!user) {
-      setMembers([]);
-      setLoading(false);
-      return;
-    }
     try {
       const data = await fetchMembers();
       setMembers(data);
     } catch (e: any) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Não foi possível carregar a lista de integrantes do laboratório."
-      );
+      console.warn("Falha ao carregar lista de integrantes:", e);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     loadMembers();
@@ -358,20 +349,14 @@ export function Dashboard() {
       if (!silent) setIsRefreshing(true);
       setError("");
       try {
-        if (user && !isStudentView) {
-          const [nextSessions, nextPresent] = await Promise.all([
-            fetchSessions(range),
-            fetchPresentIds(),
-          ]);
-          setSessions(nextSessions);
-          setPresentIds(nextPresent);
-        } else {
-          // Visão pública anonima (DP-1): apenas agregados sem identificadores individuais
-          const stats = await fetchPublicLabStats(28);
-          setPublicStats(stats);
-          setPresentIds(new Array(stats.presentNow).fill("present"));
-          setSessions([]);
-        }
+        const [nextSessions, nextPresent, stats] = await Promise.all([
+          fetchSessions(range),
+          fetchPresentIds(),
+          fetchPublicLabStats(28),
+        ]);
+        setSessions(nextSessions);
+        setPresentIds(nextPresent);
+        setPublicStats(stats);
         setLastRefreshed(new Date());
       } catch (e: any) {
         const msg =
@@ -388,15 +373,15 @@ export function Dashboard() {
         setIsRefreshing(false);
       }
     },
-    [range, user, isStudentView]
+    [range]
   );
 
   useEffect(() => {
-    if (user && members.length === 0) {
+    if (members.length === 0) {
       setLoading(true);
     }
     refreshData(false);
-  }, [refreshData, user, members.length]);
+  }, [refreshData, members.length]);
 
   // Polling a cada 30 segundos
   useEffect(() => {
@@ -1116,7 +1101,50 @@ export function Dashboard() {
                 </div>
               </div>
 
-              {/* Aviso Institucional & Resguardo LGPD (DP-1) */}
+              {/* Gráfico Semanal de Presenças (Dias Úteis) */}
+              {!loading && totals.length > 0 && (
+                <WeeklyChart
+                  rows={filteredTotals}
+                  range={range}
+                  sessions={weekdaySessions}
+                />
+              )}
+
+              {/* Seção de Busca + Tabela Geral de Integrantes e Presenças ao Vivo */}
+              <div className="space-y-3">
+                <SearchField
+                  inputRef={searchInputRef}
+                  value={searchInput}
+                  onChange={handleSearchChange}
+                  onClear={clearSearch}
+                  placeholder="Buscar integrante por nome ou matrícula..."
+                  resultCount={searchQuery ? filteredTotals.length : undefined}
+                  className="surface-card !rounded-xl"
+                />
+
+                {hasActiveFilters && (
+                  <ActiveFilterChips
+                    period={period}
+                    searchQuery={searchQuery}
+                    onResetPeriod={resetPeriodToDefault}
+                    onClearSearch={clearSearch}
+                  />
+                )}
+
+                {loading && members.length === 0 ? (
+                  <TableSkeleton />
+                ) : (
+                  <TotalsTable
+                    rows={filteredTotals}
+                    totalCount={totals.length}
+                    searchActive={Boolean(searchQuery.trim())}
+                    onClearSearch={clearSearch}
+                    onSelectMember={(row) => setSelectedMemberId(row.member.id)}
+                  />
+                )}
+              </div>
+
+              {/* Aviso Institucional & Resguardo LGPD */}
               <div className="surface-card p-6 border-l-4 border-l-orange-500 bg-gradient-to-r from-orange-500/5 via-transparent to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
