@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState, useRef, type PointerEvent } from "react";
+import { JustifyModal } from "./JustifyModal";
 import {
+  type AttendanceJustification,
+  computeWeeklyCompliance,
+  listAttendanceJustifications,
+} from "../lib/compliance";
+import { getWeekBoundaries } from "../lib/tz";
+import {
+  FileCheck2,
   X,
   Ban,
   ClockAlert,
@@ -66,6 +74,30 @@ export function TutorWarningModal({
   const [batchCopied, setBatchCopied] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isCompactView, setIsCompactView] = useState(false);
+  const [justifications, setJustifications] = useState<Record<string, AttendanceJustification>>({});
+  const [selectedJustifyMember, setSelectedJustifyMember] = useState<{
+    member: Member;
+    totalSeconds: number;
+    justification?: AttendanceJustification | null;
+  } | null>(null);
+
+  const effectiveNow = now ?? new Date();
+  const weekBounds = useMemo(() => getWeekBoundaries(effectiveNow), [effectiveNow]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    listAttendanceJustifications(weekBounds.periodStart, weekBounds.periodEnd, undefined, false)
+      .then((items) => {
+        const map: Record<string, AttendanceJustification> = {};
+        for (const item of items) {
+          if (item.status === "active") {
+            map[item.profileId] = item;
+          }
+        }
+        setJustifications(map);
+      })
+      .catch((err) => console.warn("Erro ao carregar justificativas:", err));
+  }, [isOpen, weekBounds.periodStart, weekBounds.periodEnd]);
   const filterSelectorRef = useRef<HTMLDivElement>(null);
   const [isFilterDragging, setIsFilterDragging] = useState(false);
   const [filterDragLeftPx, setFilterDragLeftPx] = useState<number | null>(null);
@@ -179,14 +211,25 @@ export function TutorWarningModal({
 
     return members.map((member) => {
       const totalSeconds = secondsMap.get(member.id) ?? 0;
-      const metTarget = totalSeconds >= TARGET_SECONDS;
-      const deficitSeconds = Math.max(0, TARGET_SECONDS - totalSeconds);
+      const just = justifications[member.id] ?? null;
+      const compliance = computeWeeklyCompliance(
+        member.id,
+        totalSeconds,
+        weekBounds.periodStart,
+        just,
+        TARGET_SECONDS
+      );
+      const isJustified = compliance.status === "justified";
+      const metTarget = compliance.status === "met";
+      const deficitSeconds = compliance.deficitSeconds;
       const progressPercent = Math.min(100, Math.round((totalSeconds / TARGET_SECONDS) * 100));
 
       return {
         member,
         totalSeconds,
         metTarget,
+        isJustified,
+        justification: just,
         deficitSeconds,
         progressPercent,
       };
@@ -196,7 +239,7 @@ export function TutorWarningModal({
   // Estatísticas do resumo
   const totalStudents = weeklyTotals.length;
   const underTargetStudents = useMemo(
-    () => weeklyTotals.filter((item) => !item.metTarget),
+    () => weeklyTotals.filter((item) => !item.metTarget && !item.isJustified),
     [weeklyTotals]
   );
   const metTargetCount = totalStudents - underTargetStudents.length;
@@ -211,8 +254,8 @@ export function TutorWarningModal({
     const q = search.trim().toLowerCase();
     return weeklyTotals
       .filter((item) => {
-        if (filterMode === "under" && item.metTarget) return false;
-        if (filterMode === "met" && !item.metTarget) return false;
+        if (filterMode === "under" && (item.metTarget || item.isJustified)) return false;
+        if (filterMode === "met" && (!item.metTarget && !item.isJustified)) return false;
         if (!q) return true;
         return (
           item.member.name.toLowerCase().includes(q) ||
@@ -869,29 +912,61 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {!item.metTarget ? (
-                        <button
-                          type="button"
-                          onClick={() => handleSendEmailNotice(item)}
-                          className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer min-h-[34px] inline-flex items-center justify-center gap-1.5 ${
-                            isEmailPrepared
-                              ? "bg-emerald-600 text-white"
-                              : "bg-amber-600 hover:bg-amber-700 text-white shadow-2xs"
-                          }`}
-                        >
-                          {isEmailPrepared ? (
-                            <>
-                              <Check className="h-3.5 w-3.5" />
-                              <span>E-mail preparado!</span>
-                            </>
-                          ) : (
-                            <>
-                              <BellRing className="h-3.5 w-3.5" />
-                              <span>Advertir</span>
-                            </>
-                          )}
-                        </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {!item.metTarget && !item.isJustified ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleSendEmailNotice(item)}
+                            className={`rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer min-h-[34px] inline-flex items-center justify-center gap-1 ${
+                              isEmailPrepared
+                                ? "bg-emerald-600 text-white"
+                                : "bg-amber-600 hover:bg-amber-700 text-white shadow-2xs"
+                            }`}
+                          >
+                            {isEmailPrepared ? (
+                              <>
+                                <Check className="h-3.5 w-3.5" />
+                                <span>Preparado!</span>
+                              </>
+                            ) : (
+                              <>
+                                <BellRing className="h-3.5 w-3.5" />
+                                <span>Advertir</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedJustifyMember({ member: item.member, totalSeconds: item.totalSeconds, justification: null })}
+                            className="rounded-xl px-2.5 py-1.5 text-xs font-bold border border-amber-600/30 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors inline-flex items-center gap-1 min-h-[34px]"
+                          >
+                            <FileCheck2 className="h-3.5 w-3.5" />
+                            <span>Justificar</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenWhatsApp(item)}
+                            className="rounded-xl px-2.5 py-1.5 text-xs font-bold border border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors inline-flex items-center gap-1 min-h-[34px]"
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                            <span>Zap</span>
+                          </button>
+                        </>
+                      ) : item.isJustified ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-amber-700 dark:text-amber-400 font-bold text-xs inline-flex items-center gap-1 px-2 py-1 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                            <FileCheck2 className="h-3.5 w-3.5" />
+                            <span>Justificado</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedJustifyMember({ member: item.member, totalSeconds: item.totalSeconds, justification: item.justification })}
+                            className="text-2xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline font-medium"
+                          >
+                            Ver / Revogar
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-emerald-700 dark:text-emerald-400 font-bold text-xs inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/10 rounded-lg">
                           <Check className="h-3.5 w-3.5" />
@@ -957,50 +1032,75 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                     {/* Badge ou Ação em Desktop */}
                     <div className="hidden sm:flex items-center gap-2 shrink-0">
                       {!item.metTarget ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleSendEmailNotice(item)}
-                            className={`rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-claude cursor-pointer min-h-[42px] inline-flex items-center justify-center gap-2 active:scale-95 ${
-                              isEmailPrepared
-                                ? "bg-emerald-600 text-white"
-                                : "bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-700 hover:to-orange-700"
-                            }`}
-                          >
-                            {isEmailPrepared ? (
-                              <>
-                                <Check className="h-4 w-4" />
-                                <span>E-mail preparado!</span>
-                              </>
-                            ) : (
-                              <>
-                                <BellRing className="h-4 w-4" />
-                                <span>Advertir</span>
-                              </>
-                            )}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleOpenWhatsApp(item)}
-                            title="Abrir WhatsApp com o comunicado pré-formatado"
-                            className="rounded-2xl border border-emerald-600/30 dark:border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 px-3.5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-2xs cursor-pointer min-h-[42px] inline-flex items-center justify-center gap-1.5 active:scale-95"
-                          >
-                            <Send className="h-4 w-4" />
-                            <span>WhatsApp</span>
-                          </button>
-
-                          {warning && (
+                        !item.isJustified ? (
+                          <>
                             <button
                               type="button"
-                              onClick={() => removeWarning(item.member.id)}
-                              className="text-xs text-slate-400 dark:text-slate-500 hover:text-amber-800 dark:hover:text-amber-400 underline font-medium cursor-pointer px-1"
-                              title="Remover registro de advertência deste aluno"
+                              onClick={() => handleSendEmailNotice(item)}
+                              className={`rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-claude cursor-pointer min-h-[42px] inline-flex items-center justify-center gap-2 active:scale-95 ${
+                                isEmailPrepared
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-700 hover:to-orange-700"
+                              }`}
                             >
-                              Desfazer
+                              {isEmailPrepared ? (
+                                <>
+                                  <Check className="h-4 w-4" />
+                                  <span>E-mail preparado!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <BellRing className="h-4 w-4" />
+                                  <span>Advertir</span>
+                                </>
+                              )}
                             </button>
-                          )}
-                        </>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedJustifyMember({ member: item.member, totalSeconds: item.totalSeconds, justification: null })}
+                              className="rounded-2xl border border-amber-600/30 dark:border-amber-600/40 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-3.5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-2xs cursor-pointer min-h-[42px] inline-flex items-center justify-center gap-1.5 active:scale-95"
+                            >
+                              <FileCheck2 className="h-4 w-4" />
+                              <span>Justificar</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenWhatsApp(item)}
+                              title="Abrir WhatsApp com o comunicado pré-formatado"
+                              className="rounded-2xl border border-emerald-600/30 dark:border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 px-3.5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-2xs cursor-pointer min-h-[42px] inline-flex items-center justify-center gap-1.5 active:scale-95"
+                            >
+                              <Send className="h-4 w-4" />
+                              <span>WhatsApp</span>
+                            </button>
+
+                            {warning && (
+                              <button
+                                type="button"
+                                onClick={() => removeWarning(item.member.id)}
+                                className="text-xs text-slate-400 dark:text-slate-500 hover:text-amber-800 dark:hover:text-amber-400 underline font-medium cursor-pointer px-1"
+                                title="Remover registro de advertência deste aluno"
+                              >
+                                Desfazer
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3.5 py-2 text-xs sm:text-sm font-bold text-amber-800 dark:text-amber-300">
+                              <FileCheck2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                              <span>Justificado</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedJustifyMember({ member: item.member, totalSeconds: item.totalSeconds, justification: item.justification })}
+                              className="rounded-2xl border border-slate-200 dark:border-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.05] text-slate-700 dark:text-slate-300 px-3.5 py-2 text-xs font-semibold transition-colors"
+                            >
+                              Ver / Revogar
+                            </button>
+                          </div>
+                        )
                       ) : (
                         <span className="inline-flex items-center gap-1.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 px-4 py-2 text-xs sm:text-sm font-bold text-emerald-800 dark:text-emerald-300">
                           <Check className="h-4 w-4 text-emerald-600" />
@@ -1251,20 +1351,70 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
       </div>
   );
 
+  const modalWithJustify = (
+    <>
+      {content}
+      {selectedJustifyMember && (
+        <JustifyModal
+          isOpen={Boolean(selectedJustifyMember)}
+          onClose={() => setSelectedJustifyMember(null)}
+          member={selectedJustifyMember.member}
+          totalSeconds={selectedJustifyMember.totalSeconds}
+          periodStartMonday={weekBounds.periodStart}
+          weekLabel={weekBounds.label}
+          existingJustification={selectedJustifyMember.justification}
+          onSuccess={(just) => {
+            setJustifications((prev) => {
+              if (just.status === "active") {
+                return { ...prev, [just.profileId]: just };
+              }
+              const next = { ...prev };
+              delete next[just.profileId];
+              return next;
+            });
+          }}
+        />
+      )}
+    </>
+  );
+
   if (isInline) {
-    return content;
+    return modalWithJustify;
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-hidden animate-fade-in"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tutor-modal-title"
-    >
-      {content}
-    </div>
+    <>
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-hidden animate-fade-in"
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tutor-modal-title"
+      >
+        {content}
+      </div>
+      {selectedJustifyMember && (
+        <JustifyModal
+          isOpen={Boolean(selectedJustifyMember)}
+          onClose={() => setSelectedJustifyMember(null)}
+          member={selectedJustifyMember.member}
+          totalSeconds={selectedJustifyMember.totalSeconds}
+          periodStartMonday={weekBounds.periodStart}
+          weekLabel={weekBounds.label}
+          existingJustification={selectedJustifyMember.justification}
+          onSuccess={(just) => {
+            setJustifications((prev) => {
+              if (just.status === "active") {
+                return { ...prev, [just.profileId]: just };
+              }
+              const next = { ...prev };
+              delete next[just.profileId];
+              return next;
+            });
+          }}
+        />
+      )}
+    </>
   );
 }
 

@@ -19,17 +19,19 @@ import {
   Coffee,
   Cpu,
   RotateCcw,
+  KeyRound,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
-import { useSearchParams } from "react-router-dom";
-import { supabase } from "../lib/supabase";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   fetchMembers,
   fetchPresentIds,
   fetchSessions,
+  fetchPublicLabStats,
   type Member,
   type SessionRecord,
+  type PublicLabStats,
 } from "../lib/reports";
 import { rangeFor, PERIOD_LABELS, type PeriodKey } from "../lib/period";
 import {
@@ -39,6 +41,7 @@ import {
   totalsByMember,
   filterWeekdaySessions,
   calculateOccupancyInsights,
+  DEFAULT_LAB_CAPACITY,
 } from "../lib/aggregate";
 import { Header } from "../components/Header";
 import { PeriodSelector } from "../components/PeriodSelector";
@@ -191,6 +194,7 @@ export function Dashboard() {
   const [error, setError] = useState("");
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [now, setNow] = useState<Date>(() => new Date());
+  const [publicStats, setPublicStats] = useState<PublicLabStats | null>(null);
 
   // Modais e gavetas
   const [isTermsOpen, setIsTermsOpen] = useState(false);
@@ -209,7 +213,57 @@ export function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // Atalho global "/" ou Ctrl+K / Cmd+K para focar a busca da tabela (H7 — Eficiência de Uso)
+  // ESC com prioridade de fechamento: fecha a camada mais interna primeiro
+  useEffect(() => {
+    const handleEscKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (selectedMemberId) {
+        setSelectedMemberId(null);
+        return;
+      }
+      if (isOfficialReportOpen) {
+        setIsOfficialReportOpen(false);
+        return;
+      }
+      if (isManualAttendanceOpen) {
+        setIsManualAttendanceOpen(false);
+        return;
+      }
+      if (isTutorProfileOpen) {
+        setIsTutorProfileOpen(false);
+        return;
+      }
+      if (isTutorWarningOpen) {
+        setIsTutorWarningOpen(false);
+        return;
+      }
+      if (isHowItWorksOpen) {
+        setIsHowItWorksOpen(false);
+        return;
+      }
+      if (isTermsOpen) {
+        setIsTermsOpen(false);
+        return;
+      }
+      if (searchQuery) {
+        clearSearch();
+        return;
+      }
+    };
+    window.addEventListener("keydown", handleEscKeyDown);
+    return () => window.removeEventListener("keydown", handleEscKeyDown);
+  }, [
+    selectedMemberId,
+    isOfficialReportOpen,
+    isManualAttendanceOpen,
+    isTutorProfileOpen,
+    isTutorWarningOpen,
+    isHowItWorksOpen,
+    isTermsOpen,
+    searchQuery,
+  ]);
+
+  // Atalho global "/" ou Ctrl+K / Cmd+K (respeita campos de edição e modais abertos)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -219,6 +273,17 @@ export function Dashboard() {
           target.tagName === "TEXTAREA" ||
           target.tagName === "SELECT" ||
           target.isContentEditable);
+
+      const hasOpenModal =
+        Boolean(selectedMemberId) ||
+        isOfficialReportOpen ||
+        isManualAttendanceOpen ||
+        isTutorProfileOpen ||
+        isTutorWarningOpen ||
+        isHowItWorksOpen ||
+        isTermsOpen;
+
+      if (isEditable || hasOpenModal) return;
 
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -232,7 +297,7 @@ export function Dashboard() {
         return;
       }
 
-      if (!isEditable && e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         if (user && !isStudentView && tutorTab !== "records") {
           setTutorTab("records");
@@ -245,19 +310,29 @@ export function Dashboard() {
     };
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [user, isStudentView, tutorTab]);
+  }, [
+    user,
+    isStudentView,
+    tutorTab,
+    selectedMemberId,
+    isOfficialReportOpen,
+    isManualAttendanceOpen,
+    isTutorProfileOpen,
+    isTutorWarningOpen,
+    isHowItWorksOpen,
+    isTermsOpen,
+  ]);
 
   const loadMembers = useCallback(async () => {
+    if (!user) {
+      setMembers([]);
+      setLoading(false);
+      return;
+    }
     try {
       const data = await fetchMembers();
       setMembers(data);
     } catch (e: any) {
-      if (e?.message?.includes("JWT") || e?.message?.includes("expired")) {
-        await supabase.auth.signOut();
-        const retryData = await fetchMembers();
-        setMembers(retryData);
-        return;
-      }
       setError(
         e instanceof Error
           ? e.message
@@ -266,7 +341,7 @@ export function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadMembers();
@@ -282,44 +357,33 @@ export function Dashboard() {
       if (!silent) setIsRefreshing(true);
       setError("");
       try {
-        const [nextSessions, nextPresent] = await Promise.all([
-          fetchSessions(range),
-          fetchPresentIds(),
-        ]);
-        setSessions(nextSessions);
-        setPresentIds(nextPresent);
+        if (user && !isStudentView) {
+          const [nextSessions, nextPresent] = await Promise.all([
+            fetchSessions(range),
+            fetchPresentIds(),
+          ]);
+          setSessions(nextSessions);
+          setPresentIds(nextPresent);
+        } else {
+          // Visão pública anonima (DP-1): apenas agregados sem identificadores individuais
+          const stats = await fetchPublicLabStats(28);
+          setPublicStats(stats);
+          setPresentIds(new Array(stats.presentNow).fill("present"));
+          setSessions([]);
+        }
         setLastRefreshed(new Date());
       } catch (e: any) {
-        if (
-          e?.message?.includes("JWT") ||
-          e?.message?.includes("expired") ||
-          e?.message?.includes("401")
-        ) {
-          try {
-            await supabase.auth.signOut();
-            const [retrySessions, retryPresent] = await Promise.all([
-              fetchSessions(range),
-              fetchPresentIds(),
-            ]);
-            setSessions(retrySessions);
-            setPresentIds(retryPresent);
-            setLastRefreshed(new Date());
-            return;
-          } catch {
-            // Continua com erro
-          }
-        }
         setError(
           e instanceof Error
             ? e.message
-            : "Falha ao acessar os dados de permanência. Tente novamente."
+            : "Falha ao sincronizar telemetria. Tente novamente."
         );
       } finally {
         setLoading(false);
         setIsRefreshing(false);
       }
     },
-    [range]
+    [range, user, isStudentView]
   );
 
   useEffect(() => {
@@ -427,7 +491,7 @@ export function Dashboard() {
   }, [members, weekdaySessions, now]);
 
   const occupancyInsights = useMemo(() => {
-    return calculateOccupancyInsights(sessions, presentCount, now);
+    return calculateOccupancyInsights(sessions, presentCount, now, DEFAULT_LAB_CAPACITY);
   }, [sessions, presentCount, now]);
 
   const crowd = CROWD_STYLES[occupancyInsights.currentCrowdLevel];
@@ -471,6 +535,15 @@ export function Dashboard() {
         isRefreshing={isRefreshing}
         presentCount={presentCount}
         lastRefreshed={lastRefreshed}
+        syncState={
+          error
+            ? "error"
+            : isRefreshing
+            ? "updating"
+            : now.getTime() - lastRefreshed.getTime() > 60000
+            ? "delayed"
+            : "connected"
+        }
       />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 relative">
@@ -1032,48 +1105,37 @@ export function Dashboard() {
                 </div>
               </div>
 
-              {/* Gráfico de Dias Úteis com Dia de Pico Destacado */}
-              {!loading && totals.length > 0 && (
-                <WeeklyChart
-                  rows={filteredTotals}
-                  range={range}
-                  sessions={weekdaySessions}
-                />
-              )}
-
-              {/* Seção de Busca + Filtros Ativos + Tabela de Integrantes */}
-              <div className="space-y-3">
-                <SearchField
-                  inputRef={searchInputRef}
-                  value={searchInput}
-                  onChange={handleSearchChange}
-                  onClear={clearSearch}
-                  placeholder="Buscar integrante por nome ou matrícula..."
-                  resultCount={searchQuery ? filteredTotals.length : undefined}
-                  className="surface-card !rounded-xl"
-                />
-
-                {/* Chips Removíveis de Filtros Ativos (H6 — Reconhecimento em vez de Memorização) */}
-                {hasActiveFilters && (
-                  <ActiveFilterChips
-                    period={period}
-                    searchQuery={searchQuery}
-                    onResetPeriod={resetPeriodToDefault}
-                    onClearSearch={clearSearch}
-                  />
-                )}
-
-                {loading && members.length === 0 ? (
-                  <TableSkeleton />
-                ) : (
-                  <TotalsTable
-                    rows={filteredTotals}
-                    totalCount={totals.length}
-                    searchActive={Boolean(searchQuery.trim())}
-                    onClearSearch={clearSearch}
-                    onSelectMember={(row) => setSelectedMemberId(row.member.id)}
-                  />
-                )}
+              {/* Aviso Institucional & Resguardo LGPD (DP-1) */}
+              <div className="surface-card p-6 border-l-4 border-l-orange-500 bg-gradient-to-r from-orange-500/5 via-transparent to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="eyebrow text-orange-600 dark:text-amber-400">
+                      Privacidade & Minimização de Dados (LGPD Art. 11)
+                    </span>
+                    <span className="rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 text-2xs px-2 py-0.5 font-bold">
+                      DP-1 Ativa
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Painel Público de Ocupação & Telemetria Agregada
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+                    Em estrita conformidade com a LGPD e as normas de governança biométrica do laboratório, a consulta pública exibe somente métricas de lotação agregadas. Nomes, matrículas e auditoria individual de horas são exclusivos para tutores autenticados.
+                    {publicStats && (
+                      <span className="block mt-1 font-mono-data text-2xs text-slate-500">
+                        Janela agregada: {publicStats.windowDays} dias · {publicStats.totalSessions} sessões computadas no período ({publicStats.timezone}).
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <Link
+                  to="/login"
+                  className="btn-primary shrink-0 !min-h-[42px] !px-4"
+                  title="Acessar o workspace administrativo de tutores"
+                >
+                  <KeyRound className="h-4 w-4" />
+                  <span>Acesso Tutor</span>
+                </Link>
               </div>
             </div>
           )}
@@ -1179,6 +1241,7 @@ export function Dashboard() {
         lastRefreshed={lastRefreshed}
         onOpenTerms={() => setIsTermsOpen(true)}
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+        isRefreshing={isRefreshing}
       />
 
       {/* Modal Como Funciona (H10) */}

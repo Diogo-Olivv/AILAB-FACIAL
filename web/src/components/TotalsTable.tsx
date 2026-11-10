@@ -430,7 +430,11 @@ export function TotalsTable({
                           </span>
                           <div
                             className="hidden sm:flex h-1.5 w-24 md:w-28 overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.07]"
-                            aria-hidden="true"
+                            role="progressbar"
+                            aria-valuenow={pct}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label={`Progresso de permanência de ${row.member.name}: ${pct}%`}
                           >
                             <div
                               className={`h-full rounded-full transition-all duration-300 ${

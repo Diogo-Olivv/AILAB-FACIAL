@@ -4,9 +4,10 @@ interface FooterProps {
   lastRefreshed: Date;
   onOpenTerms: () => void;
   onOpenHowItWorks?: () => void;
+  isRefreshing?: boolean;
 }
 
-export function Footer({ lastRefreshed, onOpenTerms, onOpenHowItWorks }: FooterProps) {
+export function Footer({ lastRefreshed, onOpenTerms, onOpenHowItWorks, isRefreshing = false }: FooterProps) {
   return (
     <footer
       className="mt-16 border-t border-slate-200/80 dark:border-white/[0.07] bg-white/70 dark:bg-[#0F1623]/75 backdrop-blur-xl px-4 py-6 text-xs text-slate-500 dark:text-slate-400 transition-colors sm:px-6 lg:px-8"
@@ -20,7 +21,9 @@ export function Footer({ lastRefreshed, onOpenTerms, onOpenHowItWorks }: FooterP
             aria-atomic="true"
           >
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+              {isRefreshing && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+              )}
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
             <span>

@@ -23,20 +23,69 @@ export interface DateRange {
   to: Date;
 }
 
-export async function fetchMembers(): Promise<Member[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, name, matricula, avatar_url, is_tutor")
-    .eq("active", true)
-    .order("name");
+export interface PublicBucket {
+  dow: number;
+  hour: number;
+  sessions: number;
+  seconds: number;
+}
+
+export interface PublicLabStats {
+  presentNow: number;
+  windowDays: number;
+  totalSessions: number;
+  buckets: PublicBucket[];
+  timezone: string;
+  generatedAt: string;
+}
+
+export async function fetchPublicLabStats(days = 28): Promise<PublicLabStats> {
+  const { data, error } = await supabase.rpc("public_lab_stats", { p_days: days });
   if (error) throw error;
-  return (data ?? []).map((p) => ({
-    id: p.id,
-    name: p.name,
-    matricula: p.matricula,
-    avatarUrl: p.avatar_url ?? null,
-    isTutor: Boolean(p.is_tutor),
-  }));
+  const raw = data as {
+    present_now?: number;
+    window_days?: number;
+    total_sessions?: number;
+    buckets?: Array<{ dow: number; hour: number; sessions: number; seconds: number }>;
+    timezone?: string;
+    generated_at?: string;
+  };
+  return {
+    presentNow: raw?.present_now ?? 0,
+    windowDays: raw?.window_days ?? days,
+    totalSessions: raw?.total_sessions ?? 0,
+    buckets: raw?.buckets ?? [],
+    timezone: raw?.timezone ?? "America/Sao_Paulo",
+    generatedAt: raw?.generated_at ?? new Date().toISOString(),
+  };
+}
+
+export async function fetchMembers(): Promise<Member[]> {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, name, matricula, avatar_url, is_tutor")
+      .eq("active", true)
+      .order("name");
+    if (error) {
+      if (error.code === "42501" || error.message?.includes("permission denied")) {
+        return [];
+      }
+      throw error;
+    }
+    return (data ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      matricula: p.matricula,
+      avatarUrl: p.avatar_url ?? null,
+      isTutor: Boolean(p.is_tutor),
+    }));
+  } catch (err: any) {
+    if (err?.code === "42501" || err?.message?.includes("permission denied")) {
+      return [];
+    }
+    throw err;
+  }
 }
 
 export async function updateMemberAvatar(memberId: string, avatarUrl: string | null): Promise<void> {
@@ -85,22 +134,34 @@ export function compressImageToBase64(file: File, maxSize = 256): Promise<string
 }
 
 export async function fetchSessions(range: DateRange): Promise<SessionRecord[]> {
-  const { data, error } = await supabase
-    .from("sessions")
-    .select("id, profile_id, check_in, check_out, duration_s, auto_closed, voided_at")
-    .gte("check_in", range.from.toISOString())
-    .lte("check_in", range.to.toISOString())
-    .order("check_in", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((s) => ({
-    id: s.id,
-    profileId: s.profile_id,
-    checkIn: s.check_in,
-    checkOut: s.check_out,
-    durationS: s.duration_s,
-    autoClosed: s.auto_closed,
-    voidedAt: s.voided_at,
-  }));
+  try {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("id, profile_id, check_in, check_out, duration_s, auto_closed, voided_at")
+      .gte("check_in", range.from.toISOString())
+      .lte("check_in", range.to.toISOString())
+      .order("check_in", { ascending: false });
+    if (error) {
+      if (error.code === "42501" || error.message?.includes("permission denied")) {
+        return [];
+      }
+      throw error;
+    }
+    return (data ?? []).map((s) => ({
+      id: s.id,
+      profileId: s.profile_id,
+      checkIn: s.check_in,
+      checkOut: s.check_out,
+      durationS: s.duration_s,
+      autoClosed: s.auto_closed,
+      voidedAt: s.voided_at,
+    }));
+  } catch (err: any) {
+    if (err?.code === "42501" || err?.message?.includes("permission denied")) {
+      return [];
+    }
+    throw err;
+  }
 }
 
 export async function fetchMemberSessionsOnDate(
@@ -139,12 +200,24 @@ export async function tutorRegisterManualSession(
 }
 
 export async function fetchPresentIds(): Promise<string[]> {
-  const { data, error } = await supabase
-    .from("sessions")
-    .select("profile_id")
-    .is("check_out", null);
-  if (error) throw error;
-  return (data ?? []).map((s) => s.profile_id);
+  try {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("profile_id")
+      .is("check_out", null);
+    if (error) {
+      if (error.code === "42501" || error.message?.includes("permission denied")) {
+        return [];
+      }
+      throw error;
+    }
+    return (data ?? []).map((s) => s.profile_id);
+  } catch (err: any) {
+    if (err?.code === "42501" || err?.message?.includes("permission denied")) {
+      return [];
+    }
+    throw err;
+  }
 }
 
 /**

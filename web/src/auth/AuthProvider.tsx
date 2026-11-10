@@ -1,55 +1,53 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Session, User } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { VIEWER_EMAIL } from "../lib/config";
 import { AuthContext, type AuthState } from "./auth-context";
-
-const TUTOR_STORAGE_KEY = "ailab_tutor_session";
-const TUTOR_CUSTOM_CREDENTIALS_KEY = "ailab_custom_tutor_credentials";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Verifica se há sessão local ativa do tutor
-    try {
-      const localTutor = localStorage.getItem(TUTOR_STORAGE_KEY);
-      if (localTutor) {
-        const parsed = JSON.parse(localTutor);
-        if (parsed?.access_token) {
-          setSession(parsed);
-          setLoading(false);
-          return;
-        }
-        localStorage.removeItem(TUTOR_STORAGE_KEY);
-      }
-    } catch {
-      // Ignora erro
-    }
-
-    // 2. Verifica sessão do Supabase Auth
+    // 1. Obtém a sessão real gerenciada pelo Supabase Auth
     supabase.auth
       .getSession()
       .then(({ data, error }) => {
-        if (error) {
-          supabase.auth.signOut().catch(() => {});
+        if (error || !data.session) {
           setSession(null);
         } else {
-          setSession(data.session);
+          // Validação fail-closed: verifica se papel de tutor consta estritamente em app_metadata
+          const role = data.session.user?.app_metadata?.role;
+          if (role === "tutor") {
+            setSession(data.session);
+          } else {
+            setSession(null);
+          }
         }
         setLoading(false);
       })
       .catch(() => {
+        setSession(null);
         setLoading(false);
       });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      if (next) {
-        setSession(next);
+    // 2. Ouve eventos de autenticação do Supabase Auth (refresh de token, sign in, sign out)
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (nextSession) {
+        const role = nextSession.user?.app_metadata?.role;
+        if (role === "tutor") {
+          setSession(nextSession);
+        } else {
+          setSession(null);
+        }
+      } else {
+        setSession(null);
       }
     });
-    return () => sub.subscription.unsubscribe();
+
+    return () => {
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const value = useMemo<AuthState>(
@@ -58,240 +56,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: session?.user ?? null,
       loading,
       signIn: async (password: string, email?: string) => {
-        let cleanEmail = (
+        const cleanEmail = (
           email && email.trim().length > 0 ? email.trim() : VIEWER_EMAIL
         ).toLowerCase();
 
-        // Se o usuário digitou apenas o nome de usuário institucional sem o domínio, auto-completa
         if (!cleanEmail.includes("@")) {
-          cleanEmail = `${cleanEmail}@ailab.com`;
+          throw new Error("Informe o e-mail completo com domínio institucional.");
         }
 
-        // 1. Tenta autenticação padrão oficial no Supabase Auth (GoTrue)
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: cleanEmail,
-            password,
-          });
+        // Autenticação oficial no Supabase Auth (GoTrue)
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
 
-          if (!error && data?.session) {
-            const role =
-              data.session.user?.app_metadata?.role ||
-              data.session.user?.user_metadata?.role;
-            if (role !== "tutor") {
-              await supabase.auth.signOut().catch(() => {});
-              throw new Error("Acesso negado. Esta conta não possui privilégios de tutor.");
-            }
-            setSession(data.session);
-            localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(data.session));
-            localStorage.setItem("ailab_site_access_granted", "true");
-            return;
-          }
-        } catch (err: any) {
-          if (err?.message?.includes("Acesso negado")) {
-            throw err;
-          }
-          // Prossegue para verificação via RPC e contingências
+        if (error) {
+          throw new Error("E-mail ou senha de tutor incorretos.");
         }
 
-        // 2. Consulta a RPC segura verify_tutor_login no Supabase
-        try {
-          const { data: rpcRes, error: rpcErr } = await supabase.rpc("verify_tutor_login", {
-            p_email: cleanEmail,
-            p_password: password,
-          });
-
-          if (!rpcErr && rpcRes && rpcRes.valid) {
-            // Tenta obter sessão GoTrue após auto-sincronização no banco
-            try {
-              const { data: retryData, error: retryErr } =
-                await supabase.auth.signInWithPassword({
-                  email: cleanEmail,
-                  password,
-                });
-
-              if (!retryErr && retryData?.session) {
-                const role =
-                  retryData.session.user?.app_metadata?.role ||
-                  retryData.session.user?.user_metadata?.role;
-                if (role !== "tutor") {
-                  await supabase.auth.signOut().catch(() => {});
-                  throw new Error("Acesso negado. Esta conta não possui privilégios de tutor.");
-                }
-                setSession(retryData.session);
-                localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(retryData.session));
-                localStorage.setItem("ailab_site_access_granted", "true");
-                return;
-              }
-            } catch (retryException: any) {
-              if (retryException?.message?.includes("Acesso negado")) {
-                throw retryException;
-              }
-            }
-
-            // Fallback de contingência local resiliente
-            const tutorUser: User = {
-              id: rpcRes.user_id || "tutor-master-id",
-              aud: "authenticated",
-              role: "authenticated",
-              email: rpcRes.email || cleanEmail,
-              app_metadata: { role: "tutor", provider: "email" },
-              user_metadata: {
-                role: "tutor",
-                name: rpcRes.name || cleanEmail.split("@")[0],
-              },
-              created_at: new Date().toISOString(),
-            } as User;
-
-            const tutorSession: Session = {
-              access_token: "tutor-static-session-token",
-              token_type: "bearer",
-              user: tutorUser,
-              expires_in: 3600 * 24 * 7,
-              expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 7,
-              refresh_token: "tutor-refresh-token",
-            };
-
-            setSession(tutorSession);
-            localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(tutorSession));
-            localStorage.setItem("ailab_site_access_granted", "true");
-            return;
-          }
-        } catch (err: any) {
-          if (err?.message?.includes("Acesso negado")) {
-            throw err;
-          }
-          // Prossegue para contingência estática
+        if (!data?.session) {
+          throw new Error("Não foi possível iniciar a sessão.");
         }
 
-        // 3. Verificação estática master de contingência (tutor@ailab.com / apenasParaTutores@42)
-        if (cleanEmail === "tutor@ailab.com" && password === "apenasParaTutores@42") {
-          const tutorUser: User = {
-            id: "tutor-master-id",
-            aud: "authenticated",
-            role: "authenticated",
-            email: "tutor@ailab.com",
-            app_metadata: { role: "tutor", provider: "email" },
-            user_metadata: { role: "tutor", name: "Tutor Master" },
-            created_at: new Date().toISOString(),
-          } as User;
-
-          const tutorSession: Session = {
-            access_token: "tutor-static-session-token",
-            token_type: "bearer",
-            user: tutorUser,
-            expires_in: 3600 * 24 * 7,
-            expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 7,
-            refresh_token: "tutor-refresh-token",
-          };
-
-          setSession(tutorSession);
-          localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(tutorSession));
-          localStorage.setItem("ailab_site_access_granted", "true");
-          return;
+        // Validação rigorosa: role deve estar em app_metadata (imutável pelo cliente)
+        const role = data.session.user?.app_metadata?.role;
+        if (role !== "tutor") {
+          await supabase.auth.signOut().catch(() => {});
+          setSession(null);
+          throw new Error("Acesso negado. Esta conta não possui privilégios de tutor.");
         }
 
-        throw new Error("E-mail ou senha de tutor incorretos.");
+        setSession(data.session);
       },
       signOut: async () => {
-        localStorage.removeItem(TUTOR_STORAGE_KEY);
-        localStorage.removeItem("ailab_site_access_granted");
-        await supabase.auth.signOut().catch(() => {});
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.warn("Falha ao invalidar sessão no servidor:", error.message);
+          throw new Error("Não foi possível encerrar a sessão. Verifique a conexão.");
+        }
         setSession(null);
       },
       updateTutorCredentials: async (newEmail: string, newPassword: string) => {
-        let cleanEmail = newEmail.trim().toLowerCase();
+        const cleanEmail = newEmail.trim().toLowerCase();
         if (!cleanEmail.includes("@")) {
-          cleanEmail = `${cleanEmail}@ailab.com`;
-        }
-        if (!cleanEmail.endsWith("@ailab.com")) {
-          throw new Error("O e-mail institucional deve terminar obrigatoriamente com @ailab.com");
+          throw new Error("Informe um e-mail válido.");
         }
         if (!newPassword || newPassword.length < 6) {
           throw new Error("A nova senha deve possuir pelo menos 6 caracteres.");
         }
 
-        // 1. Atualiza credenciais nativamente no Supabase Auth via GoTrue
-        try {
-          const { error: updateErr } = await supabase.auth.updateUser({
-            email: cleanEmail,
-            password: newPassword,
-          });
-          if (updateErr) {
-            console.warn("supabase.auth.updateUser:", updateErr.message);
-          }
-        } catch (authErr: any) {
-          console.warn("Exceção ao atualizar no Supabase Auth:", authErr?.message);
-        }
-
-        // 2. Salva localmente para contingência
-        localStorage.setItem(
-          TUTOR_CUSTOM_CREDENTIALS_KEY,
-          JSON.stringify({ email: cleanEmail, password: newPassword })
-        );
-
-        // 3. Tenta autenticar no GoTrue para obter JWT assinado
-        try {
-          const { data: signData } = await supabase.auth.signInWithPassword({
-            email: cleanEmail,
-            password: newPassword,
-          });
-          if (signData?.session) {
-            setSession(signData.session);
-            localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(signData.session));
-            return;
-          }
-        } catch {
-          // Fallback para sessão direta
-        }
-
-        // 4. Fallback imediato de sessão ativa
-        const updatedUser: User = {
-          ...(session?.user ?? ({} as User)),
-          id: session?.user?.id || "tutor-master-id",
-          aud: "authenticated",
-          role: "authenticated",
+        // Atualização oficial no Supabase Auth via GoTrue
+        const { error } = await supabase.auth.updateUser({
           email: cleanEmail,
-          app_metadata: { role: "tutor", provider: "email" },
-          user_metadata: { role: "tutor", name: cleanEmail.split("@")[0] },
-          created_at: session?.user?.created_at || new Date().toISOString(),
-        } as User;
+          password: newPassword,
+        });
 
-        const updatedSession: Session = {
-          access_token: session?.access_token || "tutor-static-session-token",
-          token_type: "bearer",
-          user: updatedUser,
-          expires_in: 3600 * 24 * 7,
-          expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 7,
-          refresh_token: session?.refresh_token || "tutor-refresh-token",
-        };
-
-        setSession(updatedSession);
-        localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(updatedSession));
+        if (error) {
+          throw new Error(error.message || "Falha ao atualizar credenciais.");
+        }
       },
       updateTutorAvatar: async (avatarUrl: string | null) => {
-        try {
-          await supabase.auth.updateUser({
-            data: { avatar_url: avatarUrl },
-          });
-        } catch {
-          // Ignora caso esteja operando em modo offline / sessão local
-        }
-
-        if (session?.user) {
-          const updatedUser: User = {
-            ...session.user,
-            user_metadata: {
-              ...session.user.user_metadata,
-              avatar_url: avatarUrl,
-            },
-          };
-          const updatedSession: Session = {
-            ...session,
-            user: updatedUser,
-          };
-          setSession(updatedSession);
-          localStorage.setItem(TUTOR_STORAGE_KEY, JSON.stringify(updatedSession));
+        const { error } = await supabase.auth.updateUser({
+          data: { avatar_url: avatarUrl },
+        });
+        if (error) {
+          throw new Error(error.message || "Falha ao atualizar foto de perfil.");
         }
       },
     }),

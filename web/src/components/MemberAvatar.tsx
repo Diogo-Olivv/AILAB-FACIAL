@@ -93,6 +93,8 @@ export function MemberAvatar({
       {present && (
         <span
           title="Presente no laboratório agora"
+          aria-label="Presente no laboratório agora"
+          role="status"
           className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white dark:ring-[#0F1623] bg-emerald-500"
         />
       )}

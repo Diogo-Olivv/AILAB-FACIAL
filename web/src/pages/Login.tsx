@@ -48,13 +48,17 @@ export function Login() {
     setBusy(true);
     try {
       const cleanInput = emailInput.trim().toLowerCase();
-      const finalEmail = cleanInput.includes("@") ? cleanInput : `${cleanInput}@ailab.com`;
-      await signIn(finalEmail, password);
+      if (!cleanInput.includes("@")) {
+        setError("Informe seu endereço de e-mail institucional completo.");
+        setBusy(false);
+        return;
+      }
+      await signIn(cleanInput, password);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Credenciais inválidas. Verifique seu e-mail @ailab.com e senha."
+          : "Credenciais inválidas. Verifique seu e-mail e senha institucional."
       );
     } finally {
       setBusy(false);
@@ -144,10 +148,10 @@ export function Login() {
             <Sparkles className="h-4 w-4 text-orange-500 dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <strong className="text-slate-900 dark:text-white font-semibold block">
-                Acesso Institucional @ailab.com
+                Acesso de Tutoria & Auditoria
               </strong>
               <span className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed block">
-                Digite seu usuário (<code className="rounded bg-white dark:bg-[#0F1623] border border-slate-200 dark:border-white/[0.1] px-1.5 py-0.5 font-mono-data text-slate-900 dark:text-slate-200 font-semibold">nome@ailab.com</code>) ou apenas o prefixo antes do <code className="font-mono-data">@</code>.
+                Informe seu e-mail institucional completo e senha cadastrada com permissão de tutor.
               </span>
             </div>
           </div>
@@ -158,26 +162,21 @@ export function Login() {
               htmlFor="tutor-email"
               className="block text-xs font-semibold text-slate-700 dark:text-slate-200"
             >
-              E-mail institucional
+              E-mail institucional completo
             </label>
             <div className="relative flex items-center rounded-xl border border-slate-300/80 dark:border-white/[0.12] bg-slate-100/70 dark:bg-[#161F30] px-3.5 min-h-[44px] focus-within:border-orange-500 focus-within:bg-white dark:focus-within:bg-[#0F1623] focus-within:ring-2 focus-within:ring-orange-500/20 transition-all">
               <Mail className="h-4 w-4 text-slate-400 shrink-0 mr-2.5" aria-hidden="true" />
               <input
                 id="tutor-email"
-                type="text"
+                type="email"
                 required
-                autoComplete="username"
-                placeholder="seu.nome"
+                autoComplete="email"
+                placeholder="seu.email@instituicao.edu.br"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 disabled={busy}
                 className="w-full bg-transparent border-none text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:outline-none focus:ring-0"
               />
-              {!emailInput.includes("@") && (
-                <span className="text-2xs text-orange-600 dark:text-amber-400 font-mono-data font-semibold bg-orange-500/10 ring-1 ring-orange-500/20 px-2 py-0.5 rounded-md shrink-0 select-none ml-1">
-                  @ailab.com
-                </span>
-              )}
             </div>
           </div>
 

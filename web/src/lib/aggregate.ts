@@ -296,12 +296,16 @@ export interface OccupancyInsights {
   };
 }
 
+export const DEFAULT_LAB_CAPACITY = 20;
+
 export function calculateOccupancyInsights(
   sessions: SessionRecord[],
   presentCount: number,
-  now: Date
+  now: Date,
+  maxCapacity: number = DEFAULT_LAB_CAPACITY
 ): OccupancyInsights {
   const weekdaySessions = filterWeekdaySessions(sessions).filter((s) => s.voidedAt == null);
+  const hasSufficientSamples = weekdaySessions.length >= 3;
 
   let morningSec = 0;
   let morningCount = 0;
@@ -365,14 +369,14 @@ export function calculateOccupancyInsights(
   const totalShiftSec = morningSec + afternoonSec + eveningSec || 1;
 
   const peakShift =
-    morningSec === 0 && afternoonSec === 0 && eveningSec === 0
-      ? { name: "Sem dados" as const, hoursDescription: "Sem registros", seconds: 0, sessionsCount: 0 }
+    !hasSufficientSamples || (morningSec === 0 && afternoonSec === 0 && eveningSec === 0)
+      ? { name: "Sem dados" as const, hoursDescription: "Amostras insuficientes no período", seconds: 0, sessionsCount: 0 }
       : sortedByActivity[0];
 
   const sortedAscending = [...shiftDefs].sort((a, b) => a.seconds - b.seconds);
   const quietShift =
-    morningSec === 0 && afternoonSec === 0 && eveningSec === 0
-      ? { name: "Sem dados" as const, hoursDescription: "Sem registros", seconds: 0, sessionsCount: 0 }
+    !hasSufficientSamples || (morningSec === 0 && afternoonSec === 0 && eveningSec === 0)
+      ? { name: "Sem dados" as const, hoursDescription: "Amostras insuficientes no período", seconds: 0, sessionsCount: 0 }
       : sortedAscending[0];
 
   // Cálculo da hora específica de pico (08h às 20h)
@@ -441,10 +445,11 @@ export function calculateOccupancyInsights(
         }
       : null;
 
+  const occupancyRatio = maxCapacity > 0 ? presentCount / maxCapacity : 0;
   let currentCrowdLevel: "Tranquilo" | "Moderado" | "Movimentado" = "Tranquilo";
-  if (presentCount >= 8) {
+  if (occupancyRatio >= 0.7 || presentCount >= 14) {
     currentCrowdLevel = "Movimentado";
-  } else if (presentCount >= 3) {
+  } else if (occupancyRatio >= 0.35 || presentCount >= 7) {
     currentCrowdLevel = "Moderado";
   }
 

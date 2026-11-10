@@ -4,6 +4,8 @@ import logo from "../ailab_makers.jpeg";
 import { useTheme } from "../lib/useTheme";
 import { InstallPwaButton } from "./InstallPwaButton";
 
+export type SyncState = "connected" | "updating" | "delayed" | "error";
+
 interface HeaderProps {
   user: any;
   signOut: () => Promise<void>;
@@ -13,6 +15,7 @@ interface HeaderProps {
   isRefreshing?: boolean;
   presentCount?: number;
   lastRefreshed?: Date;
+  syncState?: SyncState;
 }
 
 export function Header({
@@ -24,12 +27,42 @@ export function Header({
   isRefreshing = false,
   presentCount,
   lastRefreshed,
+  syncState = "connected",
 }: HeaderProps) {
   const { isDark, toggleTheme } = useTheme();
   const showLive = typeof presentCount === "number";
   const syncTime = lastRefreshed
     ? lastRefreshed.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     : null;
+
+  const effectiveSyncState: SyncState = isRefreshing ? "updating" : syncState;
+
+  const syncConfig = {
+    connected: {
+      badge: "bg-emerald-500/10 ring-emerald-500/20 text-emerald-800 dark:text-emerald-300",
+      dot: "bg-emerald-500",
+      label: "Sincronizado",
+      ping: false,
+    },
+    updating: {
+      badge: "bg-amber-500/10 ring-amber-500/20 text-amber-800 dark:text-amber-300",
+      dot: "bg-amber-500",
+      label: "Atualizando...",
+      ping: true,
+    },
+    delayed: {
+      badge: "bg-amber-500/10 ring-amber-500/20 text-amber-800 dark:text-amber-300",
+      dot: "bg-amber-500",
+      label: "Atrasado",
+      ping: false,
+    },
+    error: {
+      badge: "bg-rose-500/10 ring-rose-500/20 text-rose-800 dark:text-rose-300",
+      dot: "bg-rose-500",
+      label: "Falha de conexão",
+      ping: false,
+    },
+  }[effectiveSyncState];
 
   return (
     <header
@@ -59,28 +92,30 @@ export function Header({
             {/* Badge de Status do Sistema (H1 — Visibilidade do Status) */}
             {showLive && (
               <div
-                className="hidden sm:inline-flex items-center gap-2 rounded-full bg-emerald-500/10 dark:bg-emerald-500/10 ring-1 ring-emerald-500/20 px-2.5 py-1 text-xs"
+                className={`hidden sm:inline-flex items-center gap-2 rounded-full ring-1 px-2.5 py-1 text-xs ${syncConfig.badge}`}
                 aria-live="polite"
                 title={
                   lastRefreshed
-                    ? `Sincronizado às ${lastRefreshed.toLocaleTimeString("pt-BR")} · ${presentCount} presente(s) agora`
-                    : `${presentCount} presente(s) agora`
+                    ? `${syncConfig.label} · Última resposta às ${lastRefreshed.toLocaleTimeString("pt-BR")} · ${presentCount} presente(s)`
+                    : `${syncConfig.label} · ${presentCount} presente(s)`
                 }
               >
                 <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75 animate-ping" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  {syncConfig.ping && (
+                    <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${syncConfig.dot}`} />
+                  )}
+                  <span className={`relative inline-flex h-2 w-2 rounded-full ${syncConfig.dot}`} />
                 </span>
-                <span className="font-semibold text-emerald-800 dark:text-emerald-300 tabular-nums whitespace-nowrap">
-                  Sincronizado
-                  {syncTime && (
-                    <span className="hidden xl:inline font-mono-data text-[11px] text-emerald-700/80 dark:text-emerald-300/80 ml-1">
+                <span className="font-semibold tabular-nums whitespace-nowrap">
+                  {syncConfig.label}
+                  {syncTime && effectiveSyncState === "connected" && (
+                    <span className="hidden xl:inline font-mono-data text-[11px] opacity-80 ml-1">
                       · {syncTime}
                     </span>
                   )}
                 </span>
-                <span className="h-3 w-px bg-emerald-500/25" aria-hidden="true" />
-                <span className="font-mono-data font-bold text-emerald-900 dark:text-emerald-200 tabular-nums whitespace-nowrap">
+                <span className="h-3 w-px bg-current opacity-25" aria-hidden="true" />
+                <span className="font-mono-data font-bold tabular-nums whitespace-nowrap">
                   {presentCount} {presentCount === 1 ? "presente" : "presentes"}
                 </span>
                 {onRefresh && (
@@ -88,7 +123,7 @@ export function Header({
                     type="button"
                     onClick={onRefresh}
                     disabled={isRefreshing}
-                    className="ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/20 disabled:opacity-60 cursor-pointer"
+                    className="ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-50 cursor-pointer"
                     title="Atualizar dados agora"
                     aria-label="Atualizar dados agora"
                   >
