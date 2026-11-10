@@ -35,7 +35,7 @@ export function AnalysisProgress({ onCancel }: AnalysisProgressProps) {
 
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-3xl border border-line bg-card p-8 sm:p-10 shadow-sm max-w-lg w-full gap-6 animate-fade-in"
+      className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0F1623] p-8 sm:p-10 shadow-sm max-w-lg w-full gap-6 animate-fade-in"
       role="status"
       aria-live="polite"
       aria-label="Processamento biométrico em andamento"
@@ -49,16 +49,16 @@ export function AnalysisProgress({ onCancel }: AnalysisProgressProps) {
       </div>
 
       <div className="text-center space-y-1">
-        <h2 className="text-base sm:text-lg font-bold text-ink">
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
           Processando Análise Facial
         </h2>
-        <p className="text-xs sm:text-sm text-muted">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
           A inferência neural está sendo executada com descarte imediato do frame fotográfico.
         </p>
       </div>
 
       {/* Lista de Etapas Dinâmicas */}
-      <div className="w-full space-y-2.5 bg-cream/60 dark:bg-slate-800/60 rounded-2xl p-4 border border-line/50">
+      <div className="w-full space-y-2.5 bg-cream/60 dark:bg-slate-800/60 rounded-2xl p-4 border border-slate-200/80 dark:border-white/[0.08]/50">
         {STEPS.map((step) => {
           const isDone = currentStep > step.id;
           const isCurrent = currentStep === step.id;
@@ -72,14 +72,14 @@ export function AnalysisProgress({ onCancel }: AnalysisProgressProps) {
                   ? "font-bold text-navy scale-[1.01]"
                   : isDone
                   ? "text-green font-semibold"
-                  : "text-muted/60"
+                  : "text-slate-500 dark:text-slate-400/60"
               }`}
             >
               <span className="flex items-center justify-center h-5 w-5 shrink-0">
                 {isDone ? (
                   <CheckCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 ) : (
-                  <IconComp className="h-4 w-4 text-[#706E6A] dark:text-slate-400" />
+                  <IconComp className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                 )}
               </span>
               <span className="flex-1">{step.label}</span>
@@ -97,7 +97,7 @@ export function AnalysisProgress({ onCancel }: AnalysisProgressProps) {
       {onCancel && (
         <button
           onClick={onCancel}
-          className="text-xs font-semibold text-muted hover:text-warn hover:underline cursor-pointer min-h-[44px] px-4"
+          className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-warn hover:underline cursor-pointer min-h-[44px] px-4"
         >
           Cancelar Análise
         </button>

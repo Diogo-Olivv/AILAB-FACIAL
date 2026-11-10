@@ -28,7 +28,7 @@ import {
   compressImageToBase64,
 } from "../lib/reports";
 import { formatDuration, formatTime, sessionSeconds } from "../lib/aggregate";
-import { getAvatarStyle } from "./TotalsTable";
+import { getAvatarStyle } from "./MemberAvatar";
 import { useAuth } from "../auth/useAuth";
 
 interface Props {
@@ -233,7 +233,7 @@ export function MemberDetailDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-end bg-black/50 backdrop-blur-xs transition-opacity animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/60 backdrop-blur-sm transition-opacity animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -241,11 +241,11 @@ export function MemberDetailDrawer({
     >
       <div
         ref={drawerRef}
-        className="h-full w-full max-w-full sm:max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-l border-white/80 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-slide-left text-[#171715] dark:text-slate-100"
+        className="h-full w-full max-w-full sm:max-w-md bg-white dark:bg-[#0F1623] border-l border-slate-200/90 dark:border-white/[0.1] shadow-2xl flex flex-col overflow-hidden animate-slide-left text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drawer Header estilo Apple Sheet com tipografia Claude */}
-        <div className="flex items-start justify-between border-b border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5]/90 dark:bg-slate-800/90 p-5 gap-3">
+        <div className="flex items-start justify-between modal-header p-5 gap-3">
           <div className="flex items-center gap-3.5 min-w-0">
             {/* Avatar com upload e foto interativa */}
             <div className="relative group shrink-0">
@@ -254,11 +254,11 @@ export function MemberDetailDrawer({
                   src={avatarUrl}
                   alt={member.name}
                   onError={() => setAvatarUrl(null)}
-                  className="h-14 w-14 rounded-2xl object-cover ring-2 ring-white dark:ring-slate-800 shadow-md transition-transform duration-200 group-hover:scale-102"
+                  className="h-14 w-14 min-w-[3.5rem] min-h-[3.5rem] aspect-square shrink-0 rounded-full object-cover ring-2 ring-white dark:ring-slate-800 shadow-md transition-transform duration-200 group-hover:scale-[1.02]"
                 />
               ) : (
                 <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${getAvatarStyle(member.name)} text-lg font-bold ring-2 ring-white dark:ring-slate-800 shadow-md`}
+                  className={`flex h-14 w-14 min-w-[3.5rem] min-h-[3.5rem] aspect-square shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarStyle(member.name)} text-lg font-bold ring-2 ring-white dark:ring-slate-800 shadow-md`}
                 >
                   {member.name.charAt(0).toUpperCase()}
                 </div>
@@ -268,7 +268,7 @@ export function MemberDetailDrawer({
               {user && (
                 <>
                   <label
-                    className={`absolute inset-0 rounded-2xl bg-black/50 text-white flex flex-col items-center justify-center transition-opacity cursor-pointer ${
+                    className={`absolute inset-0 rounded-full bg-black/50 text-white flex flex-col items-center justify-center transition-opacity cursor-pointer ${
                       isUploadingAvatar ? "opacity-100 bg-black/70" : "opacity-0 group-hover:opacity-100"
                     }`}
                     title="Alterar foto de perfil"
@@ -292,7 +292,7 @@ export function MemberDetailDrawer({
 
                   {/* Ícone de câmera de fácil toque no mobile */}
                   <label
-                    className="sm:hidden absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 shadow-xs text-xs cursor-pointer text-slate-700 dark:text-slate-200"
+                    className="sm:hidden absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs text-xs cursor-pointer text-slate-700 dark:text-slate-200"
                     title="Alterar foto"
                   >
                     <Camera className="h-3 w-3" />
@@ -310,7 +310,7 @@ export function MemberDetailDrawer({
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[10.5px] font-sans font-semibold uppercase tracking-wider text-[#706E6A] dark:text-slate-400 block">
+                <span className="text-[10.5px] font-sans font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
                   Ficha do Integrante
                 </span>
                 {avatarUrl && (
@@ -326,7 +326,7 @@ export function MemberDetailDrawer({
                 )}
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 id="drawer-member-name" className="font-editorial text-xl sm:text-2xl font-normal text-[#171715] dark:text-slate-100 truncate">
+                <h2 id="drawer-member-name" className="font-editorial text-xl sm:text-2xl font-semibold text-slate-900 dark:text-slate-100 truncate">
                   {member.name}
                 </h2>
                 {member.isTutor && (
@@ -341,7 +341,7 @@ export function MemberDetailDrawer({
               </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {member.matricula && (
-                  <span className="rounded-md bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-2 py-0.5 text-2xs font-mono-data font-medium text-[#706E6A] dark:text-slate-300">
+                  <span className="rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-2xs font-mono-data font-medium text-slate-500 dark:text-slate-300">
                     {member.matricula}
                   </span>
                 )}
@@ -362,8 +362,8 @@ export function MemberDetailDrawer({
                     )}
                   </div>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#FAF9F5] dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-2.5 py-0.5 text-[10.5px] font-medium text-[#706E6A] dark:text-slate-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#706E6A]/40 shrink-0" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 text-[10.5px] font-medium text-slate-500 dark:text-slate-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-500/40 shrink-0" />
                     Ausente
                   </span>
                 )}
@@ -373,7 +373,7 @@ export function MemberDetailDrawer({
           <button
             onClick={onClose}
             aria-label="Fechar detalhes do integrante"
-            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.04] hover:bg-black/[0.08] dark:bg-white/10 dark:hover:bg-white/20 text-[#706E6A] dark:text-slate-300 hover:text-[#171715] dark:hover:text-white transition-colors cursor-pointer"
+            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.04] hover:bg-black/[0.08] dark:bg-white/10 dark:hover:bg-white/20 text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -381,13 +381,13 @@ export function MemberDetailDrawer({
 
         {/* Painel de Gestão da Tutoria */}
         {user && (
-          <div className="border-b border-[#E5E2DC] dark:border-slate-800 bg-[#FAF5F0]/70 dark:bg-slate-800/60 p-4 space-y-3">
+          <div className="border-b border-slate-200 dark:border-slate-800 bg-orange-50/70 dark:bg-slate-800/60 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C15F3D] dark:text-amber-400 flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 <span>Ações da Tutoria</span>
               </span>
-              <span className="text-[10.5px] text-[#706E6A] dark:text-slate-400 font-medium">
+              <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
                 Controle de presença & cadastro
               </span>
             </div>
@@ -473,16 +473,16 @@ export function MemberDetailDrawer({
         )}
 
         {/* Total stats card estilo Perplexity Mono + Claude Paper */}
-        <div className="p-5 border-b border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5]/40 dark:bg-slate-900/40 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800/80 p-3.5 shadow-2xs">
-            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#706E6A] dark:text-slate-400 block">Total de Permanência</span>
-            <span className="text-2xl font-semibold text-[#171715] dark:text-slate-100 mt-1 block font-mono-data">
+        <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/40 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 p-3.5 shadow-2xs">
+            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Total de Permanência</span>
+            <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mt-1 block font-mono-data">
               {formatDuration(totalSeconds)}
             </span>
           </div>
-          <div className="rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800/80 p-3.5 shadow-2xs">
-            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#706E6A] dark:text-slate-400 block">Sessões no Período</span>
-            <span className="text-2xl font-semibold text-[#171715] dark:text-slate-100 mt-1 block font-mono-data">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 p-3.5 shadow-2xs">
+            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Sessões no Período</span>
+            <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mt-1 block font-mono-data">
               {memberSessions.length}
             </span>
           </div>
@@ -490,12 +490,12 @@ export function MemberDetailDrawer({
 
         {/* Sessions List */}
         <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-4">
-          <h3 className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#706E6A] dark:text-slate-400">
+          <h3 className="text-[11px] font-sans font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Histórico de Sessões no Período
           </h3>
 
           {memberSessions.length === 0 ? (
-            <div className="rounded-2xl border border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5] dark:bg-slate-800/50 p-8 text-center text-[#706E6A] dark:text-slate-400 text-sm">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-8 text-center text-slate-500 dark:text-slate-400 text-sm">
               Nenhuma sessão registrada para este integrante nas datas selecionadas.
             </div>
           ) : (
@@ -521,12 +521,12 @@ export function MemberDetailDrawer({
                     className={`rounded-2xl border p-3.5 shadow-2xs space-y-2.5 transition-all ${
                       isOver10h
                         ? "border-amber-300 dark:border-amber-700/80 bg-amber-50/20 dark:bg-amber-950/20 hover:border-amber-400"
-                        : "border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-[#706E6A]/30 dark:hover:border-slate-600"
+                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-[#706E6A]/30 dark:hover:border-slate-600"
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs flex-wrap gap-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="font-editorial font-medium text-sm text-[#171715] dark:text-slate-100 capitalize">
+                        <span className="font-editorial font-medium text-sm text-slate-900 dark:text-slate-100 capitalize">
                           {dateLabel}
                         </span>
                         {isOver10h ? (
@@ -543,7 +543,7 @@ export function MemberDetailDrawer({
                       </div>
 
                       {isVoided ? (
-                        <span className="rounded-full bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/50 px-2 py-0.5 font-medium text-[#C15F3D] dark:text-amber-400 text-[10px] inline-flex items-center gap-1">
+                        <span className="rounded-full bg-orange-50 dark:bg-amber-950/40 border border-orange-200 dark:border-amber-800/50 px-2 py-0.5 font-medium text-[#C15F3D] dark:text-amber-400 text-[10px] inline-flex items-center gap-1">
                           <Slash className="h-2.5 w-2.5" />
                           <span>Anulada (0h)</span>
                         </span>
@@ -553,19 +553,19 @@ export function MemberDetailDrawer({
                           <span>Em andamento</span>
                         </span>
                       ) : (
-                        <span className="font-mono-data font-semibold text-[#171715] dark:text-slate-200 text-xs sm:text-sm">
+                        <span className="font-mono-data font-semibold text-slate-900 dark:text-slate-200 text-xs sm:text-sm">
                           {formatDuration(sessionDurationSec)}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-[#706E6A] dark:text-slate-400 font-mono-data">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-mono-data">
                       <span>
-                        Entrada: <strong className="text-[#171715] dark:text-slate-200 font-semibold">{formatTime(s.checkIn)}</strong>
+                        Entrada: <strong className="text-slate-900 dark:text-slate-200 font-semibold">{formatTime(s.checkIn)}</strong>
                       </span>
                       <span>
                         Saída:{" "}
-                        <strong className="text-[#171715] dark:text-slate-200 font-semibold">
+                        <strong className="text-slate-900 dark:text-slate-200 font-semibold">
                           {isOpenSession ? "—" : formatTime(s.checkOut!)}
                         </strong>
                       </span>
@@ -573,7 +573,7 @@ export function MemberDetailDrawer({
 
                     {/* Controles Administrativos do Tutor */}
                     {Boolean(user) && s.id != null && (
-                      <div className="border-t border-[#E5E2DC]/80 dark:border-slate-700/80 pt-2 flex items-center justify-between gap-2">
+                      <div className="border-t border-slate-200/80 dark:border-slate-700/80 pt-2 flex items-center justify-between gap-2">
                         {confirmDeleteSessionId === s.id ? (
                           <div className="w-full flex items-center justify-between gap-2 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl p-2 animate-fade-in">
                             <span className="text-[11px] font-medium text-rose-800 dark:text-rose-300 font-sans">
@@ -584,7 +584,7 @@ export function MemberDetailDrawer({
                                 type="button"
                                 onClick={() => setConfirmDeleteSessionId(null)}
                                 disabled={busySessionId !== null}
-                                className="px-2 py-1 rounded-lg border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[10px] font-medium text-[#706E6A] dark:text-slate-300 cursor-pointer"
+                                className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[10px] font-medium text-slate-500 dark:text-slate-300 cursor-pointer"
                               >
                                 Cancelar
                               </button>
@@ -716,7 +716,7 @@ export function MemberDetailDrawer({
                           setTypedMemberName("");
                         }}
                         disabled={busyAction !== null}
-                        className="rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-[#706E6A] dark:text-slate-300 hover:text-[#171715] dark:hover:text-white transition-all cursor-pointer min-h-[36px]"
+                        className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer min-h-[36px]"
                       >
                         Cancelar
                       </button>
@@ -739,12 +739,12 @@ export function MemberDetailDrawer({
         {/* Modal Explicativo de Anulação de Sessão */}
         {sessionToVoid && (
           <div
-            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in"
             role="dialog"
             aria-modal="true"
             aria-labelledby="void-modal-title"
           >
-            <div className="w-full max-w-sm rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xl space-y-4 animate-scale-up text-slate-900 dark:text-slate-100">
+            <div className="w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xl space-y-4 animate-scale-up text-slate-900 dark:text-slate-100">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300">
                   <Slash className="h-5 w-5" />
@@ -753,10 +753,10 @@ export function MemberDetailDrawer({
                   <h4 id="void-modal-title" className="font-editorial text-lg font-bold">
                     Anular Horas da Sessão
                   </h4>
-                  <p className="text-2xs text-[#706E6A] dark:text-slate-400">Auditoria de Permanência</p>
+                  <p className="text-2xs text-slate-500 dark:text-slate-400">Auditoria de Permanência</p>
                 </div>
               </div>
-              <p className="text-xs text-[#706E6A] dark:text-slate-300 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
                 Esta ação anulará a duração computada desta sessão (<strong>0h 00m</strong>) para fins de auditoria de metas (por exemplo, saída não registrada ou anomalia). Os horários originais de entrada e saída permanecem preservados no histórico do laboratório.
               </p>
               <div className="flex items-center justify-end gap-2 pt-2">
@@ -764,7 +764,7 @@ export function MemberDetailDrawer({
                   type="button"
                   onClick={() => setSessionToVoid(null)}
                   disabled={busySessionId !== null}
-                  className="rounded-xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-[#706E6A] dark:text-slate-300 hover:text-[#171715] dark:hover:text-white cursor-pointer min-h-[38px]"
+                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer min-h-[38px]"
                 >
                   Cancelar
                 </button>
@@ -786,10 +786,10 @@ export function MemberDetailDrawer({
         )}
 
         {/* Drawer Footer */}
-        <div className="border-t border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5] dark:bg-slate-900 p-4">
+        <div className="modal-footer p-4">
           <button
             onClick={onClose}
-            className="w-full rounded-2xl bg-[#171715] hover:bg-[#2A2925] dark:bg-slate-800 dark:hover:bg-slate-700 py-3.5 px-4 min-h-[48px] text-sm font-sans font-medium text-[#FAF9F5] dark:text-slate-100 shadow-xs active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center tracking-tight"
+            className="w-full rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 py-3.5 px-4 min-h-[48px] text-sm font-sans font-medium text-slate-50 dark:text-slate-100 shadow-xs active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center tracking-tight"
           >
             Fechar Detalhes
           </button>

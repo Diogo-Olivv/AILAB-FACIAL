@@ -18,6 +18,7 @@ import {
   Copy,
   FileText,
 } from "lucide-react";
+import { MemberAvatar } from "./MemberAvatar";
 import type { Member, SessionRecord, DateRange } from "../lib/reports";
 import { formatDuration, sessionSeconds, isWeekday } from "../lib/aggregate";
 import { formatRange, type PeriodKey } from "../lib/period";
@@ -509,20 +510,20 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
       ref={modalRef}
       className={
         isInline
-          ? "relative w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl border border-[#E5E2DC] dark:border-slate-800 shadow-xs flex flex-col overflow-hidden text-slate-900 dark:text-slate-100 animate-fade-in-up"
-          : "relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-4xl bg-background sm:bg-background/98 sm:backdrop-blur-2xl sm:rounded-3xl border-0 sm:border sm:border-stone-200/80 dark:bg-slate-900 dark:sm:bg-slate-900/98 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-scale-up text-slate-900 dark:text-slate-100"
+          ? "relative w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col overflow-hidden text-slate-900 dark:text-slate-100 animate-fade-in-up"
+          : "relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-4xl bg-background sm:bg-background/98 sm:backdrop-blur-2xl sm:rounded-2xl border-0 sm:border sm:border-slate-200/80 dark:bg-slate-900 dark:sm:bg-slate-900/98 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden animate-scale-up text-slate-900 dark:text-slate-100"
       }
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header estilo Editorial Claude */}
-      <div className="shrink-0 flex items-center justify-between border-b border-stone-200/70 dark:border-slate-800 bg-background/90 dark:bg-slate-900/90 py-4 px-4 sm:px-6 gap-3">
+      <div className="shrink-0 flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 bg-background/90 dark:bg-slate-900/90 py-4 px-4 sm:px-6 gap-3">
         <div className="flex items-center gap-3.5 min-w-0">
           <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white font-serif text-2xl shadow-md shadow-amber-500/20">
             §
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-editorial-italic text-xs sm:text-sm text-stone-500 dark:text-stone-400 hidden xs:inline">
+              <span className="font-editorial-italic text-xs sm:text-sm text-slate-500 dark:text-slate-400 hidden xs:inline">
                 Governança &bull;
               </span>
               <h2
@@ -538,7 +539,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                   : "Auditoria Semanal de Permanência"}
               </h2>
             </div>
-            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 font-medium truncate mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
               Tutor: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">{tutorEmail}</strong> · Meta: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">4h 00m</strong>{range && <> · Período: <strong className="text-slate-800 dark:text-slate-200 font-mono-data">{formatRange(range)}</strong></>}
             </p>
           </div>
@@ -548,7 +549,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
           <button
             onClick={onClose}
             aria-label="Fechar modal de auditoria"
-            className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-stone-100 dark:bg-slate-800 hover:bg-stone-200 dark:hover:bg-slate-700 text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
@@ -556,16 +557,16 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
       </div>
 
         {/* Resumo de Indicadores Ampliado para Celular com Estilo Claude / Perplexity */}
-        <div className="shrink-0 p-3 sm:p-5 border-b border-stone-200/70 dark:border-slate-800 bg-stone-100/50 dark:bg-slate-800/60 grid grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="shrink-0 p-3 sm:p-5 border-b border-slate-200/70 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-800/60 grid grid-cols-3 gap-2.5 sm:gap-4">
           {/* Total */}
           <div className="claude-card rounded-2xl p-3 sm:p-4 text-center sm:text-left dark:bg-slate-800 dark:border-slate-700">
-            <span className="text-2xs sm:text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-slate-400 block truncate font-sans">
+            <span className="text-2xs sm:text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 block truncate font-sans">
               Total Alunos
             </span>
             <span className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-slate-100 mt-1 block font-mono-data tracking-apple-tightest">
               {totalStudents}
             </span>
-            <span className="hidden sm:inline-block text-2xs text-stone-400 font-medium mt-0.5">
+            <span className="hidden sm:inline-block text-2xs text-slate-400 font-medium mt-0.5">
               {totalStudents > 0 ? Math.round((metTargetCount / totalStudents) * 100) : 0}% em conformidade
             </span>
           </div>
@@ -609,7 +610,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
 
         {/* Alerta de Ausentes Completos */}
         {neverPresentStudents.length > 0 && (
-          <div className="shrink-0 px-3 sm:px-5 py-2.5 border-b border-stone-200/70 dark:border-slate-800 bg-rose-50/60 dark:bg-rose-950/20 flex items-center gap-3">
+          <div className="shrink-0 px-3 sm:px-5 py-2.5 border-b border-slate-200/70 dark:border-slate-800 bg-rose-50/60 dark:bg-rose-950/20 flex items-center gap-3">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-500/20 dark:bg-rose-500/30 text-rose-600 dark:text-rose-400">
               <Ban className="h-4 w-4" />
             </span>
@@ -628,7 +629,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
         )}
 
         {/* Barra de Filtros e Busca estilo Perplexity Command Bar */}
-        <div className="shrink-0 p-3 sm:p-4 border-b border-stone-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
+        <div className="shrink-0 p-3 sm:p-4 border-b border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
             {/* Segmented Control estilo Claude Pill */}
             <div
@@ -637,7 +638,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
               onPointerMove={handleFilterPointerMove}
               onPointerUp={handleFilterPointerUp}
               onPointerCancel={handleFilterPointerCancel}
-              className="relative flex w-full max-w-full items-center overflow-hidden rounded-2xl bg-stone-200/60 dark:bg-slate-800 p-1 select-none touch-pan-y cursor-grab active:cursor-grabbing sm:w-auto"
+              className="relative flex w-full max-w-full items-center overflow-hidden rounded-2xl bg-slate-200/60 dark:bg-slate-800 p-1 select-none touch-pan-y cursor-grab active:cursor-grabbing sm:w-auto"
             >
               <div
                 className={`pointer-events-none absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-700 shadow-sm ${
@@ -662,7 +663,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 className={`relative z-10 min-w-0 flex-1 rounded-xl px-2 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "under"
                     ? "relative z-10 text-amber-900 dark:text-amber-300 font-extrabold"
-                    : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
                 <span className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden">
@@ -680,7 +681,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 className={`relative z-10 min-w-0 flex-1 rounded-xl px-2 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "met"
                     ? "relative z-10 text-emerald-900 dark:text-emerald-300 font-extrabold"
-                    : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
                 <span className="flex min-w-0 items-center justify-center gap-1.5 overflow-hidden">
@@ -698,7 +699,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 className={`relative z-10 min-w-0 flex-1 rounded-xl px-2 py-2 text-xs sm:px-3.5 sm:text-sm font-bold transition-all cursor-pointer min-h-[38px] overflow-hidden ${
                   filterMode === "all"
                     ? "relative z-10 text-slate-900 dark:text-slate-100 font-extrabold"
-                    : "text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium"
                 }`}
               >
                 <span className="block truncate">
@@ -710,7 +711,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
 
             {/* Perplexity Spotlight Search */}
             <div className="relative flex-1 sm:max-w-xs group">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-stone-400 dark:text-slate-500 group-focus-within:text-teal-600 dark:group-focus-within:text-teal-400">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-teal-600 dark:group-focus-within:text-teal-400">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>
@@ -721,13 +722,13 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 onChange={(e) => setSearch(e.target.value)}
                 onPointerDown={(e) => e.stopPropagation()}
                 placeholder="Buscar aluno ou matrícula..."
-                className="w-full rounded-2xl border border-stone-200/90 dark:border-slate-700 bg-stone-50/70 dark:bg-slate-800 py-2.5 pl-10 pr-9 text-sm text-slate-900 dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-400 focus:border-teal-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-teal-500/10 shadow-inner transition-all font-medium"
+                className="w-full rounded-2xl border border-slate-200/90 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800 py-2.5 pl-10 pr-9 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 focus:border-teal-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-teal-500/10 shadow-inner transition-all font-medium"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer text-sm"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer text-sm"
                   aria-label="Limpar busca"
                 >
                   <X className="h-4 w-4" />
@@ -737,7 +738,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
           </div>
 
           {/* Barra de Ações Rápidas em Lote e Alternador de Densidade */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100 dark:border-slate-800 text-xs font-sans">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs font-sans">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -748,12 +749,12 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                     selectAllUnderTarget();
                   }
                 }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 hover:bg-stone-100 dark:hover:bg-slate-750 px-2.5 py-1.5 text-slate-700 dark:text-slate-200 font-medium transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 px-2.5 py-1.5 text-slate-700 dark:text-slate-200 font-medium transition-colors cursor-pointer"
               >
                 {selectedMemberIds.length === underTargetStudents.length && underTargetStudents.length > 0 ? (
                   <CheckSquare className="h-4 w-4 text-amber-600 shrink-0" />
                 ) : (
-                  <Square className="h-4 w-4 text-stone-400 shrink-0" />
+                  <Square className="h-4 w-4 text-slate-400 shrink-0" />
                 )}
                 <span>
                   {selectedMemberIds.length === underTargetStudents.length && underTargetStudents.length > 0
@@ -766,7 +767,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 <button
                   type="button"
                   onClick={clearSelection}
-                  className="text-2xs text-stone-500 hover:text-stone-800 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
+                  className="text-2xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
                 >
                   Limpar ({selectedMemberIds.length})
                 </button>
@@ -776,7 +777,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
             <button
               type="button"
               onClick={() => setIsCompactView((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800 px-2.5 py-1.5 text-2xs font-medium text-slate-700 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-2xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
               title="Alternar entre visualização densa ou cartões expandidos"
               aria-pressed={isCompactView}
             >
@@ -799,17 +800,17 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
         <div
           className={
             isInline
-              ? "p-3 sm:p-5 space-y-3 bg-stone-100/30 dark:bg-slate-950/40"
-              : "flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 space-y-3 bg-stone-100/30 dark:bg-slate-950/40"
+              ? "p-3 sm:p-5 space-y-3 bg-slate-100/30 dark:bg-slate-950/40"
+              : "flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 space-y-3 bg-slate-100/30 dark:bg-slate-950/40"
           }
         >
           {filteredList.length === 0 ? (
-            <div className="claude-card rounded-3xl p-8 sm:p-12 text-center bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-800">
-              <Sparkles className="h-8 w-8 text-stone-400 dark:text-slate-500 mx-auto mb-2" />
+            <div className="claude-card rounded-2xl p-8 sm:p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+              <Sparkles className="h-8 w-8 text-slate-400 dark:text-slate-500 mx-auto mb-2" />
               <p className="font-editorial text-lg font-bold text-slate-800 dark:text-slate-100">
                 Nenhum registro encontrado
               </p>
-              <p className="text-xs sm:text-sm text-stone-500 dark:text-slate-400 mt-1">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
                 Ajuste os termos da busca ou altere o filtro de frequência semanal.
               </p>
             </div>
@@ -846,7 +847,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                             {item.member.name}
                           </span>
                           {item.member.matricula && (
-                            <span className="text-2xs font-mono-data text-stone-500 dark:text-slate-400">
+                            <span className="text-2xs font-mono-data text-slate-500 dark:text-slate-400">
                               {item.member.matricula}
                             </span>
                           )}
@@ -857,7 +858,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-2xs text-stone-500 dark:text-slate-400 font-mono-data mt-0.5">
+                        <div className="flex items-center gap-2 text-2xs text-slate-500 dark:text-slate-400 font-mono-data mt-0.5">
                           <span>Permanência: <strong className="text-slate-800 dark:text-slate-200">{formatDuration(item.totalSeconds)}</strong></span>
                           {!item.metTarget ? (
                             <span className="text-amber-700 dark:text-amber-400 font-bold">• Faltam {formatDuration(item.deficitSeconds)} ({item.progressPercent}%)</span>
@@ -913,7 +914,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
               return (
                 <div
                   key={item.member.id}
-                  className={`claude-card rounded-3xl p-4 sm:p-5 transition-all space-y-3.5 bg-white dark:bg-slate-900 ${
+                  className={`claude-card rounded-2xl p-4 sm:p-5 transition-all space-y-3.5 bg-white dark:bg-slate-900 ${
                     isSelected
                       ? "ring-2 ring-amber-500 border-amber-400 dark:border-amber-600"
                       : item.metTarget
@@ -931,23 +932,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                         aria-label={`Selecionar ${item.member.name}`}
                         className="h-4 w-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer shrink-0"
                       />
-                      {item.member.avatarUrl ? (
-                        <img
-                          src={item.member.avatarUrl}
-                          alt={item.member.name}
-                          className="h-12 w-12 sm:h-14 sm:w-14 shrink-0 rounded-2xl object-cover shadow-claude ring-1 ring-stone-200 dark:ring-slate-700"
-                        />
-                      ) : (
-                        <div
-                          className={`flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl text-base sm:text-xl font-editorial font-bold shadow-claude ${
-                            item.metTarget
-                              ? "bg-gradient-to-br from-emerald-600 to-teal-700 text-white"
-                              : "bg-gradient-to-br from-amber-500 to-orange-600 text-white"
-                          }`}
-                        >
-                          {item.member.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                      <MemberAvatar name={item.member.name} src={item.member.avatarUrl} size="xl" highlight={Boolean(item.member.isTutor)} />
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-editorial text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate">
@@ -960,7 +945,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-stone-500 dark:text-slate-400 font-medium mt-0.5">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                           Matrícula:{" "}
                           <strong className="text-slate-800 dark:text-slate-200 font-mono-data">
                             {item.member.matricula ?? "Não informada"}
@@ -1009,7 +994,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                             <button
                               type="button"
                               onClick={() => removeWarning(item.member.id)}
-                              className="text-xs text-stone-400 dark:text-slate-500 hover:text-amber-800 dark:hover:text-amber-400 underline font-medium cursor-pointer px-1"
+                              className="text-xs text-slate-400 dark:text-slate-500 hover:text-amber-800 dark:hover:text-amber-400 underline font-medium cursor-pointer px-1"
                               title="Remover registro de advertência deste aluno"
                             >
                               Desfazer
@@ -1026,14 +1011,14 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                   </div>
 
                   {/* Detalhes de Horas e Barra de Progresso Ampliada */}
-                  <div className="rounded-2xl bg-stone-50 dark:bg-slate-800/80 p-3 sm:p-4 border border-stone-200/60 dark:border-slate-700 space-y-2.5">
+                  <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/80 p-3 sm:p-4 border border-slate-200/60 dark:border-slate-700 space-y-2.5">
                     <div className="flex items-center justify-between text-xs sm:text-sm font-bold">
-                      <span className="text-stone-600 dark:text-slate-300">
+                      <span className="text-slate-600 dark:text-slate-300">
                         Permanência {period === "week" ? "semanal" : "no período"}:{" "}
                         <strong className={`font-mono-data text-sm sm:text-base ${item.metTarget ? "text-emerald-700 dark:text-emerald-400" : "text-slate-900 dark:text-slate-100"}`}>
                           {formatDuration(item.totalSeconds)}
                         </strong>{" "}
-                        <span className="text-stone-400 dark:text-slate-500 font-normal">/ 4h 00m</span>
+                        <span className="text-slate-400 dark:text-slate-500 font-normal">/ 4h 00m</span>
                       </span>
 
                       {!item.metTarget ? (
@@ -1048,7 +1033,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                     </div>
 
                     {/* Barra de Progresso */}
-                    <div className="h-3 sm:h-2.5 w-full rounded-full bg-stone-200/80 dark:bg-slate-700 overflow-hidden shadow-inner">
+                    <div className="h-3 sm:h-2.5 w-full rounded-full bg-slate-200/80 dark:bg-slate-700 overflow-hidden shadow-inner">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
                           item.metTarget
@@ -1100,7 +1085,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                           <button
                             type="button"
                             onClick={() => removeWarning(item.member.id)}
-                            className="rounded-2xl border border-stone-200/90 dark:border-slate-700 bg-stone-100 dark:bg-slate-800 px-3 py-3 text-xs font-bold text-stone-600 dark:text-slate-300 hover:text-amber-800 min-h-[48px] flex items-center justify-center"
+                            className="rounded-2xl border border-slate-200/90 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-3 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-amber-800 min-h-[48px] flex items-center justify-center"
                             title="Desfazer"
                           >
                             <RotateCcw className="h-4 w-4" />
@@ -1184,13 +1169,13 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
         {/* Modal de Pré-visualização do Comunicado em Lote */}
         {isPreviewOpen && (
           <div
-            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in"
             role="dialog"
             aria-modal="true"
             aria-labelledby="preview-batch-title"
           >
-            <div className="w-full max-w-lg rounded-3xl border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl space-y-4 animate-scale-up text-slate-900 dark:text-slate-100">
-              <div className="flex items-center justify-between border-b border-stone-200 dark:border-slate-800 pb-3">
+            <div className="w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl space-y-4 animate-scale-up text-slate-900 dark:text-slate-100">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300">
                     <FileText className="h-5 w-5" />
@@ -1199,7 +1184,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                     <h4 id="preview-batch-title" className="font-editorial text-lg font-bold">
                       Pré-visualização do Comunicado em Lote
                     </h4>
-                    <p className="text-xs text-stone-500 dark:text-slate-400">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {selectedItems.length} integrantes selecionados
                     </p>
                   </div>
@@ -1207,7 +1192,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 <button
                   type="button"
                   onClick={() => setIsPreviewOpen(false)}
-                  className="rounded-full h-8 w-8 flex items-center justify-center bg-stone-100 dark:bg-slate-800 text-stone-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                  className="rounded-full h-8 w-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                   aria-label="Fechar pré-visualização"
                 >
                   <X className="h-4 w-4" />
@@ -1218,18 +1203,18 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 readOnly
                 rows={12}
                 value={generateBatchNoticeText()}
-                className="w-full rounded-2xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800/80 p-3.5 font-mono-data text-xs leading-relaxed text-slate-900 dark:text-slate-100 focus:outline-none select-all"
+                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 p-3.5 font-mono-data text-xs leading-relaxed text-slate-900 dark:text-slate-100 focus:outline-none select-all"
               />
 
               <div className="flex items-center justify-between gap-3 pt-2">
-                <span className="text-2xs text-stone-400 dark:text-slate-500 font-sans">
+                <span className="text-2xs text-slate-400 dark:text-slate-500 font-sans">
                   Texto pronto para transmissão via WhatsApp ou e-mail.
                 </span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setIsPreviewOpen(false)}
-                    className="rounded-xl border border-stone-200 dark:border-slate-700 px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-stone-50 dark:hover:bg-slate-800 cursor-pointer min-h-[38px]"
+                    className="rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer min-h-[38px]"
                   >
                     Fechar
                   </button>
@@ -1251,7 +1236,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
 
         {/* Footer com Safe-Area para Celular */}
         {!isInline && (
-          <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-stone-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 pt-3 pb-[max(env(safe-area-inset-top),14px)] px-4 sm:px-6 text-xs text-stone-500 dark:text-slate-400">
+          <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-900 pt-3 pb-[max(env(safe-area-inset-top),14px)] px-4 sm:px-6 text-xs text-slate-500 dark:text-slate-400">
             <span className="hidden sm:inline font-medium">
               * O comunicado formal é formatado automaticamente para notificação direta via WhatsApp ou e-mail.
             </span>
@@ -1272,7 +1257,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm overflow-hidden animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-hidden animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"

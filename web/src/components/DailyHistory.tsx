@@ -1,16 +1,18 @@
-import { CalendarRange, Ban, GraduationCap } from "lucide-react";
+import { CalendarRange, Ban, GraduationCap, CheckCircle2 } from "lucide-react";
 import type { DayGroup } from "../lib/aggregate";
 import { formatDuration, formatTime } from "../lib/aggregate";
 
 export function DailyHistory({ days }: { days: DayGroup[] }) {
   if (days.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-3xl border border-[#E5E2DC] bg-white/80 p-12 text-center shadow-xs dark:border-slate-800 dark:bg-slate-900/80">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] text-[#706E6A] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
-          <CalendarRange className="h-6 w-6" />
+      <div className="surface-card flex flex-col items-center justify-center p-12 text-center">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100/80 border border-slate-200/80 text-slate-500 dark:bg-[#161F30] dark:border-white/[0.08] dark:text-slate-400">
+          <CalendarRange className="h-5 w-5" />
         </div>
-        <p className="font-editorial text-lg text-[#171715] dark:text-slate-100">Nenhum registro no período</p>
-        <p className="text-xs sm:text-sm text-[#706E6A] dark:text-slate-400 mt-1 max-w-xs">
+        <p className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+          Nenhum registro no período
+        </p>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
           Nenhuma sessão encontrada para as datas selecionadas.
         </p>
       </div>
@@ -20,69 +22,91 @@ export function DailyHistory({ days }: { days: DayGroup[] }) {
   return (
     <div className="space-y-4">
       {days.map((day) => (
-        <div
-          key={day.key}
-          className="overflow-hidden rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl shadow-[0_4px_24px_rgba(23,23,21,0.03)] dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] transition-all duration-300"
-        >
-          {/* Cabeçalho do Dia estilo Claude Paper */}
-          <div className="flex items-center justify-between gap-2 bg-[#FAF9F5]/90 dark:bg-slate-800/80 border-b border-[#E5E2DC] dark:border-slate-800 px-4 py-3 sm:px-5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-2 w-2 rounded-full bg-[#C15F3D]" />
-              <span className="font-editorial font-serif text-sm sm:text-base font-normal capitalize text-[#171715] dark:text-slate-100 tracking-tight">
+        <div key={day.key} className="surface-card overflow-hidden">
+          {/* Cabeçalho do Dia */}
+          <div className="glass-table-header flex items-center justify-between gap-2 px-4 py-3 sm:px-5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="flex h-2 w-2 rounded-full bg-orange-500 shrink-0" />
+              <span className="text-sm font-bold capitalize text-slate-900 dark:text-white tracking-tight truncate">
                 {day.label}
               </span>
+              <span className="hidden sm:inline-block rounded-md bg-slate-200/60 dark:bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-mono-data tabular-nums text-slate-600 dark:text-slate-400">
+                {day.entries.length} {day.entries.length === 1 ? "sessão" : "sessões"}
+              </span>
             </div>
-            <span className="whitespace-nowrap rounded-full bg-white dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-3 py-1 text-xs font-mono-data font-semibold text-[#171715] dark:text-slate-200 shadow-2xs">
+            <span className="whitespace-nowrap rounded-lg bg-white dark:bg-[#161F30] border border-slate-200/90 dark:border-white/[0.1] px-2.5 py-1 text-xs font-mono-data tabular-nums font-bold text-slate-900 dark:text-white shadow-2xs">
               Total: {formatDuration(day.totalSeconds)}
             </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm text-[#171715] dark:text-slate-100">
-              <tbody className="divide-y divide-[#E5E2DC]/70 dark:divide-slate-800/70">
+            <table className="w-full text-left text-xs sm:text-sm text-slate-700 dark:text-slate-200">
+              <tbody className="divide-y divide-slate-200/60 dark:divide-white/[0.05]">
                 {day.entries.map((entry, index) => (
                   <tr
                     key={index}
-                    className="transition-colors duration-150 hover:bg-[#FAF9F5] dark:hover:bg-slate-800/50"
+                    className={`transition-colors duration-150 ${
+                      entry.voided
+                        ? "bg-rose-500/[0.02] dark:bg-rose-500/[0.03] hover:bg-rose-500/[0.05]"
+                        : "hover:bg-slate-50/90 dark:hover:bg-white/[0.03]"
+                    }`}
                   >
-                    <td className="px-3.5 py-3 sm:px-5 font-sans font-medium text-[#171715] dark:text-slate-100 max-w-[140px] sm:max-w-none">
+                    <td className="px-3.5 py-3 sm:px-5 font-semibold text-slate-900 dark:text-white max-w-[160px] sm:max-w-none">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="truncate">{entry.memberName}</span>
+                        <span className={`truncate ${entry.voided ? "text-slate-500 dark:text-slate-400" : ""}`}>
+                          {entry.memberName}
+                        </span>
                         {entry.isTutor && (
                           <span
                             title="Tutor do Laboratório"
-                            className="inline-flex items-center gap-0.5 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 px-1 py-0.5 text-[9.5px] font-bold text-emerald-800 dark:text-emerald-300 select-none shadow-2xs"
+                            className="inline-flex items-center gap-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 ring-1 ring-orange-500/25 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md select-none"
                           >
-                            <GraduationCap className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <GraduationCap className="h-2.5 w-2.5 shrink-0" />
                             <span>TUTOR</span>
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-2 py-3 sm:px-5 text-[#706E6A] dark:text-slate-400 font-mono-data text-xs">
-                      {formatTime(entry.checkIn)} às{" "}
+                    <td className="px-2 py-3 sm:px-5 text-slate-500 dark:text-slate-400 font-mono-data tabular-nums text-xs">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={entry.voided ? "line-through opacity-60" : ""}>
+                          {formatTime(entry.checkIn)}
+                          {entry.checkOut && !entry.open ? ` → ${formatTime(entry.checkOut)}` : ""}
+                        </span>
+                        {entry.voided ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500/20 px-2.5 py-0.5 text-[10px] font-sans font-bold">
+                            <Ban className="h-3 w-3 shrink-0" />
+                            <span>Anulada — 0h</span>
+                          </span>
+                        ) : entry.open ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 px-2.5 py-0.5 text-[10px] font-sans font-bold">
+                            <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                              <span className="absolute h-full w-full rounded-full bg-emerald-500 opacity-75 animate-ping" />
+                              <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            </span>
+                            <span>Em aberto</span>
+                          </span>
+                        ) : (
+                          <span className="hidden sm:inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-[#161F30] px-1.5 py-0.5 text-[10px] font-sans font-medium text-slate-500 dark:text-slate-400">
+                            <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500 shrink-0" />
+                            <span>Concluída</span>
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap px-3.5 py-3 sm:px-5 text-right font-mono-data tabular-nums font-bold text-xs sm:text-sm">
                       {entry.voided ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/50 px-2 py-0.5 text-[10px] font-medium text-[#C15F3D] dark:text-amber-400">
-                          <Ban className="h-2.5 w-2.5" />
-                          <span>anulada</span>
+                        <span className="text-rose-600/80 dark:text-rose-400/80 text-xs font-semibold">
+                          0h 00m
                         </span>
                       ) : entry.open ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white dark:bg-emerald-950/80 dark:text-emerald-300 dark:border dark:border-emerald-700/80 px-2.5 py-0.5 text-[10px] font-bold shadow-2xs">
-                          <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
-                            <span className="absolute h-1.5 w-1.5 rounded-full bg-white opacity-75 animate-live-ping" />
-                            <span className="relative h-1.5 w-1.5 rounded-full bg-white dark:bg-emerald-400" />
-                          </span>
-                          em andamento
+                        <span className="text-emerald-600 dark:text-emerald-400">
+                          {formatDuration(entry.seconds)}
                         </span>
                       ) : (
-                        formatTime(entry.checkOut!)
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-3.5 py-3 sm:px-5 text-right font-mono-data font-semibold text-[#171715] dark:text-slate-200 text-xs sm:text-sm">
-                      {entry.voided ? (
-                        <span className="text-[#706E6A]/50 dark:text-slate-500 text-xs">—</span>
-                      ) : (
-                        formatDuration(entry.seconds)
+                        <span className="text-slate-900 dark:text-white">
+                          {formatDuration(entry.seconds)}
+                        </span>
                       )}
                     </td>
                   </tr>

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { SunMedium, MoonStar, Scale, KeyRound } from "lucide-react";
+import { SunMedium, MoonStar, Scale, KeyRound, RefreshCw, LogOut, Cpu, ShieldCheck } from "lucide-react";
 import logo from "../ailab_makers.jpeg";
 import { useTheme } from "../lib/useTheme";
 import { InstallPwaButton } from "./InstallPwaButton";
@@ -8,56 +8,155 @@ interface HeaderProps {
   user: any;
   signOut: () => Promise<void>;
   onOpenTerms: () => void;
+  onOpenHowItWorks?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
   presentCount?: number;
+  lastRefreshed?: Date;
 }
 
 export function Header({
   user,
   signOut,
   onOpenTerms,
+  onOpenHowItWorks,
+  onRefresh,
+  isRefreshing = false,
+  presentCount,
+  lastRefreshed,
 }: HeaderProps) {
   const { isDark, toggleTheme } = useTheme();
+  const showLive = typeof presentCount === "number";
+  const syncTime = lastRefreshed
+    ? lastRefreshed.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    : null;
 
   return (
     <header
-      className="sticky top-0 z-30 border-b border-stone-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-950/90 backdrop-blur-2xl transition-all shadow-[0_2px_16px_rgba(23,23,21,0.03)]"
+      className="sticky top-0 z-40 h-16 border-b border-slate-200/90 dark:border-white/[0.1] bg-white/85 dark:bg-[#0F1623]/80 backdrop-blur-xl transition-colors"
       role="banner"
     >
-      <div className="mx-auto max-w-6xl px-3.5 py-3 sm:px-8 sm:py-3.5 flex flex-wrap items-center justify-between gap-3">
-        {/* Marca com Tipografia Editorial Claude e Acento Gradiente */}
-        <div className="flex items-center gap-3">
-          <div className="relative group">
-            <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-tr from-[#C15F3D] via-[#009E90] to-emerald-500 opacity-40 group-hover:opacity-75 blur-xs transition duration-300" />
-            <img
-              src={logo}
-              alt="AiLab Makers Logo"
-              className="relative h-10 w-10 sm:h-12 sm:w-12 rounded-2xl border border-stone-200 dark:border-slate-700 object-cover shadow-2xs"
-            />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-editorial text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 leading-tight">
-                AiLab Makers
-              </span>
+      <div className="mx-auto max-w-7xl px-3.5 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-2 sm:gap-4">
+        {/* Esquerda: Identidade Institucional + Badge de Sincronização Ao Vivo (H1) */}
+        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+          <img
+            src={logo}
+            alt="AILAB Makers"
+            className="w-9 h-9 min-w-[2.25rem] min-h-[2.25rem] aspect-square rounded-lg object-cover ring-1 ring-black/10 dark:ring-white/10 shrink-0 shadow-2xs"
+          />
+          <div className="min-w-0 flex items-center gap-2.5">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-white leading-none truncate">
+                  AILAB <span className="text-orange-600 dark:text-amber-400">Makers</span>
+                </span>
+              </div>
+              <p className="hidden lg:block text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-none mt-1 truncate">
+                Telemetria Biométrica & Permanência Acadêmica
+              </p>
             </div>
-            <p className="text-[10.5px] sm:text-xs text-stone-600 dark:text-slate-300 font-sans font-medium tracking-normal mt-0.5">
-              Controle Acadêmico de Permanência
-            </p>
+
+            {/* Badge de Status do Sistema (H1 — Visibilidade do Status) */}
+            {showLive && (
+              <div
+                className="hidden sm:inline-flex items-center gap-2 rounded-full bg-emerald-500/10 dark:bg-emerald-500/10 ring-1 ring-emerald-500/20 px-2.5 py-1 text-xs"
+                aria-live="polite"
+                title={
+                  lastRefreshed
+                    ? `Sincronizado às ${lastRefreshed.toLocaleTimeString("pt-BR")} · ${presentCount} presente(s) agora`
+                    : `${presentCount} presente(s) agora`
+                }
+              >
+                <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75 animate-ping" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+                <span className="font-semibold text-emerald-800 dark:text-emerald-300 tabular-nums whitespace-nowrap">
+                  Sincronizado
+                  {syncTime && (
+                    <span className="hidden xl:inline font-mono-data text-[11px] text-emerald-700/80 dark:text-emerald-300/80 ml-1">
+                      · {syncTime}
+                    </span>
+                  )}
+                </span>
+                <span className="h-3 w-px bg-emerald-500/25" aria-hidden="true" />
+                <span className="font-mono-data font-bold text-emerald-900 dark:text-emerald-200 tabular-nums whitespace-nowrap">
+                  {presentCount} {presentCount === 1 ? "presente" : "presentes"}
+                </span>
+                {onRefresh && (
+                  <button
+                    type="button"
+                    onClick={onRefresh}
+                    disabled={isRefreshing}
+                    className="ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/20 disabled:opacity-60 cursor-pointer"
+                    title="Atualizar dados agora"
+                    aria-label="Atualizar dados agora"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Ações Rápidas com Toggle de Tema e Instalação PWA */}
-        <div className="flex items-center gap-2">
-          {/* Botão de Instalação PWA */}
+        {/* Centro/Direita: Controles Secundários + Divisor Vertical + Ação Primária */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Em mobile (< 640px): botão compacto de sincronização com ponto verde ao vivo */}
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="icon-btn sm:hidden relative"
+              title={
+                showLive
+                  ? `Sincronizar agora (${presentCount} no laboratório)`
+                  : "Sincronizar agora"
+              }
+              aria-label="Sincronizar dados agora"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin text-orange-500" : ""}`} />
+              {showLive && (
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#161F30]" />
+              )}
+            </button>
+          )}
+
+          {/* Como Funciona (H10 — Ajuda e Documentação) */}
+          {onOpenHowItWorks && (
+            <button
+              type="button"
+              onClick={onOpenHowItWorks}
+              className="hidden md:inline-flex btn-secondary !min-h-[38px] !px-3"
+              title="Entenda o pipeline biométrico InsightFace ArcFace 512-D"
+              aria-label="Como funciona o reconhecimento facial"
+            >
+              <Cpu className="h-3.5 w-3.5 text-orange-500 dark:text-amber-400 shrink-0" />
+              <span className="hidden lg:inline">Como Funciona</span>
+            </button>
+          )}
+
+          {/* Termos LGPD */}
+          <button
+            type="button"
+            onClick={onOpenTerms}
+            className="hidden md:inline-flex btn-secondary !min-h-[38px] !px-3"
+            title="Políticas de Privacidade Biométrica (LGPD Art. 11)"
+            aria-label="Políticas de Privacidade Biométrica LGPD"
+          >
+            <Scale className="h-3.5 w-3.5 text-orange-500 dark:text-amber-400 shrink-0" />
+            <span className="hidden lg:inline">Termos LGPD</span>
+          </button>
+
+          {/* Instalação PWA */}
           <InstallPwaButton />
 
-          {/* Botão de Alternância de Tema */}
+          {/* Alternador de Tema Claro/Escuro */}
           <button
             type="button"
             onClick={toggleTheme}
-            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-stone-300/80 dark:border-slate-700 bg-stone-100/80 dark:bg-slate-900 px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 hover:border-[#C15F3D] hover:text-[#C15F3D] dark:hover:border-amber-400 dark:hover:text-amber-300 shadow-xs transition-all cursor-pointer min-h-[40px]"
+            className="icon-btn"
             title={isDark ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"}
             aria-label={isDark ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"}
           >
@@ -66,42 +165,39 @@ export function Header({
             ) : (
               <MoonStar className="h-4 w-4 text-slate-700" />
             )}
-            <span className="hidden sm:inline font-semibold">
-              {isDark ? "Modo Claro" : "Modo Escuro"}
-            </span>
           </button>
 
-          {/* Termos de Privacidade */}
-          <button
-            type="button"
-            onClick={onOpenTerms}
-            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-stone-300/80 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:border-stone-400 dark:hover:border-slate-600 shadow-xs transition-all cursor-pointer min-h-[40px]"
-            title="Políticas de Privacidade Biométrica (LGPD Art. 11)"
-            aria-label="Políticas de Privacidade Biométrica LGPD"
-          >
-            <Scale className="h-3.5 w-3.5 text-[#C15F3D] dark:text-amber-400" />
-            <span className="font-medium hidden sm:inline">Termos LGPD</span>
-          </button>
+          {/* Divisor Vertical (Desktop) */}
+          <div className="hidden md:block h-5 w-px bg-slate-200 dark:bg-white/10 mx-0.5" aria-hidden="true" />
 
+          {/* Ação Primária: Acesso Tutor ou Sessão Ativa do Tutor */}
           {user ? (
-            <button
-              type="button"
-              onClick={signOut}
-              className="inline-flex items-center justify-center rounded-2xl border border-rose-300 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 shadow-xs transition-all cursor-pointer min-h-[40px]"
-              title="Encerrar sessão de tutor"
-              aria-label="Encerrar sessão de tutor"
-            >
-              Sair
-            </button>
+            <div className="flex items-center gap-1.5">
+              <span className="hidden xl:inline-flex items-center gap-1.5 rounded-xl bg-orange-500/10 dark:bg-orange-500/15 ring-1 ring-orange-500/25 px-2.5 py-1.5 text-2xs font-mono-data font-semibold text-orange-700 dark:text-orange-300">
+                <ShieldCheck className="h-3.5 w-3.5 text-orange-500 dark:text-amber-400 shrink-0" />
+                <span>{user.email ? user.email.replace(/@ailab\.com$/i, "") : "Tutor"}</span>
+              </span>
+              <button
+                type="button"
+                onClick={signOut}
+                className="inline-flex min-h-[44px] sm:min-h-[38px] items-center justify-center gap-1.5 rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 active:scale-[0.98] transition-all cursor-pointer"
+                title="Encerrar sessão de tutor"
+                aria-label="Encerrar sessão de tutor"
+              >
+                <LogOut className="h-3.5 w-3.5 shrink-0" />
+                <span>Sair</span>
+              </button>
+            </div>
           ) : (
             <Link
               to="/login"
-              className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-[#C15F3D] to-orange-600 hover:from-[#A84828] hover:to-orange-700 text-white font-bold px-4 py-2 text-xs shadow-sm shadow-orange-500/25 active:scale-98 transition-all min-h-[40px]"
+              className="btn-primary !px-3.5"
               title="Área administrativa de tutores e coordenadores"
               aria-label="Acessar área administrativa de tutores"
             >
-              <KeyRound className="h-3.5 w-3.5" />
-              <span>Acesso Tutor</span>
+              <KeyRound className="h-3.5 w-3.5 shrink-0" />
+              <span className="sm:hidden">Tutor</span>
+              <span className="hidden sm:inline">Acesso Tutor</span>
             </Link>
           )}
         </div>

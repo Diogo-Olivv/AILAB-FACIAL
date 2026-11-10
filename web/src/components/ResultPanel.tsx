@@ -37,21 +37,21 @@ export function ResultPanel({ result, onReset, onViewDashboard }: ResultPanelPro
     >
       {/* Banner Principal de Status */}
       <div
-        className={`flex flex-col items-center text-center p-6 sm:p-8 rounded-3xl border w-full gap-3 shadow-xs ${
+        className={`flex flex-col items-center text-center p-6 sm:p-8 rounded-2xl border w-full gap-3 shadow-xs ${
           isSuccess
             ? "border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/30 dark:border-emerald-500/30"
             : isSpoof
-            ? "border-destructive/30 bg-destructive/10 dark:bg-destructive/20"
+            ? "border-rose-500/30 bg-rose-500/10 dark:bg-rose-500/15"
             : isUnknown
             ? "border-amber-500/30 bg-amber-500/10 dark:bg-amber-950/30"
-            : "border-[#E5E2DC] dark:border-slate-800 bg-card dark:bg-slate-900"
+            : "border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0F1623] dark:bg-slate-900"
         }`}
       >
         <div className="flex items-center justify-center">
           {isSuccess ? (
             <CheckCircle2 className="h-12 w-12 text-emerald-500 animate-scale-up" />
           ) : isSpoof ? (
-            <ShieldAlert className="h-12 w-12 text-destructive animate-scale-up" />
+            <ShieldAlert className="h-12 w-12 text-rose-600 dark:text-rose-400 animate-scale-up" />
           ) : isUnknown ? (
             <UserX className="h-12 w-12 text-amber-600 dark:text-amber-400 animate-scale-up" />
           ) : isBlur ? (
@@ -70,7 +70,7 @@ export function ResultPanel({ result, onReset, onViewDashboard }: ResultPanelPro
               isSuccess
                 ? "text-emerald-600 dark:text-emerald-400"
                 : isSpoof
-                ? "text-destructive"
+                ? "text-rose-600 dark:text-rose-400"
                 : isUnknown
                 ? "text-amber-700 dark:text-amber-400"
                 : "text-slate-900 dark:text-slate-100"
@@ -104,7 +104,7 @@ export function ResultPanel({ result, onReset, onViewDashboard }: ResultPanelPro
               <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100 block leading-tight">
                 {result.name}
               </span>
-              <span className="text-xs text-muted-foreground block">
+              <span className="text-xs text-slate-500 dark:text-slate-400-foreground block">
                 {result.matricula ? `Matrícula: ${result.matricula}` : "Integrante Ativo"}
               </span>
             </div>
@@ -140,9 +140,9 @@ export function ResultPanel({ result, onReset, onViewDashboard }: ResultPanelPro
       {/* Métricas Técnicas Explicadas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
         {/* 1. Similaridade Cosseno */}
-        <div className="flex flex-col justify-between rounded-2xl border border-line dark:border-slate-800 bg-card dark:bg-slate-900 p-4">
+        <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 dark:border-white/[0.08] dark:border-slate-800 bg-white dark:bg-[#0F1623] dark:bg-slate-900 p-4">
           <div className="space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400-foreground">
               Similaridade Cosseno
             </span>
             <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">
@@ -158,54 +158,54 @@ export function ResultPanel({ result, onReset, onViewDashboard }: ResultPanelPro
                 style={{ width: `${Math.min(100, result.confidence * 100)}%` }}
               />
             </div>
-            <p className="text-[10px] text-muted-foreground leading-tight">
+            <p className="text-[10px] text-slate-500 dark:text-slate-400-foreground leading-tight">
               Limiar de corte seguro: &ge; 62%
             </p>
           </div>
         </div>
 
         {/* 2. Distância Euclidiana L2 */}
-        <div className="flex flex-col justify-between rounded-2xl border border-line dark:border-slate-800 bg-card dark:bg-slate-900 p-4">
+        <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 dark:border-white/[0.08] dark:border-slate-800 bg-white dark:bg-[#0F1623] dark:bg-slate-900 p-4">
           <div className="space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400-foreground">
               Distância L2
             </span>
             <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">
               {result.distance.toFixed(3)}
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground leading-tight mt-3">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400-foreground leading-tight mt-3">
             Espaço métrico 512-D. Valores menores indicam maior proximidade do vetor.
           </p>
         </div>
 
         {/* 3. Anti-Spoofing Vivacidade */}
-        <div className="flex flex-col justify-between rounded-2xl border border-line dark:border-slate-800 bg-card dark:bg-slate-900 p-4">
+        <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 dark:border-white/[0.08] dark:border-slate-800 bg-white dark:bg-[#0F1623] dark:bg-slate-900 p-4">
           <div className="space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400-foreground">
               Score Vivacidade
             </span>
             <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
               {(result.livenessScore * 100).toFixed(0)}%
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground leading-tight mt-3">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400-foreground leading-tight mt-3">
             MiniFASNetV2. Detecção de ataque de apresentação (fotos/telas).
           </p>
         </div>
       </div>
 
       {/* Indicador de Transparência e Origem */}
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground w-full px-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400-foreground w-full px-2">
         <span className="flex items-center gap-1.5">
-          <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
+          <Cpu className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400-foreground" />
           <span>
             Motor: {result.source === "cloud_run_api" ? "Cloud Run ArcFace API" : "Sandbox Local Calibrado"}
           </span>
         </span>
 
         <span className="flex items-center gap-1.5">
-          <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
+          <Maximize2 className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400-foreground" />
           <span>
             Óptica: {result.opticalMetrics.width}x{result.opticalMetrics.height} · Nitidez {result.opticalMetrics.sharpnessScore}%
           </span>
@@ -225,7 +225,7 @@ export function ResultPanel({ result, onReset, onViewDashboard }: ResultPanelPro
         {onViewDashboard && (
           <button
             onClick={onViewDashboard}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-line dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-3.5 text-sm font-bold text-slate-900 dark:text-slate-100 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 cursor-pointer min-h-[44px] transition-colors"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-3.5 text-sm font-bold text-slate-900 dark:text-slate-100 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 cursor-pointer min-h-[44px] transition-colors"
           >
             <BarChart3 className="h-4 w-4" />
             <span>Ver no Painel de Horas</span>

@@ -17,12 +17,12 @@ export function RequireTutorAuth({ children }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF9F5] dark:bg-[#0B0F19] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F19] flex flex-col items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3 animate-pulse">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/40 text-[#C15F3D] dark:text-amber-400 shadow-2xs">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 dark:bg-amber-950/40 border border-orange-200 dark:border-amber-800/40 text-[#C15F3D] dark:text-amber-400 shadow-2xs">
             <GraduationCap className="h-6 w-6 text-amber-500" />
           </div>
-          <p className="text-xs font-mono-data text-[#706E6A] dark:text-slate-400">
+          <p className="text-xs font-mono-data text-slate-500 dark:text-slate-400">
             Verificando credenciais do tutor...
           </p>
         </div>

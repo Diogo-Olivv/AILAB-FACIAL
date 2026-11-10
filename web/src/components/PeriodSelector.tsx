@@ -451,7 +451,7 @@ export function PeriodSelector({
   }, [localFrom, localTo]);
 
   return (
-    <div className="rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl p-3 sm:p-3.5 shadow-[0_4px_20px_rgba(23,23,21,0.02)] dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-300">
+    <div className="surface-card p-2.5 sm:p-3 transition-all duration-200">
       {/* Segmented Control + Date Display */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div
@@ -460,16 +460,16 @@ export function PeriodSelector({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
-          className="relative w-full sm:w-[350px] h-11 rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] dark:bg-slate-800/80 dark:border-slate-700 p-1 select-none cursor-grab active:cursor-grabbing touch-pan-y shadow-2xs"
+          className="segmented-track w-full sm:w-[340px] h-11 sm:h-10 select-none cursor-grab active:cursor-grabbing touch-pan-y"
           role="tablist"
           aria-label="Seletor de período"
         >
           {/* Pílula flutuante fluida estilo iOS — só visível quando não está no modo custom */}
           {period !== "custom" && (
             <div
-              className={`absolute top-1 bottom-1 rounded-xl bg-white border border-[#E5E2DC]/80 shadow-2xs dark:bg-slate-900 dark:border-slate-600 pointer-events-none ${
+              className={`segmented-pill top-1 bottom-1 pointer-events-none ${
                 isDragging
-                  ? "transition-none shadow-md scale-[1.01]"
+                  ? "transition-none scale-[1.01]"
                   : "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
               }`}
               style={{
@@ -497,10 +497,10 @@ export function PeriodSelector({
                     onPeriod(key);
                     setIsPickerOpen(false);
                   }}
-                  className={`flex items-center justify-center px-2 text-xs sm:text-sm font-sans rounded-xl transition-colors duration-200 cursor-pointer h-full select-none ${
+                  className={`flex items-center justify-center px-2 text-xs font-sans rounded-lg transition-colors duration-200 cursor-pointer h-full select-none ${
                     isActive
-                      ? "text-[#171715] dark:text-slate-100 font-semibold"
-                      : "text-[#706E6A] dark:text-slate-400 font-medium hover:text-[#171715] dark:hover:text-slate-200"
+                      ? "text-slate-900 dark:text-white font-semibold"
+                      : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
                   <span>{PERIOD_LABELS[key]}</span>
@@ -511,22 +511,22 @@ export function PeriodSelector({
         </div>
 
         {/* Container do botão disparador e do popover ancorado */}
-        <div ref={pickerContainerRef} className="relative inline-block self-end sm:self-auto">
+        <div ref={pickerContainerRef} className="relative flex items-center gap-2 w-full sm:w-auto justify-end">
           <button
             ref={buttonRef}
             type="button"
             onClick={handleDateDisplayClick}
-            className={`h-11 inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-xs text-[#171715] dark:text-slate-200 shadow-2xs font-mono-data cursor-pointer transition-all duration-200 select-none ${
+            className={`min-h-[44px] sm:min-h-[40px] w-full sm:w-auto inline-flex items-center justify-between sm:justify-center gap-2 rounded-xl border px-3.5 py-2 text-xs text-slate-900 dark:text-slate-200 shadow-2xs font-mono-data tabular-nums cursor-pointer transition-all duration-200 select-none ${
               period === "custom"
-                ? "border-[#C15F3D]/50 bg-[#FAF5F0] dark:border-amber-600/50 dark:bg-amber-950/30 ring-2 ring-[#C15F3D]/15 dark:ring-amber-600/15"
-                : "border-[#E5E2DC] bg-[#FAF9F5] dark:border-slate-700 dark:bg-slate-800/80 hover:border-[#C15F3D]/40 hover:bg-white dark:hover:bg-slate-800"
+                ? "border-orange-500/40 bg-orange-500/10 dark:border-amber-500/40 dark:bg-amber-500/10 ring-2 ring-orange-500/15"
+                : "border-slate-200/90 bg-slate-100/70 dark:border-white/[0.1] dark:bg-[#161F30] hover:border-slate-300 hover:bg-white dark:hover:border-white/[0.18] dark:hover:bg-[#1E293B]"
             }`}
             aria-label="Selecionar período personalizado no calendário"
             aria-expanded={isPickerOpen}
             title="Clique para abrir o calendário e selecionar datas"
           >
-            <CalendarDays className="h-3.5 w-3.5 text-[#706E6A] dark:text-slate-400 shrink-0" />
-            <span className="font-medium text-[#171715] dark:text-slate-200">
+            <CalendarDays className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+            <span className="font-medium text-slate-900 dark:text-slate-200">
               {formatRange(range)}
             </span>
             {period === "custom" && (
@@ -535,7 +535,7 @@ export function PeriodSelector({
               </span>
             )}
             <ChevronDown
-              className={`h-3 w-3 text-[#706E6A] dark:text-slate-400 transition-transform duration-200 ${
+              className={`h-3 w-3 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${
                 isPickerOpen ? "rotate-180" : ""
               }`}
             />
@@ -551,20 +551,20 @@ export function PeriodSelector({
                 right: `${popoverPos.right}px`,
                 zIndex: 99999,
               }}
-              className="w-[340px] max-w-[calc(100vw-24px)] max-h-[calc(100vh-140px)] overflow-y-auto rounded-3xl border border-[#E5E2DC] dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-[0_20px_60px_rgba(23,23,21,0.25)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.8)] p-4 sm:p-5 animate-scale-up text-[#171715] dark:text-slate-100"
+              className="w-[340px] max-w-[calc(100vw-24px)] max-h-[calc(100vh-140px)] overflow-y-auto rounded-2xl border border-slate-200/90 dark:border-white/[0.1] bg-white/95 dark:bg-[#0F1623]/95 backdrop-blur-2xl shadow-[0_24px_64px_-12px_rgba(15,23,42,0.28)] dark:shadow-[0_24px_64px_-12px_rgba(0,0,0,0.85)] p-4 sm:p-5 animate-scale-up text-slate-900 dark:text-slate-100"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Cabeçalho do Calendário */}
-              <div className="flex items-center justify-between pb-3 border-b border-[#E5E2DC] dark:border-slate-800">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FAF5F0] dark:bg-amber-950/40 text-[#C15F3D] dark:text-amber-400 border border-[#F0DCD3] dark:border-amber-800/50">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 dark:bg-amber-500/10 text-[#C15F3D] dark:text-amber-400 border border-orange-200 dark:border-amber-500/30">
                     <CalendarRange className="h-4 w-4" />
                   </div>
                   <div>
-                    <h4 className="font-editorial text-sm font-bold text-[#171715] dark:text-slate-100 leading-tight">
+                    <h4 className="font-editorial text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight">
                       Selecionar Período
                     </h4>
-                    <p className="text-[11px] text-[#706E6A] dark:text-slate-400 font-sans">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-sans">
                       {localFrom
                         ? `${selectedDaysCount} ${selectedDaysCount === 1 ? "dia" : "dias"} selecionados`
                         : "Escolha as datas de início e fim"}
@@ -574,7 +574,7 @@ export function PeriodSelector({
                 <button
                   type="button"
                   onClick={() => setIsPickerOpen(false)}
-                  className="rounded-full h-7 w-7 flex items-center justify-center text-[#706E6A] dark:text-slate-400 hover:bg-[#FAF9F5] dark:hover:bg-slate-800 hover:text-[#171715] dark:hover:text-white transition-colors cursor-pointer"
+                  className="rounded-full h-7 w-7 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
                   aria-label="Fechar calendário"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -586,14 +586,14 @@ export function PeriodSelector({
                 <button
                   type="button"
                   onClick={() => applyPreset(1)}
-                  className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-slate-500 dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   Hoje
                 </button>
                 <button
                   type="button"
                   onClick={applyLastWeekPreset}
-                  className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-slate-500 dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
                   title="Segunda a Sexta da semana anterior"
                 >
                   Semana Passada
@@ -601,35 +601,35 @@ export function PeriodSelector({
                 <button
                   type="button"
                   onClick={() => applyPreset(7)}
-                  className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-slate-500 dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   7 dias
                 </button>
                 <button
                   type="button"
                   onClick={() => applyPreset(15)}
-                  className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-slate-500 dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   15 dias
                 </button>
                 <button
                   type="button"
                   onClick={() => applyPreset(30)}
-                  className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-slate-500 dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   30 dias
                 </button>
                 <button
                   type="button"
                   onClick={applyThisMonthPreset}
-                  className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-slate-500 dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   Este Mês
                 </button>
                 <button
                   type="button"
                   onClick={applyLastMonthPreset}
-                  className="rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[11px] font-sans font-medium text-slate-500 dark:text-slate-300 hover:border-[#C15F3D]/40 hover:text-[#C15F3D] dark:hover:text-amber-400 transition-colors cursor-pointer"
                   title="Mês anterior completo"
                 >
                   Mês Passado
@@ -641,18 +641,18 @@ export function PeriodSelector({
                 <button
                   type="button"
                   onClick={handlePrevMonth}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E5E2DC] dark:border-slate-700 hover:bg-[#FAF9F5] dark:hover:bg-slate-800 text-[#706E6A] dark:text-slate-300 cursor-pointer transition-colors"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-300 cursor-pointer transition-colors"
                   aria-label="Mês anterior"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <span className="font-sans text-xs font-bold text-[#171715] dark:text-slate-100">
+                <span className="font-sans text-xs font-bold text-slate-900 dark:text-slate-100">
                   {MONTH_NAMES[viewMonth]} {viewYear}
                 </span>
                 <button
                   type="button"
                   onClick={handleNextMonth}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E5E2DC] dark:border-slate-700 hover:bg-[#FAF9F5] dark:hover:bg-slate-800 text-[#706E6A] dark:text-slate-300 cursor-pointer transition-colors"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-300 cursor-pointer transition-colors"
                   aria-label="Próximo mês"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -660,7 +660,7 @@ export function PeriodSelector({
               </div>
 
               {/* Dias da Semana */}
-              <div className="grid grid-cols-7 gap-1 text-center py-1 font-sans text-[10px] font-semibold text-[#706E6A] dark:text-slate-400 uppercase tracking-wider">
+              <div className="grid grid-cols-7 gap-1 text-center py-1 font-sans text-3xs font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
                 {WEEKDAY_NAMES.map((w) => (
                   <div key={w} className="py-0.5">
                     {w}
@@ -669,7 +669,7 @@ export function PeriodSelector({
               </div>
 
               {/* Grade dos Dias */}
-              <div className="grid grid-cols-7 gap-1 text-center font-mono-data text-xs">
+              <div className="grid grid-cols-7 gap-1 text-center font-mono-data tabular-nums text-xs">
                 {calendarDays.map(({ dateStr, dayNumber, isCurrentMonth }) => {
                   const isSelectedStart = dateStr === localFrom;
                   const isSelectedEnd = dateStr === localTo;
@@ -692,12 +692,12 @@ export function PeriodSelector({
                       }}
                       className={`relative h-8 rounded-lg flex items-center justify-center font-medium transition-all cursor-pointer select-none ${
                         isSelectedStart || isSelectedEnd
-                          ? "bg-[#C15F3D] text-white font-bold shadow-xs z-10 scale-105"
+                          ? "bg-[#C15F3D] text-white font-bold shadow-[0_2px_8px_-2px_rgba(193,95,61,0.6)] z-10"
                           : isInRange
-                          ? "bg-[#C15F3D]/15 dark:bg-amber-500/25 text-[#C15F3D] dark:text-amber-300 font-semibold"
+                          ? "bg-[#C15F3D]/10 dark:bg-amber-500/15 text-[#C15F3D] dark:text-amber-300 font-semibold"
                           : isCurrentMonth
-                          ? "text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-800"
-                          : "text-[#706E6A]/40 dark:text-slate-600 hover:text-[#706E6A]"
+                          ? "text-slate-900 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                          : "text-slate-300 dark:text-slate-600 hover:text-slate-500"
                       }`}
                     >
                       <span>{dayNumber}</span>
@@ -710,13 +710,13 @@ export function PeriodSelector({
               </div>
 
               {/* Faixa com Resumo de Datas e Botões de Ação */}
-              <div className="mt-3.5 pt-3 border-t border-[#E5E2DC] dark:border-slate-800 space-y-3">
-                <div className="flex items-center justify-between text-2xs font-mono-data text-[#706E6A] dark:text-slate-400 px-0.5">
+              <div className="mt-3.5 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between text-2xs font-mono-data tabular-nums text-slate-500 dark:text-slate-400 px-0.5">
                   <div>
-                    De: <strong className="text-[#171715] dark:text-slate-200">{localFrom || "—"}</strong>
+                    De: <strong className="text-slate-900 dark:text-slate-200">{localFrom || "—"}</strong>
                   </div>
                   <div>
-                    Até: <strong className="text-[#171715] dark:text-slate-200">{localTo || localFrom || "—"}</strong>
+                    Até: <strong className="text-slate-900 dark:text-slate-200">{localTo || localFrom || "—"}</strong>
                   </div>
                 </div>
 
@@ -724,7 +724,7 @@ export function PeriodSelector({
                   <button
                     type="button"
                     onClick={() => setIsPickerOpen(false)}
-                    className="flex-1 rounded-xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 transition-colors cursor-pointer min-h-[38px]"
+                    className="btn-secondary flex-1"
                   >
                     Cancelar
                   </button>
@@ -732,7 +732,7 @@ export function PeriodSelector({
                     type="button"
                     onClick={handleApplyCustomRange}
                     disabled={!localFrom}
-                    className="flex-1 rounded-xl bg-[#171715] dark:bg-white hover:bg-[#2A2925] dark:hover:bg-slate-100 px-3 py-2 text-xs font-sans font-bold text-white dark:text-slate-900 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed min-h-[38px] inline-flex items-center justify-center gap-1.5"
+                    className="btn-primary flex-1"
                   >
                     <Check className="h-3.5 w-3.5" />
                     <span>Aplicar Período</span>

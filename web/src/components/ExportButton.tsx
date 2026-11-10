@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Download, Loader2 } from "lucide-react";
 import type { MemberTotal } from "../lib/aggregate";
 import { formatDuration } from "../lib/aggregate";
 import type { DateRange } from "../lib/reports";
@@ -10,11 +11,13 @@ interface Props {
 }
 
 function formatDateForFilename(date: Date): string {
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).replace(/\//g, "-");
+  return date
+    .toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    })
+    .replace(/\//g, "-");
 }
 
 function escapeCsvField(value: string): string {
@@ -37,7 +40,6 @@ export function ExportButton({ rows, range, period }: Props) {
       const toStr = formatDateForFilename(range.to);
       const filename = `ailab-presenca_${fromStr}_a_${toStr}.csv`;
 
-      // Cabeçalho CSV com BOM para compatibilidade com Excel
       const bom = "\uFEFF";
       const header = [
         "Nome",
@@ -95,7 +97,7 @@ export function ExportButton({ rows, range, period }: Props) {
     } catch {
       // Silencia erros de download
     } finally {
-      setTimeout(() => setIsExporting(false), 1200);
+      setTimeout(() => setIsExporting(false), 900);
     }
   };
 
@@ -105,22 +107,17 @@ export function ExportButton({ rows, range, period }: Props) {
       onClick={handleExport}
       disabled={isExporting || rows.length === 0}
       title={`Exportar ${rows.length} integrantes para CSV`}
-      className="inline-flex items-center gap-1.5 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2.5 text-xs font-sans font-medium text-[#706E6A] dark:text-slate-300 hover:border-[#706E6A]/50 hover:text-[#171715] dark:hover:text-slate-100 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 active:scale-[0.97] shadow-2xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none h-11"
+      className="btn-secondary select-none"
       aria-label="Exportar dados de presença como CSV"
     >
       {isExporting ? (
         <>
-          <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-orange-500" />
           <span>Exportando…</span>
         </>
       ) : (
         <>
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
+          <Download className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
           <span>Exportar CSV</span>
         </>
       )}

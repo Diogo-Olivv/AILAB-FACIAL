@@ -60,7 +60,7 @@ export function InstallPwaButton() {
 
   if (isInstalled) {
     return (
-      <span className="inline-flex items-center gap-1 text-2xs font-sans font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-full">
+      <span className="hidden lg:inline-flex items-center gap-1 text-2xs font-sans font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 px-2.5 py-1 rounded-full">
         <CheckCircle2 className="h-3 w-3" />
         App Instalado
       </span>
@@ -79,17 +79,17 @@ export function InstallPwaButton() {
         type="button"
         onClick={handleInstallClick}
         aria-label="Baixar App (PWA) - Instalar no dispositivo"
-        className="inline-flex items-center gap-1.5 rounded-full border border-[#8F371B]/30 dark:border-amber-600/40 bg-[#FAF5F0] dark:bg-amber-950/40 px-3 py-1.5 text-xs font-sans font-semibold text-[#8F371B] dark:text-amber-200 hover:bg-[#F0DCD3] dark:hover:bg-amber-900/50 shadow-2xs active:scale-[0.98] transition-all cursor-pointer min-h-[36px]"
+        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-orange-200 dark:border-amber-500/30 bg-orange-50 dark:bg-amber-500/10 px-2.5 lg:px-3 text-xs font-sans font-semibold text-[#8F371B] dark:text-amber-200 hover:bg-orange-100 dark:hover:bg-amber-500/20 transition-colors cursor-pointer"
       >
         <Smartphone className="h-3.5 w-3.5" />
-        <span>Baixar App (PWA)</span>
+        <span className="hidden lg:inline">Baixar App</span>
       </button>
 
       {showIosGuide && (
         <div
           role="dialog"
           aria-label="Instruções de instalação para iOS"
-          className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-xl z-50 text-xs text-[#171715] dark:text-slate-200 animate-fade-in"
+          className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-card-hover z-50 text-xs text-slate-900 dark:text-slate-200 animate-fade-in"
         >
           <p className="font-semibold text-xs mb-1">Como instalar no iPhone/iPad:</p>
           <ol className="list-decimal list-inside space-y-1 text-muted-foreground text-[11px] leading-relaxed">

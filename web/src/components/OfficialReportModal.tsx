@@ -400,7 +400,7 @@ export function OfficialReportModal({
   };
 
   return (
-    <div className="report-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div className="report-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/60 backdrop-blur-sm animate-fade-in">
       <style>{`
         @media print {
           /* Setup da Página A4 */
@@ -512,18 +512,18 @@ export function OfficialReportModal({
       `}</style>
 
       {/* Modal Container */}
-      <div className="report-modal-dialog relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-[#E5E2DC] dark:border-slate-800 overflow-hidden">
+      <div className="report-modal-dialog relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         {/* Barra de Ações Superior (Oculta na Impressão) */}
-        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5] dark:bg-slate-950/60">
+        <div className="no-print flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-950/60 text-[#C15F3D]">
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-semibold text-[#171715] dark:text-slate-100">
+              <h2 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100">
                 Relatório Oficial de Frequência & Compliance
               </h2>
-              <p className="text-2xs text-[#706E6A] dark:text-slate-400">
+              <p className="text-2xs text-slate-500 dark:text-slate-400">
                 Visualização formatada para prestação de contas institucional e exportação em PDF.
               </p>
             </div>
@@ -533,7 +533,7 @@ export function OfficialReportModal({
             <button
               type="button"
               onClick={handleDownloadHtml}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 text-[#171715] dark:text-slate-200 px-3.5 py-2 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-200 px-3.5 py-2 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
               title="Baixar arquivo HTML autossuficiente para arquivo ou visualização externa"
             >
               <Download className="h-3.5 w-3.5" />
@@ -543,7 +543,7 @@ export function OfficialReportModal({
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#171715] dark:bg-white hover:bg-[#2A2925] dark:hover:bg-slate-100 text-[#FAF9F5] dark:text-slate-900 px-4 py-2 text-xs font-semibold shadow-sm transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-slate-50 dark:text-slate-900 px-4 py-2 text-xs font-semibold shadow-sm transition-all cursor-pointer"
               title="Abrir diálogo do navegador para imprimir ou salvar como PDF"
             >
               <Printer className="h-3.5 w-3.5" />
@@ -553,7 +553,7 @@ export function OfficialReportModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-slate-800 text-[#706E6A] hover:text-[#171715] dark:hover:text-white border border-[#E5E2DC] dark:border-slate-700 text-sm font-bold cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 text-sm font-bold cursor-pointer"
               aria-label="Fechar modal"
             >
               <X className="h-4 w-4" />
@@ -563,7 +563,7 @@ export function OfficialReportModal({
 
 
         {/* Conteúdo do Relatório Imprimível */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-white dark:bg-slate-900 text-[#171715] dark:text-slate-100">
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
           <div id="official-report-printable" className="space-y-6">
             {/* Cabeçalho Institucional Oficial */}
             <div className="border-b-2 border-slate-900 dark:border-slate-700 pb-4">
@@ -574,19 +574,19 @@ export function OfficialReportModal({
                       AILAB MAKERS • LABORATÓRIO DE INTELIGÊNCIA ARTIFICIAL
                     </span>
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-bold font-editorial tracking-tight text-[#171715] dark:text-white mt-1">
+                  <h1 className="text-xl sm:text-2xl font-bold font-editorial tracking-tight text-slate-900 dark:text-white mt-1">
                     Relatório Oficial de Frequência e Atividades
                   </h1>
-                  <p className="text-xs text-[#706E6A] dark:text-slate-400 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Sistema Biométrico de Registro Facial de Presença
                   </p>
                 </div>
 
-                <div className="text-left sm:text-right font-mono text-2xs text-[#706E6A] dark:text-slate-400 space-y-0.5">
-                  <p><strong className="text-[#171715] dark:text-slate-200">Período:</strong> {fromStr} a {toStr}</p>
-                  <p><strong className="text-[#171715] dark:text-slate-200">Filtro:</strong> {period.toUpperCase()}</p>
-                  <p><strong className="text-[#171715] dark:text-slate-200">Emissão:</strong> {issuanceDate}</p>
-                  {tutorEmail && <p><strong className="text-[#171715] dark:text-slate-200">Tutor:</strong> {tutorEmail}</p>}
+                <div className="text-left sm:text-right font-mono text-2xs text-slate-500 dark:text-slate-400 space-y-0.5">
+                  <p><strong className="text-slate-900 dark:text-slate-200">Período:</strong> {fromStr} a {toStr}</p>
+                  <p><strong className="text-slate-900 dark:text-slate-200">Filtro:</strong> {period.toUpperCase()}</p>
+                  <p><strong className="text-slate-900 dark:text-slate-200">Emissão:</strong> {issuanceDate}</p>
+                  {tutorEmail && <p><strong className="text-slate-900 dark:text-slate-200">Tutor:</strong> {tutorEmail}</p>}
                 </div>
               </div>
             </div>

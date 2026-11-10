@@ -51,7 +51,7 @@ export function AnalysisWorkflow({
   return (
     <section
       id="analise-facial"
-      className="flex flex-col items-center rounded-3xl border border-line bg-card/80 p-6 sm:p-10 shadow-xs space-y-6"
+      className="flex flex-col items-center rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0F1623]/80 p-6 sm:p-10 shadow-xs space-y-6"
       aria-labelledby="analysis-section-title"
     >
       {/* Cabeçalho do Módulo */}
@@ -61,11 +61,11 @@ export function AnalysisWorkflow({
         </span>
         <h2
           id="analysis-section-title"
-          className="text-2xl sm:text-3xl font-extrabold tracking-tight text-ink"
+          className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white"
         >
           Análise Facial e Check-in com IA
         </h2>
-        <p className="text-xs sm:text-sm text-muted">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
           Utilize sua webcam ou envie uma foto recente. O modelo InsightFace calcula o vetor biométrico
           e verifica a similaridade cosseno em tempo real.
         </p>
@@ -78,7 +78,7 @@ export function AnalysisWorkflow({
           <div
             role="tablist"
             aria-label="Escolha a origem da foto"
-            className="flex items-center gap-1 rounded-2xl border border-line/80 bg-cream/70 p-1.5 w-full max-w-xs justify-center"
+            className="flex items-center gap-1 rounded-2xl border border-slate-200/80 dark:border-white/[0.08]/80 bg-cream/70 p-1.5 w-full max-w-xs justify-center"
           >
             <button
               role="tab"
@@ -87,7 +87,7 @@ export function AnalysisWorkflow({
               className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs sm:text-sm font-bold transition-all cursor-pointer min-h-[44px] ${
                 sourceMode === "camera"
                   ? "bg-navy text-white shadow-xs"
-                  : "text-ink/80 hover:text-ink hover:bg-navy/5"
+                  : "text-slate-900 dark:text-white/80 hover:text-slate-900 dark:text-white hover:bg-navy/5"
               }`}
             >
               <Camera className="h-4 w-4" />
@@ -101,7 +101,7 @@ export function AnalysisWorkflow({
               className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs sm:text-sm font-bold transition-all cursor-pointer min-h-[44px] ${
                 sourceMode === "upload"
                   ? "bg-navy text-white shadow-xs"
-                  : "text-ink/80 hover:text-ink hover:bg-navy/5"
+                  : "text-slate-900 dark:text-white/80 hover:text-slate-900 dark:text-white hover:bg-navy/5"
               }`}
             >
               <FolderOpen className="h-4 w-4" />
@@ -111,12 +111,12 @@ export function AnalysisWorkflow({
 
           {/* Seletor de Ação de Presença */}
           <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold">
-            <span className="text-muted">Ação desejada:</span>
-            <div className="inline-flex rounded-xl border border-line bg-white p-1">
+            <span className="text-slate-500 dark:text-slate-400">Ação desejada:</span>
+            <div className="inline-flex rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white p-1">
               <button
                 onClick={() => setAction("auto")}
                 className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
-                  action === "auto" ? "bg-navy text-white font-bold" : "text-ink hover:bg-navy/5"
+                  action === "auto" ? "bg-navy text-white font-bold" : "text-slate-900 dark:text-white hover:bg-navy/5"
                 }`}
               >
                 Automática
@@ -124,7 +124,7 @@ export function AnalysisWorkflow({
               <button
                 onClick={() => setAction("check_in")}
                 className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
-                  action === "check_in" ? "bg-green text-white font-bold" : "text-ink hover:bg-navy/5"
+                  action === "check_in" ? "bg-green text-white font-bold" : "text-slate-900 dark:text-white hover:bg-navy/5"
                 }`}
               >
                 Entrada
@@ -132,7 +132,7 @@ export function AnalysisWorkflow({
               <button
                 onClick={() => setAction("check_out")}
                 className={`rounded-lg px-3 py-1.5 transition-all cursor-pointer ${
-                  action === "check_out" ? "bg-navy text-white font-bold" : "text-ink hover:bg-navy/5"
+                  action === "check_out" ? "bg-navy text-white font-bold" : "text-slate-900 dark:text-white hover:bg-navy/5"
                 }`}
               >
                 Saída

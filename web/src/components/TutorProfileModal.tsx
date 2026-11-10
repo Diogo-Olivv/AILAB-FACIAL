@@ -188,18 +188,18 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-3 sm:p-4 animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="tutor-profile-title"
     >
       <div
-        className="w-full max-w-lg max-h-[92dvh] sm:max-h-[88vh] flex flex-col rounded-3xl border border-white/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-apple animate-scale-up text-slate-900 dark:text-slate-100 overflow-hidden"
+        className="w-full max-w-lg max-h-[92dvh] sm:max-h-[88vh] flex flex-col rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_24px_80px_-16px_rgba(15,23,42,0.35)] animate-scale-up text-slate-900 dark:text-slate-100 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Cabeçalho Fixo (Sempre Visível) */}
-        <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-4.5 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shrink-0">
+        <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-4 modal-header shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <span className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25">
               <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -246,22 +246,22 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
             </div>
 
             {/* Seção de Foto de Perfil do Tutor */}
-            <div className="flex items-center gap-3.5 p-3 sm:p-3.5 rounded-2xl border border-stone-200 dark:border-slate-800 bg-[#FAF9F5] dark:bg-slate-800/60 shadow-2xs">
+            <div className="flex items-center gap-3.5 p-3 sm:p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 shadow-2xs">
               <div className="relative group shrink-0">
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
                     alt="Foto do Tutor"
-                    className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl object-cover ring-2 ring-[#C15F3D]/25 dark:ring-amber-500/30 shadow-md"
+                    className="h-12 w-12 sm:h-14 sm:w-14 min-w-[3rem] aspect-square shrink-0 rounded-full object-cover ring-2 ring-[#C15F3D]/25 dark:ring-amber-500/30 shadow-md"
                   />
                 ) : (
-                  <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-[#C15F3D] text-white shadow-md shadow-orange-500/25">
+                  <div className="flex h-12 w-12 sm:h-14 sm:w-14 min-w-[3rem] aspect-square shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-[#C15F3D] text-white shadow-md shadow-orange-500/25">
                     <GraduationCap className="h-6 w-6 sm:h-7 sm:w-7" />
                   </div>
                 )}
 
                 <label
-                  className={`absolute inset-0 rounded-2xl bg-black/55 text-white flex flex-col items-center justify-center transition-opacity cursor-pointer ${
+                  className={`absolute inset-0 rounded-full bg-black/55 text-white flex flex-col items-center justify-center transition-opacity cursor-pointer ${
                     isUploadingPhoto ? "opacity-100 bg-black/75" : "opacity-0 group-hover:opacity-100"
                   }`}
                   title="Carregar foto de perfil"
@@ -426,7 +426,7 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
           </div>
 
           {/* Rodapé Fixo (Ações Sempre Visíveis e Acessíveis) */}
-          <div className="flex gap-2.5 p-4 sm:p-5 border-t border-black/[0.06] dark:border-white/[0.08] bg-slate-50/70 dark:bg-slate-900/70 backdrop-blur-sm shrink-0">
+          <div className="flex gap-2.5 p-4 sm:p-5 modal-footer backdrop-blur-sm shrink-0">
             <button
               type="button"
               onClick={onClose}

@@ -9,7 +9,7 @@ interface HeroProps {
 export function Hero({ onStartAnalysis, onViewDashboard, onOpenHowItWorks }: HeroProps) {
   return (
     <section
-      className="relative overflow-hidden rounded-3xl border border-line bg-gradient-to-br from-card via-card to-cream p-6 sm:p-10 shadow-xs"
+      className="relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-gradient-to-br from-card via-card to-cream p-6 sm:p-10 shadow-xs"
       aria-labelledby="hero-title"
     >
       {/* Luz decorativa de fundo suave (sem comprometer contraste) */}
@@ -32,29 +32,29 @@ export function Hero({ onStartAnalysis, onViewDashboard, onOpenHowItWorks }: Her
         {/* Título Principal de Alto Impacto */}
         <h1
           id="hero-title"
-          className="font-serif text-3xl sm:text-4xl md:text-5xl font-black text-ink tracking-tight leading-tight"
+          className="font-serif text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight"
         >
           Reconhecimento Biométrico & Controle de Presença
         </h1>
 
         {/* Descrição Concisa */}
-        <p className="text-sm sm:text-base text-muted leading-relaxed">
+        <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-relaxed">
           Substitua listas manuais por presença ágil e segura. O sistema analisa marcos faciais,
           compara vetores normalizados de 512 dimensões (InsightFace) e calcula o tempo de
           permanência no laboratório com descarte imediato dos frames fotográficos.
         </p>
 
         {/* Destaques Técnicos Rápidos */}
-        <div className="flex flex-wrap gap-2.5 pt-1 text-xs font-semibold text-ink/80">
-          <span className="inline-flex items-center gap-1.5 rounded-lg border border-line/80 bg-white/80 px-2.5 py-1 shadow-2xs">
+        <div className="flex flex-wrap gap-2.5 pt-1 text-xs font-semibold text-slate-900 dark:text-white/80">
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 dark:border-white/[0.08]/80 bg-white/80 px-2.5 py-1 shadow-2xs">
             <Sparkles className="h-3.5 w-3.5 text-amber-500" />
             <span>MiniFASNetV2 Anti-Spoofing</span>
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-lg border border-line/80 bg-white/80 px-2.5 py-1 shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 dark:border-white/[0.08]/80 bg-white/80 px-2.5 py-1 shadow-2xs">
             <Binary className="h-3.5 w-3.5 text-indigo-500" />
             <span>pgvector HNSW 512-D</span>
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-lg border border-line/80 bg-white/80 px-2.5 py-1 shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 dark:border-white/[0.08]/80 bg-white/80 px-2.5 py-1 shadow-2xs">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
             <span>LGPD Art. 11 (Memória Volátil)</span>
           </span>
@@ -87,7 +87,7 @@ export function Hero({ onStartAnalysis, onViewDashboard, onOpenHowItWorks }: Her
         </div>
 
         {/* Aviso de Confiança e Privacidade */}
-        <div className="flex items-center gap-2.5 rounded-xl border border-line/60 bg-cream/60 px-4 py-2.5 text-xs text-muted">
+        <div className="flex items-center gap-2.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08]/60 bg-cream/60 px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400">
           <Shield className="h-4 w-4 text-[#C15F3D] shrink-0" />
           <span>
             <strong>Privacidade por Design:</strong> As fotos são processadas apenas em memória volátil

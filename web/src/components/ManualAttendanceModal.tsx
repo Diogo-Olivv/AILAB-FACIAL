@@ -4,7 +4,7 @@ import type { Member } from "../lib/reports";
 import { fetchMemberSessionsOnDate, tutorRegisterManualSession } from "../lib/reports";
 import { combineDateTime, overlaps, validateManualSession } from "../lib/manualSession";
 import { formatTime } from "../lib/aggregate";
-import { getAvatarStyle } from "./TotalsTable";
+import { MemberAvatar } from "./MemberAvatar";
 
 interface Props {
   isOpen: boolean;
@@ -146,7 +146,7 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-3 sm:p-4 animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -154,10 +154,10 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
     >
       <div
         ref={modalRef}
-        className="w-full max-w-lg max-h-[92dvh] sm:max-h-[88vh] flex flex-col rounded-3xl border border-white/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-apple animate-scale-up text-slate-900 dark:text-slate-100 overflow-hidden"
+        className="w-full max-w-lg max-h-[92dvh] sm:max-h-[88vh] flex flex-col rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_24px_80px_-16px_rgba(15,23,42,0.35)] animate-scale-up text-slate-900 dark:text-slate-100 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-4.5 border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shrink-0">
+        <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-4 modal-header shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <span className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-[#C15F3D] text-white text-xl shadow-md shadow-orange-500/25">
               <FileEdit className="h-5 w-5 text-white" />
@@ -169,7 +169,7 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
               >
                 Registrar Presença Manual
               </h2>
-              <p className="text-xs text-[#706E6A] dark:text-slate-400 truncate">
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                 Contingência para lista de papel e totens
               </p>
             </div>
@@ -177,7 +177,7 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
           <button
             onClick={onClose}
             aria-label="Fechar registro de presença manual"
-            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] dark:bg-white/10 dark:hover:bg-white/20 text-[#706E6A] dark:text-slate-300 hover:text-[#171715] dark:hover:text-white transition-colors cursor-pointer"
+            className="flex h-10 w-10 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.1] dark:bg-white/10 dark:hover:bg-white/20 text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -187,31 +187,19 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
           <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6 sm:py-5 space-y-4">
           {/* Seletor de integrante */}
           <div className="space-y-1.5">
-            <label htmlFor="manual-member-search" className="text-xs font-bold text-[#706E6A] dark:text-slate-300">
+            <label htmlFor="manual-member-search" className="text-xs font-bold text-slate-500 dark:text-slate-300">
               Integrante
             </label>
             {selectedMember ? (
-              <div className="flex items-center justify-between gap-2 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800/80 px-3 py-2.5 shadow-xs">
+              <div className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-2.5 shadow-xs">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  {selectedMember.avatarUrl ? (
-                    <img
-                      src={selectedMember.avatarUrl}
-                      alt={selectedMember.name}
-                      className="h-9 w-9 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
-                    />
-                  ) : (
-                    <span
-                      className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${getAvatarStyle(selectedMember.name)} text-sm font-bold`}
-                    >
-                      {selectedMember.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
+                  <MemberAvatar name={selectedMember.name} src={selectedMember.avatarUrl} size="sm" highlight={Boolean(selectedMember.isTutor)} />
                   <div className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-[#171715] dark:text-slate-100">
+                    <span className="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                       {selectedMember.name}
                     </span>
                     {selectedMember.matricula && (
-                      <span className="block truncate text-2xs font-mono-data text-[#706E6A] dark:text-slate-400">
+                      <span className="block truncate text-2xs font-mono-data text-slate-500 dark:text-slate-400">
                         {selectedMember.matricula}
                       </span>
                     )}
@@ -223,7 +211,7 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
                     setProfileId("");
                     setSearch("");
                   }}
-                  className="shrink-0 rounded-lg border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-2xs font-medium text-[#706E6A] dark:text-slate-300 hover:text-[#171715] dark:hover:text-white cursor-pointer"
+                  className="shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1 text-2xs font-medium text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                 >
                   Trocar
                 </button>
@@ -237,11 +225,11 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar por nome ou matrícula..."
                   autoComplete="off"
-                  className="w-full rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-sm text-[#171715] dark:text-slate-100 placeholder:text-slate-400 outline-none focus:border-[#C15F3D] focus:ring-4 focus:ring-[#C15F3D]/15 shadow-xs transition-all"
+                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 outline-none focus:border-[#C15F3D] focus:ring-4 focus:ring-[#C15F3D]/15 shadow-xs transition-all"
                 />
-                <div className="max-h-44 overflow-y-auto overscroll-contain rounded-2xl border border-[#E5E2DC] dark:border-slate-700 divide-y divide-[#E5E2DC]/70 dark:divide-slate-800">
+                <div className="max-h-44 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-200/70 dark:divide-slate-800">
                   {filteredMembers.length === 0 ? (
-                    <p className="px-3 py-4 text-center text-xs text-[#706E6A] dark:text-slate-400">
+                    <p className="px-3 py-4 text-center text-xs text-slate-500 dark:text-slate-400">
                       Nenhum integrante encontrado.
                     </p>
                   ) : (
@@ -253,27 +241,15 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
                           setProfileId(m.id);
                           setError("");
                         }}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-[#FAF9F5] dark:hover:bg-slate-800/70 transition-colors cursor-pointer"
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800/70 transition-colors cursor-pointer"
                       >
-                        {m.avatarUrl ? (
-                          <img
-                            src={m.avatarUrl}
-                            alt={m.name}
-                            className="h-8 w-8 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
-                          />
-                        ) : (
-                          <span
-                            className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${getAvatarStyle(m.name)} text-xs font-bold`}
-                          >
-                            {m.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
+                        <MemberAvatar name={m.name} src={m.avatarUrl} size="xs" />
                         <span className="min-w-0">
-                          <span className="block truncate text-sm font-medium text-[#171715] dark:text-slate-100">
+                          <span className="block truncate text-sm font-medium text-slate-900 dark:text-slate-100">
                             {m.name}
                           </span>
                           {m.matricula && (
-                            <span className="block truncate text-2xs font-mono-data text-[#706E6A] dark:text-slate-400">
+                            <span className="block truncate text-2xs font-mono-data text-slate-500 dark:text-slate-400">
                               {m.matricula}
                             </span>
                           )}
@@ -288,7 +264,7 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
 
           {/* Dia */}
           <div className="space-y-1.5">
-            <label htmlFor="manual-date" className="text-xs font-bold text-[#706E6A] dark:text-slate-300">
+            <label htmlFor="manual-date" className="text-xs font-bold text-slate-500 dark:text-slate-300">
               Dia
             </label>
             <input
@@ -297,14 +273,14 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
               value={date}
               max={todayStr}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-sm font-mono-data text-[#171715] dark:text-slate-100 outline-none focus:border-[#C15F3D] focus:ring-4 focus:ring-[#C15F3D]/15 shadow-xs transition-all"
+              className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-sm font-mono-data text-slate-900 dark:text-slate-100 outline-none focus:border-[#C15F3D] focus:ring-4 focus:ring-[#C15F3D]/15 shadow-xs transition-all"
             />
           </div>
 
           {/* Entrada e saída */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label htmlFor="manual-entry" className="text-xs font-bold text-[#706E6A] dark:text-slate-300">
+              <label htmlFor="manual-entry" className="text-xs font-bold text-slate-500 dark:text-slate-300">
                 Hora de entrada
               </label>
               <input
@@ -312,11 +288,11 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
                 type="time"
                 value={entryTime}
                 onChange={(e) => setEntryTime(e.target.value)}
-                className="w-full rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-sm font-mono-data text-[#171715] dark:text-slate-100 outline-none focus:border-[#C15F3D] focus:ring-4 focus:ring-[#C15F3D]/15 shadow-xs transition-all"
+                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-sm font-mono-data text-slate-900 dark:text-slate-100 outline-none focus:border-[#C15F3D] focus:ring-4 focus:ring-[#C15F3D]/15 shadow-xs transition-all"
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="manual-exit" className="text-xs font-bold text-[#706E6A] dark:text-slate-300">
+              <label htmlFor="manual-exit" className="text-xs font-bold text-slate-500 dark:text-slate-300">
                 Hora de saída
               </label>
               <input
@@ -324,7 +300,7 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
                 type="time"
                 value={exitTime}
                 onChange={(e) => setExitTime(e.target.value)}
-                className="w-full rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-sm font-mono-data text-[#171715] dark:text-slate-100 outline-none focus:border-[#C15F3D] focus:ring-4 focus:ring-[#C15F3D]/15 shadow-xs transition-all"
+                className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 px-3.5 py-2.5 text-sm font-mono-data text-slate-900 dark:text-slate-100 outline-none focus:border-[#C15F3D] focus:ring-4 focus:ring-[#C15F3D]/15 shadow-xs transition-all"
               />
             </div>
           </div>
@@ -346,19 +322,19 @@ export function ManualAttendanceModal({ isOpen, onClose, members, onRegistered }
           </div>
 
           {/* Rodapé Fixo */}
-          <div className="flex gap-2.5 p-4 sm:p-5 border-t border-black/[0.06] dark:border-white/[0.08] bg-slate-50/70 dark:bg-slate-900/70 backdrop-blur-sm shrink-0">
+          <div className="flex gap-2.5 p-4 sm:p-5 modal-footer backdrop-blur-sm shrink-0">
             <button
               type="button"
               onClick={onClose}
               disabled={busy}
-              className="flex-1 rounded-2xl border border-black/10 dark:border-slate-700 bg-white/80 dark:bg-slate-800 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-[#706E6A] dark:text-slate-300 hover:bg-slate-100 hover:text-[#171715] dark:hover:bg-slate-700 dark:hover:text-white transition-all cursor-pointer min-h-[44px]"
+              className="flex-1 rounded-2xl border border-black/10 dark:border-slate-700 bg-white/80 dark:bg-slate-800 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-300 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-white transition-all cursor-pointer min-h-[44px]"
             >
               Fechar
             </button>
             <button
               type="submit"
               disabled={busy}
-              className="flex-1 rounded-2xl bg-[#171715] hover:bg-[#2A2925] dark:bg-white dark:hover:bg-slate-100 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-[#FAF9F5] dark:text-slate-900 shadow-sm active:scale-98 disabled:opacity-50 transition-all cursor-pointer min-h-[44px]"
+              className="flex-1 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-50 dark:text-slate-900 shadow-sm active:scale-98 disabled:opacity-50 transition-all cursor-pointer min-h-[44px]"
             >
               {busy ? "Registrando..." : "Registrar Presença"}
             </button>

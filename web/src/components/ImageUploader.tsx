@@ -110,26 +110,26 @@ export function ImageUploader({ onFileSelected, disabled }: ImageUploaderProps) 
           className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center w-full transition-all cursor-pointer select-none ${
             isDragging
               ? "border-green bg-green/10 scale-[1.01]"
-              : "border-line bg-card/60 hover:bg-card hover:border-navy/40"
+              : "border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0F1623]/60 hover:bg-white dark:bg-[#0F1623] hover:border-navy/40"
           } ${disabled ? "opacity-50 pointer-events-none" : ""}`}
         >
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-navy/10 mb-3 text-primary">
             <FolderOpen className="h-8 w-8 text-[#C15F3D]" />
           </div>
           <div className="space-y-1">
-            <p className="text-sm sm:text-base font-bold text-ink">
+            <p className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
               Arraste sua foto para cá ou clique para selecionar
             </p>
-            <p id="upload-instructions" className="text-xs text-muted">
+            <p id="upload-instructions" className="text-xs text-slate-500 dark:text-slate-400">
               Formatos aceitos: JPG, PNG ou WebP (até 5MB)
             </p>
           </div>
-          <span className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-line bg-white px-4 py-2 text-xs font-bold text-navy shadow-2xs">
+          <span className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white px-4 py-2 text-xs font-bold text-navy shadow-2xs">
             Escolher Arquivo
           </span>
         </div>
       ) : (
-        <div className="flex flex-col items-center w-full rounded-2xl border border-line bg-card p-4 shadow-sm gap-4">
+        <div className="flex flex-col items-center w-full rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0F1623] p-4 shadow-sm gap-4">
           <div className="relative aspect-4/3 w-full overflow-hidden rounded-xl bg-black/5 flex items-center justify-center">
             {previewUrl && (
               <img
@@ -146,7 +146,7 @@ export function ImageUploader({ onFileSelected, disabled }: ImageUploaderProps) 
           <div className="flex flex-wrap items-center justify-between gap-2 w-full pt-1">
             <button
               onClick={clearSelection}
-              className="rounded-xl border border-line bg-white px-3.5 py-2 text-xs font-semibold text-ink hover:bg-navy/5 cursor-pointer min-h-[44px]"
+              className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white px-3.5 py-2 text-xs font-semibold text-slate-900 dark:text-white hover:bg-navy/5 cursor-pointer min-h-[44px]"
             >
               Trocar Imagem
             </button>

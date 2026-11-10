@@ -1,32 +1,29 @@
 import { useMemo, useState } from "react";
-import { SearchX, ArrowUp, ArrowDown, ArrowUpDown, GraduationCap } from "lucide-react";
+import {
+  SearchX,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  GraduationCap,
+  ChevronRight,
+  Award,
+  RotateCcw,
+} from "lucide-react";
 import type { MemberTotal } from "../lib/aggregate";
 import { formatDuration } from "../lib/aggregate";
+import { MemberAvatar } from "./MemberAvatar";
+
+export { getAvatarStyle } from "./MemberAvatar";
 
 type SortField = "name" | "matricula" | "sessions" | "duration" | "status";
 type SortDirection = "asc" | "desc";
-
-const AVATAR_GRADIENTS = [
-  "from-blue-500 to-indigo-600 text-white shadow-blue-500/25",
-  "from-purple-500 to-pink-600 text-white shadow-purple-500/25",
-  "from-emerald-500 to-teal-600 text-white shadow-emerald-500/25",
-  "from-amber-500 to-orange-600 text-white shadow-amber-500/25",
-  "from-rose-500 to-red-600 text-white shadow-rose-500/25",
-  "from-cyan-500 to-blue-600 text-white shadow-cyan-500/25",
-  "from-violet-600 to-purple-700 text-white shadow-violet-500/25",
-  "from-teal-500 to-emerald-600 text-white shadow-teal-500/25",
-];
-
-export function getAvatarStyle(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
-}
+type QuickFilter = "all" | "present" | "tutors" | "goalMet";
 
 interface Props {
   rows: MemberTotal[];
+  totalCount?: number;
+  searchActive?: boolean;
+  onClearSearch?: () => void;
   onSelectMember?: (row: MemberTotal) => void;
 }
 
@@ -34,13 +31,10 @@ function RankBadge({ rank }: { rank: 1 | 2 | 3 }) {
   if (rank === 1) {
     return (
       <span
-        title="1º lugar em permanência"
-        className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/25 px-1.5 py-0.5 text-[10.5px] font-mono-data font-semibold text-amber-800 dark:text-amber-200 select-none shadow-[0_1px_3px_rgba(217,119,6,0.06)]"
+        title="1º lugar em permanência no período"
+        className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/30 px-1.5 py-0.5 text-[10px] font-mono-data tabular-nums font-bold select-none"
       >
-        <svg className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="6" />
-          <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
-        </svg>
+        <Award className="h-3 w-3 text-amber-500 dark:text-amber-400 shrink-0" />
         <span>1º</span>
       </span>
     );
@@ -48,34 +42,35 @@ function RankBadge({ rank }: { rank: 1 | 2 | 3 }) {
   if (rank === 2) {
     return (
       <span
-        title="2º lugar em permanência"
-        className="inline-flex items-center gap-1 rounded-md bg-slate-500/10 dark:bg-slate-400/10 border border-slate-400/30 px-1.5 py-0.5 text-[10.5px] font-mono-data font-semibold text-slate-700 dark:text-slate-300 select-none shadow-[0_1px_3px_rgba(100,116,139,0.06)]"
+        title="2º lugar em permanência no período"
+        className="inline-flex items-center gap-1 rounded-md bg-slate-400/15 text-slate-700 dark:text-slate-300 ring-1 ring-slate-400/30 px-1.5 py-0.5 text-[10px] font-mono-data tabular-nums font-bold select-none"
       >
-        <svg className="h-3 w-3 text-slate-500 dark:text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="6" />
-          <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
-        </svg>
+        <Award className="h-3 w-3 text-slate-500 dark:text-slate-300 shrink-0" />
         <span>2º</span>
       </span>
     );
   }
   return (
     <span
-      title="3º lugar em permanência"
-      className="inline-flex items-center gap-1 rounded-md bg-orange-500/10 dark:bg-orange-400/10 border border-orange-500/25 px-1.5 py-0.5 text-[10.5px] font-mono-data font-semibold text-[#8F4321] dark:text-orange-200 select-none shadow-[0_1px_3px_rgba(193,95,61,0.06)]"
+      title="3º lugar em permanência no período"
+      className="inline-flex items-center gap-1 rounded-md bg-orange-600/15 text-orange-800 dark:text-orange-300 ring-1 ring-orange-500/30 px-1.5 py-0.5 text-[10px] font-mono-data tabular-nums font-bold select-none"
     >
-      <svg className="h-3 w-3 text-[#C15F3D] dark:text-orange-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="8" r="6" />
-        <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
-      </svg>
+      <Award className="h-3 w-3 text-orange-600 dark:text-orange-400 shrink-0" />
       <span>3º</span>
     </span>
   );
 }
 
-export function TotalsTable({ rows, onSelectMember }: Props) {
+export function TotalsTable({
+  rows,
+  totalCount,
+  searchActive = false,
+  onClearSearch,
+  onSelectMember,
+}: Props) {
   const [sortField, setSortField] = useState<SortField>("duration");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -86,8 +81,31 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
     }
   };
 
+  // Contadores rápidos para os chips de filtro (H6 — Reconhecimento em vez de Memorização)
+  const filterCounts = useMemo(() => {
+    return {
+      all: rows.length,
+      present: rows.filter((r) => r.present).length,
+      tutors: rows.filter((r) => r.member.isTutor).length,
+      goalMet: rows.filter((r) => r.totalSeconds >= 4 * 3600).length,
+    };
+  }, [rows]);
+
+  const filteredByChip = useMemo(() => {
+    switch (quickFilter) {
+      case "present":
+        return rows.filter((r) => r.present);
+      case "tutors":
+        return rows.filter((r) => r.member.isTutor);
+      case "goalMet":
+        return rows.filter((r) => r.totalSeconds >= 4 * 3600);
+      default:
+        return rows;
+    }
+  }, [rows, quickFilter]);
+
   const sortedRows = useMemo(() => {
-    return [...rows].sort((a, b) => {
+    return [...filteredByChip].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
         case "name":
@@ -108,23 +126,23 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
       }
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [rows, sortField, sortDirection]);
+  }, [filteredByChip, sortField, sortDirection]);
 
-  if (sortedRows.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-3xl border border-[#E5E2DC] bg-white/80 p-12 text-center shadow-xs dark:border-slate-800 dark:bg-slate-900/80">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FAF9F5] border border-[#E5E2DC] text-[#706E6A] dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
-          <SearchX className="h-6 w-6" />
-        </div>
-        <p className="font-editorial text-lg text-[#171715] dark:text-slate-100">Nenhum integrante encontrado</p>
-        <p className="text-xs sm:text-sm text-[#706E6A] dark:text-slate-400 mt-1 max-w-xs">
-          Verifique o termo de busca ou altere o período selecionado no topo da página.
-        </p>
-      </div>
-    );
-  }
+  // Maior tempo para barra proporcional de permanência
+  const maxSeconds = useMemo(() => {
+    const highest = Math.max(...rows.map((r) => r.totalSeconds), 4 * 3600);
+    return highest > 0 ? highest : 4 * 3600;
+  }, [rows]);
 
-  const isDurationDesc = sortField === "duration" && sortDirection === "desc";
+  const universeTotal = typeof totalCount === "number" ? totalCount : rows.length;
+  const hasAnyFilter = quickFilter !== "all" || searchActive;
+
+  const resetAllFilters = () => {
+    setQuickFilter("all");
+    onClearSearch?.();
+  };
+
+  const isDurationDesc = sortField === "duration" && sortDirection === "desc" && quickFilter === "all";
 
   const getSortAriaLabel = (field: SortField, label: string) => {
     if (sortField !== field) return `Ordenar por ${label}`;
@@ -133,217 +151,332 @@ export function TotalsTable({ rows, onSelectMember }: Props) {
 
   const renderSortIcon = (field: SortField) => {
     if (sortField !== field) {
-      return <ArrowUpDown className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity" />;
+      return <ArrowUpDown className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />;
     }
     return sortDirection === "asc" ? (
-      <ArrowUp className="h-3 w-3 text-slate-900 dark:text-slate-100" />
+      <ArrowUp className="h-3 w-3 text-orange-500 dark:text-amber-400 shrink-0" />
     ) : (
-      <ArrowDown className="h-3 w-3 text-slate-900 dark:text-slate-100" />
+      <ArrowDown className="h-3 w-3 text-orange-500 dark:text-amber-400 shrink-0" />
     );
   };
 
   return (
-    <div className="space-y-2.5">
-      <div className="flex items-center justify-between px-1 text-xs text-[#706E6A] dark:text-slate-400 font-sans">
-        <span className="hidden sm:inline">
-          Exibindo <strong className="font-mono-data font-semibold text-[#171715] dark:text-slate-100">{sortedRows.length}</strong> integrantes (clique no nome para abrir o histórico detalhado)
-        </span>
-        <span className="sm:hidden text-[11px]">
-          <strong className="font-mono-data font-semibold text-[#171715] dark:text-slate-100">{sortedRows.length}</strong> integrantes · toque para detalhes
-        </span>
+    <div className="space-y-3">
+      {/* Barra de Filtros Rápidos + Contador de Visibilidade (H3, H6, H7) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-0.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" role="group" aria-label="Filtros rápidos de integrantes">
+          {(
+            [
+              { id: "all", label: "Todos", count: filterCounts.all },
+              { id: "present", label: "Ao Vivo", count: filterCounts.present, dot: "bg-emerald-500" },
+              { id: "goalMet", label: "Meta ≥ 4h", count: filterCounts.goalMet },
+              { id: "tutors", label: "Tutores", count: filterCounts.tutors },
+            ] as const
+          ).map((chip) => {
+            const active = quickFilter === chip.id;
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                onClick={() => setQuickFilter(chip.id)}
+                className={`inline-flex min-h-[38px] sm:min-h-[32px] items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  active
+                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-2xs"
+                    : "bg-slate-100/80 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:bg-[#161F30] dark:text-slate-300 dark:hover:bg-white/[0.1] dark:hover:text-white border border-slate-200/80 dark:border-white/[0.08]"
+                }`}
+              >
+                {"dot" in chip && chip.dot && (
+                  <span className={`h-1.5 w-1.5 rounded-full ${chip.dot}`} />
+                )}
+                <span>{chip.label}</span>
+                <span
+                  className={`rounded px-1.5 py-px text-[10px] font-mono-data tabular-nums ${
+                    active
+                      ? "bg-white/20 text-white dark:bg-slate-900/15 dark:text-slate-900"
+                      : "bg-white/80 text-slate-500 dark:bg-[#0F1623] dark:text-slate-400"
+                  }`}
+                >
+                  {chip.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center justify-between sm:justify-end gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <span className="tabular-nums">
+            Exibindo{" "}
+            <strong className="font-mono-data font-bold text-slate-900 dark:text-white">
+              {sortedRows.length}
+            </strong>{" "}
+            de{" "}
+            <strong className="font-mono-data font-semibold text-slate-700 dark:text-slate-200">
+              {universeTotal}
+            </strong>{" "}
+            integrantes
+          </span>
+          {hasAnyFilter && (
+            <button
+              type="button"
+              onClick={resetAllFilters}
+              className="inline-flex items-center gap-1 rounded-lg bg-orange-500/10 ring-1 ring-orange-500/25 px-2.5 py-1 text-2xs font-semibold text-orange-600 dark:text-amber-400 hover:bg-orange-500/20 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Limpar filtros</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="overflow-hidden rounded-3xl border border-[#E5E2DC] bg-white/85 backdrop-blur-xl shadow-[0_4px_24px_rgba(23,23,21,0.03)] dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] transition-all duration-300 sm:overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm text-[#171715] dark:text-slate-100" aria-label="Tabela de permanência dos integrantes">
-          <thead className="sticky top-0 z-10 glass-table-header select-none border-b border-[#E5E2DC] dark:border-slate-800 dark:bg-slate-900/90">
-            <tr>
-              <th
-                scope="col"
-                aria-sort={sortField === "name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                className="w-[45%] sm:w-auto px-3 py-2 sm:px-5 sm:py-2.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider"
-              >
-                <button
-                  type="button"
-                  onClick={() => handleSort("name")}
-                  aria-label={getSortAriaLabel("name", "integrante")}
-                  className="group flex items-center gap-1.5 text-left hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1 -ml-1"
-                >
-                  <span>Integrante</span>
-                  {renderSortIcon("name")}
-                </button>
-              </th>
-              <th
-                scope="col"
-                aria-sort={sortField === "matricula" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                className="hidden sm:table-cell sm:w-36 px-4 py-2 sm:px-5 sm:py-2.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider"
-              >
-                <button
-                  type="button"
-                  onClick={() => handleSort("matricula")}
-                  aria-label={getSortAriaLabel("matricula", "matrícula")}
-                  className="group flex items-center gap-1.5 text-left hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1 -ml-1"
-                >
-                  <span>Matrícula</span>
-                  {renderSortIcon("matricula")}
-                </button>
-              </th>
-              <th
-                scope="col"
-                aria-sort={sortField === "sessions" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                className="hidden sm:table-cell sm:w-28 px-4 py-2 sm:px-5 sm:py-2.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider text-center"
-              >
-                <button
-                  type="button"
-                  onClick={() => handleSort("sessions")}
-                  aria-label={getSortAriaLabel("sessions", "sessões")}
-                  className="group flex items-center justify-center gap-1.5 w-full hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1"
-                >
-                  <span>Sessões</span>
-                  {renderSortIcon("sessions")}
-                </button>
-              </th>
-              <th
-                scope="col"
-                aria-sort={sortField === "duration" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                className="w-[27%] sm:w-40 whitespace-nowrap px-2 py-2 sm:px-5 sm:py-2.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider text-right"
-              >
-                <button
-                  type="button"
-                  onClick={() => handleSort("duration")}
-                  aria-label={getSortAriaLabel("duration", "total de permanência")}
-                  className="group flex items-center justify-end gap-1.5 w-full text-right hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1"
-                >
-                  <span className="hidden sm:inline">Total Permanência</span>
-                  <span className="sm:hidden">Tempo</span>
-                  {renderSortIcon("duration")}
-                </button>
-              </th>
-              <th
-                scope="col"
-                aria-sort={sortField === "status" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
-                className="w-[28%] sm:w-32 whitespace-nowrap pl-1 pr-3 py-2 sm:px-5 sm:py-2.5 font-sans font-semibold text-[#706E6A] dark:text-slate-400 text-[11px] uppercase tracking-wider text-right sm:text-left"
-              >
-                <button
-                  type="button"
-                  onClick={() => handleSort("status")}
-                  aria-label={getSortAriaLabel("status", "status de presença")}
-                  className="group flex items-center justify-end sm:justify-start gap-1.5 w-full hover:text-[#171715] dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg py-1 px-1"
-                >
-                  <span>Status</span>
-                  {renderSortIcon("status")}
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E5E2DC]/70 dark:divide-slate-800/70">
-            {sortedRows.map((row, idx) => (
-              <tr
-                key={row.member.id}
-                onClick={() => onSelectMember && onSelectMember(row)}
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onSelectMember && onSelectMember(row);
-                  }
-                }}
-                className="group transition-colors duration-150 hover:bg-[#FAF9F5] dark:hover:bg-slate-800/50 cursor-pointer focus-visible:bg-[#FAF9F5] dark:focus-visible:bg-slate-800/60"
-                role="button"
-                aria-label={`Ver sessões e histórico de ${row.member.name}`}
-              >
-                <td className="px-3 py-2.5 sm:px-5 sm:py-3.5 text-[#171715] dark:text-slate-100 overflow-hidden">
-                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-                    {row.member.avatarUrl ? (
-                      <img
-                        src={row.member.avatarUrl}
-                        alt={row.member.name}
-                        className={`h-7 w-7 sm:h-9 sm:w-9 shrink-0 rounded-full object-cover ring-1.5 sm:ring-2 ${
-                          row.member.isTutor
-                            ? "ring-emerald-500 dark:ring-emerald-400"
-                            : "ring-white dark:ring-slate-900"
-                        } shadow-2xs transition-transform duration-200 group-hover:scale-105`}
-                      />
-                    ) : (
-                      <div
-                        className={`flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarStyle(row.member.name)} text-[10px] sm:text-xs font-bold ring-1.5 sm:ring-2 ${
-                          row.member.isTutor
-                            ? "ring-emerald-500 dark:ring-emerald-400"
-                            : "ring-white dark:ring-slate-900"
-                        } shadow-2xs transition-transform duration-200 group-hover:scale-105`}
-                      >
-                        {row.member.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span
-                          title={row.member.name}
-                          className="font-sans font-medium text-[#171715] dark:text-slate-100 group-hover:text-[#C15F3D] dark:group-hover:text-amber-400 transition-colors text-xs sm:text-sm truncate block"
-                        >
-                          {row.member.name}
-                        </span>
-                        {row.member.isTutor && (
-                          <span
-                            title="Tutor Oficial do Laboratório"
-                            className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 select-none shadow-2xs"
-                          >
-                            <GraduationCap className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                            <span>TUTOR</span>
+      {sortedRows.length === 0 ? (
+        <div className="surface-card flex flex-col items-center justify-center p-12 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100/80 border border-slate-200/80 text-slate-500 dark:bg-[#161F30] dark:border-white/[0.08] dark:text-slate-400">
+            <SearchX className="h-5 w-5" />
+          </div>
+          <p className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+            Nenhum integrante encontrado
+          </p>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
+            Não há registros correspondentes ao filtro atual. Limpe a busca ou selecione outro período.
+          </p>
+          {hasAnyFilter && (
+            <button
+              type="button"
+              onClick={resetAllFilters}
+              className="mt-4 btn-secondary"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Restaurar todos os integrantes</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="surface-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table
+              className="w-full text-left text-sm text-slate-700 dark:text-slate-200"
+              aria-label="Tabela de permanência dos integrantes"
+            >
+              <thead className="sticky top-0 z-10 glass-table-header select-none">
+                <tr>
+                  <th
+                    scope="col"
+                    aria-sort={sortField === "name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                    className="px-3.5 py-3 sm:px-5 eyebrow"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSort("name")}
+                      aria-label={getSortAriaLabel("name", "integrante")}
+                      className="group inline-flex items-center gap-1.5 text-left hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer rounded-md py-0.5"
+                    >
+                      <span>Integrante</span>
+                      {renderSortIcon("name")}
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    aria-sort={sortField === "matricula" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                    className="hidden md:table-cell w-36 px-4 py-3 eyebrow"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSort("matricula")}
+                      aria-label={getSortAriaLabel("matricula", "matrícula")}
+                      className="group inline-flex items-center gap-1.5 text-left hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer rounded-md py-0.5"
+                    >
+                      <span>Matrícula</span>
+                      {renderSortIcon("matricula")}
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    aria-sort={sortField === "sessions" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                    className="hidden sm:table-cell w-28 px-4 py-3 eyebrow text-right"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSort("sessions")}
+                      aria-label={getSortAriaLabel("sessions", "sessões")}
+                      className="group inline-flex items-center justify-end gap-1.5 w-full hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer rounded-md py-0.5"
+                    >
+                      <span>Sessões</span>
+                      {renderSortIcon("sessions")}
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    aria-sort={sortField === "duration" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                    className="w-40 sm:w-52 whitespace-nowrap px-3 py-3 sm:px-5 eyebrow text-right"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSort("duration")}
+                      aria-label={getSortAriaLabel("duration", "total de permanência")}
+                      className="group inline-flex items-center justify-end gap-1.5 w-full text-right hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer rounded-md py-0.5"
+                    >
+                      <span className="hidden sm:inline">Permanência</span>
+                      <span className="sm:hidden">Horas</span>
+                      {renderSortIcon("duration")}
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    aria-sort={sortField === "status" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                    className="w-28 sm:w-36 whitespace-nowrap pl-2 pr-3.5 py-3 sm:px-5 eyebrow text-right"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSort("status")}
+                      aria-label={getSortAriaLabel("status", "status de presença")}
+                      className="group inline-flex items-center justify-end gap-1.5 w-full hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer rounded-md py-0.5"
+                    >
+                      <span>Status</span>
+                      {renderSortIcon("status")}
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200/60 dark:divide-white/[0.05]">
+                {sortedRows.map((row, idx) => {
+                  const pct = Math.min(100, Math.round((row.totalSeconds / maxSeconds) * 100));
+                  const metFourHours = row.totalSeconds >= 4 * 3600;
+                  return (
+                    <tr
+                      key={row.member.id}
+                      onClick={() => onSelectMember && onSelectMember(row)}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onSelectMember && onSelectMember(row);
+                        }
+                      }}
+                      className="cursor-pointer hover:bg-slate-50/90 dark:hover:bg-white/[0.03] transition-colors group"
+                      role="button"
+                      aria-label={`Ver sessões e histórico de ${row.member.name}`}
+                    >
+                      {/* Coluna 1: Avatar Blindado + Nome + Pódio + TUTOR + Metadados Mobile */}
+                      <td className="px-3.5 py-3 sm:px-5 sm:py-3.5 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <MemberAvatar
+                            name={row.member.name}
+                            src={row.member.avatarUrl}
+                            size="md"
+                            highlight={Boolean(row.member.isTutor)}
+                            present={row.present}
+                            className="transition-transform duration-150 group-hover:scale-105"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span
+                                title={row.member.name}
+                                className="font-semibold text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors text-xs sm:text-sm truncate max-w-[160px] xs:max-w-[210px] sm:max-w-xs md:max-w-sm"
+                              >
+                                {row.member.name}
+                              </span>
+                              {isDurationDesc && idx < 3 && row.totalSeconds > 0 && (
+                                <RankBadge rank={(idx + 1) as 1 | 2 | 3} />
+                              )}
+                              {row.member.isTutor && (
+                                <span
+                                  title="Tutor Oficial do Laboratório"
+                                  className="inline-flex items-center gap-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 ring-1 ring-orange-500/25 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md select-none"
+                                >
+                                  <GraduationCap className="h-3 w-3 shrink-0" />
+                                  <span>TUTOR</span>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Sub-linha responsiva em telas pequenas (< 768px): Matrícula + Sessões sem corte */}
+                            <div className="flex items-center gap-2 mt-0.5 text-2xs text-slate-500 dark:text-slate-400 font-mono-data tabular-nums md:hidden">
+                              <span>{row.member.matricula ? `#${row.member.matricula}` : "Discente"}</span>
+                              <span className="sm:hidden">· {row.sessionCount} {row.sessionCount === 1 ? "sessão" : "sessões"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Coluna 2: Matrícula (Desktop) */}
+                      <td className="hidden md:table-cell px-4 py-3.5 font-mono-data tabular-nums text-xs text-slate-500 dark:text-slate-400">
+                        {row.member.matricula ? (
+                          <span className="inline-block rounded-md bg-slate-100/80 dark:bg-[#161F30] border border-slate-200/80 dark:border-white/[0.08] px-2 py-0.5 text-slate-700 dark:text-slate-300">
+                            {row.member.matricula}
                           </span>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-600">—</span>
                         )}
-                        {isDurationDesc && idx < 3 && (
-                          <RankBadge rank={(idx + 1) as 1 | 2 | 3} />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="hidden px-4 py-3.5 sm:table-cell sm:px-5 font-mono-data text-xs text-[#706E6A] dark:text-slate-400">
-                  {row.member.matricula ? (
-                    <span className="inline-block rounded-md bg-[#FAF9F5] dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 px-2 py-0.5 text-[#706E6A] dark:text-slate-300">
-                      {row.member.matricula}
-                    </span>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="hidden px-4 py-3.5 text-[#171715] dark:text-slate-200 sm:table-cell sm:px-5 text-center font-mono-data text-xs sm:text-sm font-medium">
-                  {row.sessionCount}
-                </td>
-                <td className="whitespace-nowrap px-2 py-2.5 sm:px-5 sm:py-3.5 text-right font-mono-data tabular-nums numeric-tabular text-xs sm:text-sm">
-                  {row.present ? (
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                      {formatDuration(row.totalSeconds, true)}
-                    </span>
-                  ) : (
-                    <span className="font-medium text-[#171715] dark:text-slate-200">
-                      {formatDuration(row.totalSeconds)}
-                    </span>
-                  )}
-                </td>
-                <td className="whitespace-nowrap pl-1 pr-3 py-2.5 sm:px-5 sm:py-3.5 text-right sm:text-left">
-                  <div className="flex items-center justify-end sm:justify-start">
-                    {row.present ? (
-                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 px-2.5 py-1 text-[11px] font-medium text-emerald-800 dark:text-emerald-300 shadow-2xs">
-                        <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
-                          <span className="animate-live-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-600 dark:bg-emerald-400" />
-                        </span>
-                        <span>Presente</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#FAF9F5] dark:bg-slate-800/80 border border-[#E5E2DC] dark:border-slate-700 px-2.5 py-1 text-[11px] font-medium text-[#706E6A] dark:text-slate-400">
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#706E6A]/40 dark:bg-slate-500 shrink-0" />
-                        <span>Ausente</span>
-                      </span>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                      </td>
+
+                      {/* Coluna 3: Sessões (Tablet/Desktop) */}
+                      <td className="hidden sm:table-cell px-4 py-3.5 text-right font-mono-data tabular-nums text-sm font-medium text-slate-700 dark:text-slate-200">
+                        {row.sessionCount}
+                      </td>
+
+                      {/* Coluna 4: Permanência + Barra Proporcional */}
+                      <td className="whitespace-nowrap px-3 py-3 sm:px-5 sm:py-3.5 text-right font-mono-data tabular-nums">
+                        <div className="flex flex-col items-end gap-1">
+                          <span
+                            className={`text-xs sm:text-sm font-bold ${
+                              row.present
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-slate-900 dark:text-white"
+                            }`}
+                          >
+                            {row.present
+                              ? formatDuration(row.totalSeconds, true)
+                              : formatDuration(row.totalSeconds)}
+                          </span>
+                          <div
+                            className="hidden sm:flex h-1.5 w-24 md:w-28 overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.07]"
+                            aria-hidden="true"
+                          >
+                            <div
+                              className={`h-full rounded-full transition-all duration-300 ${
+                                row.present
+                                  ? "bg-emerald-500"
+                                  : metFourHours
+                                  ? "bg-orange-500 dark:bg-amber-400"
+                                  : "bg-slate-400 dark:bg-slate-500"
+                              }`}
+                              style={{ width: `${row.totalSeconds > 0 ? Math.max(pct, 6) : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Coluna 5: Status Semântico + Chevron Interativo */}
+                      <td className="whitespace-nowrap pl-2 pr-3.5 py-3 sm:px-5 sm:py-3.5 text-right">
+                        <div className="inline-flex items-center justify-end gap-2">
+                          {row.present ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 px-2.5 py-1 text-2xs font-bold">
+                              <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                              </span>
+                              <span>Ao vivo</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100/80 dark:bg-[#161F30] text-slate-500 dark:text-slate-400 ring-1 ring-slate-200/80 dark:ring-white/[0.08] px-2.5 py-1 text-2xs font-medium">
+                              <span className="h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-500 shrink-0" />
+                              <span>Ausente</span>
+                            </span>
+                          )}
+                          <ChevronRight
+                            className="h-4 w-4 text-slate-400 dark:text-slate-500 group-hover:text-orange-500 dark:group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all shrink-0"
+                            aria-hidden="true"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

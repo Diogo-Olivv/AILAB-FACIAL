@@ -353,14 +353,14 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
 
   if (dailyData.length === 0) {
     return (
-      <div className="rounded-3xl border border-[#E5E2DC]/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-6 text-center shadow-xs transition-all duration-300">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-amber-600 dark:text-amber-400 mb-3 shadow-2xs">
-          <Clock3 className="h-6 w-6" />
+      <div className="surface-card p-6 text-center transition-all duration-300">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-600 dark:text-amber-400 mb-3">
+          <Clock3 className="h-5 w-5" />
         </div>
-        <h3 className="text-sm font-semibold text-[#171715] dark:text-slate-100 font-sans">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 font-sans">
           Sem registros de atividades em dias úteis para este período
         </h3>
-        <p className="text-xs text-[#706E6A] dark:text-slate-400 font-sans mt-1 max-w-md mx-auto">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-sans mt-1 max-w-md mx-auto">
           O laboratório opera regularmente de <strong>Segunda a Sexta-feira</strong>. Selecione <em>Semana</em> ou <em>Mês</em> para analisar o histórico de presença.
         </p>
       </div>
@@ -368,22 +368,22 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
   }
 
   return (
-    <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-4 sm:p-5 shadow-[0_4px_20px_rgba(23,23,21,0.02)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-all duration-300">
+    <div className="surface-card p-4 sm:p-5 transition-all duration-300">
       {/* Cabeçalho com Título, Seletor de Modo e Total */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-[#E5E2DC]/60 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
         <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-sans font-semibold text-[#171715] dark:text-slate-100">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-sans font-semibold tracking-tight text-slate-900 dark:text-slate-100">
               Análise de Presença e Permanência
             </h3>
             {peakDay && peakDay.hours > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/60 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+              <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-1.5 py-px text-2xs font-mono-data tabular-nums font-semibold text-amber-700 dark:text-amber-300">
                 <Flame className="h-3 w-3 text-amber-500" />
                 Pico: {peakDay.dateStr} ({peakDay.hours}h)
               </span>
             )}
           </div>
-          <p className="text-2xs text-[#706E6A] dark:text-slate-400 font-sans mt-0.5">
+          <p className="text-2xs text-slate-500 dark:text-slate-400 font-sans mt-0.5">
             Métricas de horas dedicadas no laboratório com base nas sessões biométricas reais
           </p>
         </div>
@@ -396,15 +396,15 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
             onPointerMove={handleModePointerMove}
             onPointerUp={handleModePointerUp}
             onPointerCancel={handleModePointerCancel}
-            className="relative inline-flex h-9 rounded-2xl bg-[#FAF9F5] dark:bg-slate-800/90 p-1 border border-[#E5E2DC] dark:border-slate-700 shadow-2xs select-none touch-pan-y cursor-grab active:cursor-grabbing"
+            className="segmented-track inline-flex h-9 select-none touch-pan-y cursor-grab active:cursor-grabbing"
             role="tablist"
             aria-label="Modo de visualização do gráfico"
           >
             {/* Pílula Deslizante Fluida iOS */}
             <div
-              className={`absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 border border-[#E5E2DC]/80 dark:border-slate-600 shadow-2xs pointer-events-none ${
+              className={`segmented-pill top-1 bottom-1 pointer-events-none ${
                 isDragging
-                  ? "transition-none shadow-md scale-[1.02]"
+                  ? "transition-none scale-[1.02]"
                   : "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
               }`}
               style={{
@@ -430,10 +430,10 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                   }}
                   role="tab"
                   aria-selected={isActive}
-                  className={`relative z-10 inline-flex items-center justify-center gap-1.5 px-3 rounded-xl text-xs font-sans font-medium transition-colors duration-200 cursor-pointer h-full ${
+                  className={`relative z-10 inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-lg text-xs font-sans font-medium transition-colors duration-200 cursor-pointer h-full ${
                     isActive
-                      ? "text-[#171715] dark:text-white font-semibold"
-                      : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
+                      ? "text-slate-900 dark:text-white font-semibold"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                   title={m.label}
                 >
@@ -444,8 +444,11 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
             })}
           </div>
 
-          <span className="hidden sm:inline-block text-2xs font-mono-data font-semibold text-[#171715] dark:text-slate-200 bg-[#FAF9F5] dark:bg-slate-800 border border-[#E5E2DC] dark:border-slate-700 rounded-lg px-2.5 py-1.5">
-            {formatDuration(totalPeriodSeconds)}
+          <span className="hidden sm:inline-flex h-9 flex-col justify-center text-right rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-900 px-2.5">
+            <span className="text-3xs font-semibold uppercase tracking-[0.08em] text-slate-400 leading-3">Total</span>
+            <span className="text-2xs font-mono-data tabular-nums font-semibold text-slate-900 dark:text-slate-100 leading-4">
+              {formatDuration(totalPeriodSeconds)}
+            </span>
           </span>
         </div>
       </div>
@@ -477,7 +480,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                         stroke="currentColor"
                         strokeWidth={0.6}
                         strokeDasharray="3,3"
-                        className="text-[#E5E2DC] dark:text-slate-800"
+                        className="text-slate-200 dark:text-white/[0.06]"
                       />
                       <text
                         x={yAxisWidth - 8}
@@ -485,13 +488,40 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                         textAnchor="end"
                         fontSize={8.5}
                         fill="currentColor"
-                        className="text-[#706E6A] dark:text-slate-500 font-mono-data"
+                        className="text-slate-500 dark:text-slate-500 font-mono-data"
                       >
                         {value}h
                       </text>
                     </g>
                   );
                 })}
+
+                {/* Linha de referência do pico (tracejada) */}
+                {peakDay && peakDay.hours > 0 && (
+                  <g aria-hidden="true">
+                    <line
+                      x1={yAxisWidth}
+                      y1={chartHeight - (peakDay.hours / maxHours) * usableHeight}
+                      x2={totalSvgWidth - sidePadding}
+                      y2={chartHeight - (peakDay.hours / maxHours) * usableHeight}
+                      stroke="#F59E0B"
+                      strokeWidth={0.9}
+                      strokeDasharray="4,3"
+                      opacity={0.75}
+                    />
+                    <text
+                      x={totalSvgWidth - sidePadding - 2}
+                      y={Math.max(10, chartHeight - (peakDay.hours / maxHours) * usableHeight - 4)}
+                      textAnchor="end"
+                      fontSize={7.5}
+                      fontWeight={700}
+                      fill="#D97706"
+                      className="font-mono-data tabular-nums dark:fill-amber-400"
+                    >
+                      PICO · {peakDay.hours}h
+                    </text>
+                  </g>
+                )}
 
                 {/* Barras esguias e elegantes com cantos superiores arredondados */}
                 {dailyData.map((d, i) => {
@@ -518,7 +548,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                         height={usableHeight}
                         rx={5}
                         fill="currentColor"
-                        className="text-[#FAF9F5] dark:text-slate-800/60"
+                        className="text-slate-100/80 dark:text-white/[0.04]"
                       />
 
                       {/* Barra de valor com gradiente refinado */}
@@ -536,7 +566,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                               ? "url(#barWeekendGrad)"
                               : "url(#barWorkdayGrad)"
                           }
-                          opacity={isSelected ? 1 : 0.88}
+                          opacity={selectedDayIndex === null ? 0.95 : isSelected ? 1 : 0.35}
                           className="transition-all duration-200"
                         />
                       )}
@@ -568,7 +598,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                           className={`font-mono-data ${
                             d.isToday
                               ? "text-[#C15F3D] dark:text-amber-400 font-bold"
-                              : "text-[#706E6A] dark:text-slate-400"
+                              : "text-slate-500 dark:text-slate-400"
                           }`}
                         >
                           {d.hours}
@@ -589,8 +619,8 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                             : d.isWeekend
                             ? "text-slate-400 dark:text-slate-500"
                             : isSelected
-                            ? "text-[#171715] dark:text-white font-bold"
-                            : "text-[#706E6A] dark:text-slate-400"
+                            ? "text-slate-900 dark:text-white font-bold"
+                            : "text-slate-500 dark:text-slate-400"
                         }`}
                       >
                         {d.date.getDate()}
@@ -612,12 +642,12 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
 
                 <defs>
                   <linearGradient id="barWorkdayGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#C15F3D" stopOpacity="0.95" />
-                    <stop offset="100%" stopColor="#C15F3D" stopOpacity="0.45" />
+                    <stop offset="0%" stopColor="#D9744F" stopOpacity="1" />
+                    <stop offset="100%" stopColor="#B4532F" stopOpacity="0.55" />
                   </linearGradient>
                   <linearGradient id="barTodayGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#F97316" stopOpacity="1" />
-                    <stop offset="100%" stopColor="#C15F3D" stopOpacity="0.75" />
+                    <stop offset="0%" stopColor="#FB923C" stopOpacity="1" />
+                    <stop offset="100%" stopColor="#EA580C" stopOpacity="0.7" />
                   </linearGradient>
                   <linearGradient id="barWeekendGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.8" />
@@ -654,7 +684,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                         stroke="currentColor"
                         strokeWidth={0.6}
                         strokeDasharray="3,3"
-                        className="text-[#E5E2DC] dark:text-slate-800"
+                        className="text-slate-200 dark:text-white/[0.06]"
                       />
                       <text
                         x={yAxisWidth - 8}
@@ -662,7 +692,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                         textAnchor="end"
                         fontSize={8.5}
                         fill="currentColor"
-                        className="text-[#706E6A] dark:text-slate-500 font-mono-data"
+                        className="text-slate-500 dark:text-slate-500 font-mono-data"
                       >
                         {value}h
                       </text>
@@ -670,9 +700,36 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                   );
                 })}
 
+                {/* Linha de referência do pico (tracejada) */}
+                {peakDay && peakDay.hours > 0 && (
+                  <g aria-hidden="true">
+                    <line
+                      x1={yAxisWidth}
+                      y1={chartHeight - (peakDay.hours / maxHours) * usableHeight}
+                      x2={totalSvgWidth - sidePadding}
+                      y2={chartHeight - (peakDay.hours / maxHours) * usableHeight}
+                      stroke="#F59E0B"
+                      strokeWidth={0.9}
+                      strokeDasharray="4,3"
+                      opacity={0.75}
+                    />
+                    <text
+                      x={totalSvgWidth - sidePadding - 2}
+                      y={Math.max(10, chartHeight - (peakDay.hours / maxHours) * usableHeight - 4)}
+                      textAnchor="end"
+                      fontSize={7.5}
+                      fontWeight={700}
+                      fill="#D97706"
+                      className="font-mono-data tabular-nums dark:fill-amber-400"
+                    >
+                      PICO · {peakDay.hours}h
+                    </text>
+                  </g>
+                )}
+
                 {/* Área preenchida com gradiente */}
                 {trendAreaPath && (
-                  <path d={trendAreaPath} fill="url(#trendAreaGrad)" opacity={0.4} />
+                  <path d={trendAreaPath} fill="url(#trendAreaGrad)" opacity={0.6} />
                 )}
 
                 {/* Linha da Curva Bezier */}
@@ -716,7 +773,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                           fontSize={7.5}
                           fontWeight={600}
                           fill="currentColor"
-                          className="font-mono-data text-[#171715] dark:text-slate-200"
+                          className="font-mono-data text-slate-900 dark:text-slate-200"
                         >
                           {d.hours}
                         </text>
@@ -736,8 +793,8 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
                             : d.isWeekend
                             ? "text-slate-400 dark:text-slate-500"
                             : isSelected
-                            ? "text-[#171715] dark:text-white font-bold"
-                            : "text-[#706E6A] dark:text-slate-400"
+                            ? "text-slate-900 dark:text-white font-bold"
+                            : "text-slate-500 dark:text-slate-400"
                         }`}
                       >
                         {d.date.getDate()}
@@ -759,8 +816,8 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
 
                 <defs>
                   <linearGradient id="trendAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#C15F3D" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#C15F3D" stopOpacity="0.02" />
+                    <stop offset="0%" stopColor="#C15F3D" stopOpacity="0.55" />
+                    <stop offset="100%" stopColor="#C15F3D" stopOpacity="0" />
                   </linearGradient>
                 </defs>
               </svg>
@@ -773,13 +830,13 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
           <div className="space-y-4 py-2 animate-fade-in">
             {/* Barra de Distribuição Empilhada 100% */}
             <div>
-              <div className="flex items-center justify-between text-2xs font-sans text-[#706E6A] dark:text-slate-400 mb-1.5">
+              <div className="flex items-center justify-between text-2xs font-sans text-slate-500 dark:text-slate-400 mb-1.5">
                 <span>Densidade de Permanência no Laboratório</span>
-                <span className="font-mono-data font-semibold text-[#171715] dark:text-slate-200">
+                <span className="font-mono-data tabular-nums font-semibold text-slate-900 dark:text-slate-200">
                   {shiftStats.totalHours}h no período
                 </span>
               </div>
-              <div className="h-4 w-full rounded-full overflow-hidden flex bg-slate-100 dark:bg-slate-800 p-0.5 border border-[#E5E2DC] dark:border-slate-700">
+              <div className="h-3 w-full rounded-full overflow-hidden flex gap-0.5 bg-slate-100 dark:bg-slate-800">
                 <div
                   style={{ width: `${shiftStats.morning.percent}%` }}
                   className="h-full bg-amber-400 dark:bg-amber-500 rounded-l-full transition-all duration-500"
@@ -801,69 +858,69 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
             {/* Cards dos Turnos */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Manhã */}
-              <div className="rounded-2xl border border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5]/70 dark:bg-slate-950/40 p-3.5 flex flex-col justify-between">
+              <div className="surface-muted p-3.5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                    <span className="text-xs font-semibold text-[#171715] dark:text-slate-200 font-sans">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-200 font-sans">
                       Manhã (08h–12h)
                     </span>
                   </div>
-                  <span className="font-mono-data text-xs font-bold text-amber-600 dark:text-amber-400">
+                  <span className="font-mono-data tabular-nums text-xs font-bold text-amber-600 dark:text-amber-400">
                     {shiftStats.morning.percent}%
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline justify-between">
-                  <span className="text-xl font-bold font-mono-data text-[#171715] dark:text-slate-100">
+                  <span className="text-xl font-bold font-mono-data tabular-nums text-slate-900 dark:text-slate-100">
                     {shiftStats.morning.hours}h
                   </span>
-                  <span className="text-2xs text-[#706E6A] dark:text-slate-400">
+                  <span className="text-2xs text-slate-500 dark:text-slate-400">
                     {shiftStats.morning.count} check-ins
                   </span>
                 </div>
               </div>
 
               {/* Tarde */}
-              <div className="rounded-2xl border border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5]/70 dark:bg-slate-950/40 p-3.5 flex flex-col justify-between">
+              <div className="surface-muted p-3.5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-2.5 w-2.5 rounded-full bg-[#C15F3D]" />
-                    <span className="text-xs font-semibold text-[#171715] dark:text-slate-200 font-sans">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-200 font-sans">
                       Tarde (12h–18h)
                     </span>
                   </div>
-                  <span className="font-mono-data text-xs font-bold text-[#C15F3D] dark:text-orange-400">
+                  <span className="font-mono-data tabular-nums text-xs font-bold text-[#C15F3D] dark:text-orange-400">
                     {shiftStats.afternoon.percent}%
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline justify-between">
-                  <span className="text-xl font-bold font-mono-data text-[#171715] dark:text-slate-100">
+                  <span className="text-xl font-bold font-mono-data tabular-nums text-slate-900 dark:text-slate-100">
                     {shiftStats.afternoon.hours}h
                   </span>
-                  <span className="text-2xs text-[#706E6A] dark:text-slate-400">
+                  <span className="text-2xs text-slate-500 dark:text-slate-400">
                     {shiftStats.afternoon.count} check-ins
                   </span>
                 </div>
               </div>
 
               {/* Noite */}
-              <div className="rounded-2xl border border-[#E5E2DC] dark:border-slate-800 bg-[#FAF9F5]/70 dark:bg-slate-950/40 p-3.5 flex flex-col justify-between">
+              <div className="surface-muted p-3.5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
-                    <span className="text-xs font-semibold text-[#171715] dark:text-slate-200 font-sans">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-200 font-sans">
                       Noite (18h–22h)
                     </span>
                   </div>
-                  <span className="font-mono-data text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                  <span className="font-mono-data tabular-nums text-xs font-bold text-indigo-600 dark:text-indigo-400">
                     {shiftStats.evening.percent}%
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline justify-between">
-                  <span className="text-xl font-bold font-mono-data text-[#171715] dark:text-slate-100">
+                  <span className="text-xl font-bold font-mono-data tabular-nums text-slate-900 dark:text-slate-100">
                     {shiftStats.evening.hours}h
                   </span>
-                  <span className="text-2xs text-[#706E6A] dark:text-slate-400">
+                  <span className="text-2xs text-slate-500 dark:text-slate-400">
                     {shiftStats.evening.count} check-ins
                   </span>
                 </div>
@@ -874,23 +931,23 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
 
         {/* Card de Detalhamento do Dia (Exibido exclusivamente ao clicar em um dia) */}
         {selectedDayIndex !== null && dailyData[selectedDayIndex] && mode !== "shifts" && (
-          <div className="mt-3.5 p-3.5 sm:p-4 rounded-2xl border border-amber-200/90 dark:border-amber-900/60 bg-[#FAF5F0] dark:bg-amber-950/25 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+          <div className="mt-3.5 p-3.5 sm:p-4 rounded-xl border border-orange-200 dark:border-amber-500/25 bg-orange-50/60 dark:bg-amber-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40 text-[#C15F3D] dark:text-amber-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-orange-200 dark:border-amber-500/25 text-[#C15F3D] dark:text-amber-400">
                 <CalendarDays className="h-5 w-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-sans font-semibold text-[#171715] dark:text-slate-100">
+                  <span className="text-sm font-sans font-semibold text-slate-900 dark:text-slate-100">
                     {dailyData[selectedDayIndex].weekdayLabel}, {dailyData[selectedDayIndex].dateStr}
                   </span>
                   {dailyData[selectedDayIndex].isToday && (
-                    <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                    <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-px text-3xs font-semibold uppercase tracking-[0.06em] text-amber-700 dark:text-amber-300">
                       Hoje
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-[#706E6A] dark:text-slate-400 font-sans mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-sans tabular-nums mt-0.5">
                   {dailyData[selectedDayIndex].activeMembers} {dailyData[selectedDayIndex].activeMembers === 1 ? "discente esteve presente" : "discentes estiveram presentes"} · {dailyData[selectedDayIndex].sessionCount} check-ins
                 </p>
               </div>
@@ -898,17 +955,17 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
 
             <div className="flex items-center gap-3 self-end sm:self-auto">
               <div className="text-right">
-                <div className="text-base font-mono-data font-bold text-[#C15F3D] dark:text-amber-400">
+                <div className="text-lg font-mono-data tabular-nums font-bold text-[#C15F3D] dark:text-amber-400">
                   {dailyData[selectedDayIndex].hours}h
                 </div>
-                <div className="text-[10px] text-[#706E6A] dark:text-slate-400 font-mono-data">
+                <div className="text-2xs text-slate-500 dark:text-slate-400 font-mono-data tabular-nums">
                   {formatDuration(dailyData[selectedDayIndex].totalSeconds)} acumuladas
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedDayIndex(null)}
-                className="p-1 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-white cursor-pointer transition-colors"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer transition-colors"
                 title="Fechar detalhes"
                 aria-label="Fechar detalhes"
               >
@@ -921,7 +978,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
 
       {/* Legenda de apoio (Apenas dias úteis e hoje) com dica clara de clique */}
       {mode !== "shifts" && (
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-2.5 border-t border-[#E5E2DC]/60 dark:border-slate-800 text-2xs font-sans text-[#706E6A] dark:text-slate-400">
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-2xs font-sans text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
               <div className="h-2 w-2 rounded-full bg-[#C15F3D]" />
@@ -932,7 +989,7 @@ export function WeeklyChart({ rows, range, sessions = [] }: Props) {
               <span className="font-semibold text-[#C15F3D] dark:text-amber-400">Hoje</span>
             </div>
           </div>
-          <span className="italic text-[11px] text-[#706E6A] dark:text-slate-500">
+          <span className="text-2xs text-slate-400 dark:text-slate-500">
             Clique em uma coluna ou ponto para ver os detalhes do dia
           </span>
         </div>

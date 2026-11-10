@@ -17,6 +17,9 @@ import {
   Sparkles,
   SunMedium,
   Coffee,
+  Cpu,
+  RotateCcw,
+  type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { useSearchParams } from "react-router-dom";
@@ -28,7 +31,7 @@ import {
   type Member,
   type SessionRecord,
 } from "../lib/reports";
-import { rangeFor, type PeriodKey } from "../lib/period";
+import { rangeFor, PERIOD_LABELS, type PeriodKey } from "../lib/period";
 import {
   formatDuration,
   groupByDay,
@@ -43,6 +46,7 @@ import { TotalsTable } from "../components/TotalsTable";
 import { DailyHistory } from "../components/DailyHistory";
 import { MemberDetailDrawer } from "../components/MemberDetailDrawer";
 import { PrivacyTermsModal } from "../components/PrivacyTermsModal";
+import { HowItWorksModal } from "../components/HowItWorksModal";
 import { ManualAttendanceModal } from "../components/ManualAttendanceModal";
 import { TutorWarningModal, TutorWarningPanel } from "../components/TutorWarningModal";
 import { TutorProfileModal } from "../components/TutorProfileModal";
@@ -53,6 +57,7 @@ import { WeeklyChart } from "../components/WeeklyChart";
 import { TutorInsightsCard } from "../components/TutorInsightsCard";
 import { ExportButton } from "../components/ExportButton";
 import { OfficialReportModal } from "../components/OfficialReportModal";
+import { MemberAvatar } from "../components/MemberAvatar";
 
 type View = "totals" | "history";
 type TutorTab = "overview" | "audit" | "records";
@@ -70,6 +75,7 @@ export function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [view, setView] = useState<View>("totals");
   const [tutorTab, setTutorTab] = useState<TutorTab>("overview");
   const tutorTabContainerRef = useRef<HTMLDivElement>(null);
@@ -145,7 +151,6 @@ export function Dashboard() {
     const currentLeft = Math.max(0, Math.min(drag.initialLeft + dx, maxLeft));
     setTutorTabDragLeftPx(currentLeft);
 
-    // Atualização imediata em tempo real durante o arraste
     const targetIndex = Math.min(2, Math.max(0, Math.round(currentLeft / pillWidth)));
     const targetTab = tutorTabsList[targetIndex];
     if (targetTab && targetTab !== tutorTab) {
@@ -180,6 +185,7 @@ export function Dashboard() {
     }
     tutorTabDragRef.current = null;
   };
+
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -188,19 +194,58 @@ export function Dashboard() {
 
   // Modais e gavetas
   const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isTutorWarningOpen, setIsTutorWarningOpen] = useState(false);
   const [isTutorProfileOpen, setIsTutorProfileOpen] = useState(false);
   const [isManualAttendanceOpen, setIsManualAttendanceOpen] = useState(false);
   const [isOfficialReportOpen, setIsOfficialReportOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
-  // Ticker de 1 segundo para atualizar sessões em aberto em tempo real com fluidez
+  // Ticker de 1 segundo para atualizar sessões em aberto em tempo real
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(new Date());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Atalho global "/" ou Ctrl+K / Cmd+K para focar a busca da tabela (H7 — Eficiência de Uso)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        if (user && !isStudentView && tutorTab !== "records") {
+          setTutorTab("records");
+          setTimeout(() => searchInputRef.current?.focus(), 60);
+        } else {
+          searchInputRef.current?.focus();
+          searchInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        return;
+      }
+
+      if (!isEditable && e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        if (user && !isStudentView && tutorTab !== "records") {
+          setTutorTab("records");
+          setTimeout(() => searchInputRef.current?.focus(), 60);
+        } else {
+          searchInputRef.current?.focus();
+          searchInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [user, isStudentView, tutorTab]);
 
   const loadMembers = useCallback(async () => {
     try {
@@ -229,7 +274,7 @@ export function Dashboard() {
 
   const range = useMemo(
     () => rangeFor(period, customFrom, customTo),
-    [period, customFrom, customTo],
+    [period, customFrom, customTo]
   );
 
   const refreshData = useCallback(
@@ -245,7 +290,11 @@ export function Dashboard() {
         setPresentIds(nextPresent);
         setLastRefreshed(new Date());
       } catch (e: any) {
-        if (e?.message?.includes("JWT") || e?.message?.includes("expired") || e?.message?.includes("401")) {
+        if (
+          e?.message?.includes("JWT") ||
+          e?.message?.includes("expired") ||
+          e?.message?.includes("401")
+        ) {
           try {
             await supabase.auth.signOut();
             const [retrySessions, retryPresent] = await Promise.all([
@@ -270,7 +319,7 @@ export function Dashboard() {
         setIsRefreshing(false);
       }
     },
-    [range],
+    [range]
   );
 
   useEffect(() => {
@@ -280,7 +329,7 @@ export function Dashboard() {
     refreshData(false);
   }, [refreshData, members.length]);
 
-  // Polling a cada 30 segundos para manter os dados atualizados em tempo real no dashboard
+  // Polling a cada 30 segundos
   useEffect(() => {
     const timer = setInterval(() => {
       refreshData(true);
@@ -288,7 +337,7 @@ export function Dashboard() {
     return () => clearInterval(timer);
   }, [refreshData]);
 
-  // Filtro Temporal de Dias Úteis: processa exclusivamente registros de Segunda a Sexta-feira
+  // Filtro Temporal de Dias Úteis (Segunda a Sexta)
   const weekdaySessions = useMemo(() => {
     return filterWeekdaySessions(sessions);
   }, [sessions]);
@@ -297,14 +346,16 @@ export function Dashboard() {
     return totalsByMember(members, weekdaySessions, presentIds, now);
   }, [members, weekdaySessions, presentIds, now]);
 
-  const days = useMemo(() => groupByDay(members, weekdaySessions, now), [members, weekdaySessions, now]);
+  const days = useMemo(
+    () => groupByDay(members, weekdaySessions, now),
+    [members, weekdaySessions, now]
+  );
 
   const selectedMemberTotal = useMemo(() => {
     if (!selectedMemberId) return null;
     return totals.find((t) => t.member.id === selectedMemberId) ?? null;
   }, [totals, selectedMemberId]);
 
-  // Filtragem dinâmica por nome e matrícula
   const filteredTotals = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return totals;
@@ -321,9 +372,7 @@ export function Dashboard() {
     return days
       .map((d) => ({
         ...d,
-        entries: d.entries.filter(
-          (s) => s.memberName.toLowerCase().includes(q)
-        ),
+        entries: d.entries.filter((s) => s.memberName.toLowerCase().includes(q)),
       }))
       .filter((d) => d.entries.length > 0);
   }, [days, searchQuery]);
@@ -333,7 +382,7 @@ export function Dashboard() {
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     searchDebounceRef.current = setTimeout(() => {
       setSearchQuery(value);
-    }, 200);
+    }, 180);
   };
 
   const clearSearch = () => {
@@ -342,27 +391,31 @@ export function Dashboard() {
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
   };
 
+  const resetPeriodToDefault = () => {
+    setPeriod("week");
+    setCustomFrom("");
+    setCustomTo("");
+  };
+
   // Métricas agregadas
   const presentCount = presentIds.length;
   const totalLabSeconds = useMemo(
     () => totals.reduce((acc, t) => acc + t.totalSeconds, 0),
-    [totals],
+    [totals]
   );
   const activeMembersCount = useMemo(
     () => totals.filter((t) => t.totalSeconds > 0).length,
-    [totals],
+    [totals]
   );
   const totalSessionsCount = useMemo(
     () => totals.reduce((acc, t) => acc + t.sessionCount, 0),
-    [totals],
+    [totals]
   );
 
-  // Lista de integrantes que estão no laboratório agora
   const presentMembers = useMemo(() => {
     return totals.filter((t) => t.present);
   }, [totals]);
 
-  // Total de alunos com menos de 4 horas no período selecionado (dias úteis)
   const studentsUnderFourHoursCount = useMemo(() => {
     const map = new Map<string, number>();
     for (const m of members) map.set(m.id, 0);
@@ -373,302 +426,334 @@ export function Dashboard() {
     return members.filter((m) => (map.get(m.id) ?? 0) < 4 * 3600).length;
   }, [members, weekdaySessions, now]);
 
-  // Insights analíticos de ocupação e horários de estudo
   const occupancyInsights = useMemo(() => {
     return calculateOccupancyInsights(sessions, presentCount, now);
   }, [sessions, presentCount, now]);
 
+  const crowd = CROWD_STYLES[occupancyInsights.currentCrowdLevel];
+  const shiftSegments = [
+    {
+      key: "morning",
+      label: "Manhã",
+      percent: occupancyInsights.shiftsSummary.morning.percent,
+      bar: "bg-amber-400",
+    },
+    {
+      key: "afternoon",
+      label: "Tarde",
+      percent: occupancyInsights.shiftsSummary.afternoon.percent,
+      bar: "bg-orange-500",
+    },
+    {
+      key: "evening",
+      label: "Noite",
+      percent: occupancyInsights.shiftsSummary.evening.percent,
+      bar: "bg-indigo-500",
+    },
+  ];
+
+  const hasActiveFilters = period !== "week" || Boolean(searchQuery.trim());
+
   return (
-    <div className="min-h-screen bg-transparent flex flex-col justify-between selection:bg-[#C15F3D]/20 text-[#171715] transition-colors duration-300">
-      {/* Linha sutil de carregamento superior em tempo real */}
+    <div className="min-h-screen bg-transparent flex flex-col justify-between selection:bg-orange-500/20 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      {/* Barra superior de progresso durante sincronização */}
       {isRefreshing && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-gradient-to-r from-transparent via-[#C15F3D] to-amber-500 animate-pulse" />
+        <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-gradient-to-r from-transparent via-orange-500 to-emerald-500 animate-pulse" />
       )}
 
-      {/* Cabeçalho limpo com contagem ao vivo e ações rápidas */}
+      {/* Header Global Fixo (z-40 h-16) */}
       <Header
         user={user}
         signOut={signOut}
         onOpenTerms={() => setIsTermsOpen(true)}
+        onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
         onRefresh={() => refreshData(false)}
         isRefreshing={isRefreshing}
         presentCount={presentCount}
+        lastRefreshed={lastRefreshed}
       />
 
-      <main className="flex-1 px-3 py-5 sm:px-6 md:px-8 max-w-6xl mx-auto w-full relative">
-        <div className={`space-y-6 transition-opacity duration-300 ${isRefreshing ? "opacity-75" : "opacity-100"}`}>
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 relative">
+        <div
+          className={`space-y-6 transition-opacity duration-200 ${
+            isRefreshing ? "opacity-80" : "opacity-100"
+          }`}
+        >
+          {/* Banner de Erro Acionável (Heurística #9 — Recuperação de Erros) */}
+          {error && (
+            <div
+              className="surface-card border-rose-500/30 bg-rose-500/10 dark:bg-rose-500/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-down"
+              role="alert"
+            >
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-500/15 ring-1 ring-rose-500/30 text-rose-600 dark:text-rose-400">
+                  <AlertCircle className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">
+                    Falha na Sincronização de Telemetria
+                  </p>
+                  <p className="text-xs sm:text-sm text-rose-800 dark:text-rose-200 break-words mt-0.5">
+                    {error}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => refreshData(false)}
+                className="btn-secondary !border-rose-500/30 !text-rose-700 dark:!text-rose-200 shrink-0 self-end sm:self-auto"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Tentar novamente</span>
+              </button>
+            </div>
+          )}
 
-          {/* ── 1. Painel do Tutor (Quando autenticado) ── */}
+          {/* ── 1. Painel Executivo da Tutoria (Quando autenticado) ── */}
           {user && !isStudentView ? (
-            <div className="space-y-4 animate-fade-in-up">
-              {/* Card Unificado de Workspace do Tutor */}
-              <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xs transition-all duration-300 hover:shadow-sm">
-                <div className="flex items-center gap-3.5">
+            <div className="space-y-6 animate-fade-in-up">
+              {/* Card de Comando da Tutoria */}
+              <div className="surface-card relative overflow-hidden p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div
+                  className="pointer-events-none absolute -top-24 -left-24 h-56 w-56 rounded-full bg-orange-500/10 blur-3xl"
+                  aria-hidden="true"
+                />
+                <div className="relative flex items-center gap-3.5 min-w-0">
                   {user.user_metadata?.avatar_url ? (
-                    <img
+                    <MemberAvatar
+                      name={user.email ?? "Tutor"}
                       src={user.user_metadata.avatar_url}
-                      alt="Foto do Tutor"
-                      className="h-11 w-11 shrink-0 rounded-2xl object-cover ring-2 ring-[#C15F3D]/25 dark:ring-amber-500/30 shadow-2xs"
+                      size="lg"
+                      highlight
+                      present={presentCount > 0}
                     />
                   ) : (
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FAF5F0] dark:bg-amber-950/40 border border-[#F0DCD3] dark:border-amber-800/40 text-[#C15F3D] dark:text-amber-400 text-lg shadow-2xs">
-                      <GraduationCap className="h-5 w-5 text-amber-500" />
+                    <span className="flex h-11 w-11 min-w-[2.75rem] min-h-[2.75rem] aspect-square shrink-0 items-center justify-center rounded-full bg-orange-500/10 ring-1 ring-orange-500/25 text-orange-600 dark:text-amber-400">
+                      <GraduationCap className="h-5 w-5" />
                     </span>
                   )}
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-editorial text-lg sm:text-xl font-normal text-[#171715] dark:text-slate-100">
-                        Painel da Tutoria
-                      </h2>
-                      <span className="font-mono-data rounded-md bg-stone-100 dark:bg-slate-800 border border-stone-200 dark:border-slate-700 px-2 py-0.5 text-2xs text-[#57534E] dark:text-slate-300">
+                      <span className="eyebrow text-orange-600 dark:text-amber-400">
+                        Workspace Administrativo
+                      </span>
+                      <span className="font-mono-data rounded-md bg-slate-100 dark:bg-[#161F30] border border-slate-200/80 dark:border-white/[0.08] px-2 py-0.5 text-2xs font-semibold text-slate-700 dark:text-slate-300">
                         {user.email ? user.email.replace(/@ailab\.com$/i, "") : "Tutor"}
                       </span>
                     </div>
-                    <p className="text-xs text-[#57534E] dark:text-slate-400 font-sans mt-0.5">
-                      Auditoria semanal de 4 horas, relatórios de permanência e gestão do laboratório.
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">
+                      Painel da Tutoria & Auditoria
+                    </h1>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Vigilância da meta semanal de <span className="tabular-nums font-semibold">4h</span>, registro de contingência e relatórios oficiais.
                     </p>
                   </div>
                 </div>
 
-                {/* Ações Rápidas do Workspace do Tutor */}
-                <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
+                {/* Ações Rápidas da Tutoria */}
+                <div className="relative grid grid-cols-2 sm:flex sm:items-center gap-2 w-full lg:w-auto">
                   <button
                     type="button"
                     onClick={() => setIsManualAttendanceOpen(true)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-[#C15F3D]/40 shadow-2xs hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer min-h-[40px] text-center"
+                    className="btn-primary"
                   >
-                    <UserPlus className="h-3.5 w-3.5 text-[#C15F3D] dark:text-amber-400 shrink-0" />
+                    <UserPlus className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">+ Presença Manual</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setIsTutorProfileOpen(true)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-[#171715] dark:text-slate-200 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 hover:border-stone-400 shadow-2xs hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer min-h-[40px] text-center"
+                    className="btn-secondary"
                   >
-                    <SlidersHorizontal className="h-3.5 w-3.5 text-stone-600 dark:text-slate-300 shrink-0" />
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                     <span className="truncate">Acesso @ailab.com</span>
                   </button>
                 </div>
               </div>
 
-              {/* Segmented Control Fluido Estilo iOS com Arraste (Drag) para as Abas do Tutor */}
-              <div
-                ref={tutorTabContainerRef}
-                onPointerDown={handleTutorTabPointerDown}
-                onPointerMove={handleTutorTabPointerMove}
-                onPointerUp={handleTutorTabPointerUp}
-                onPointerCancel={handleTutorTabPointerCancel}
-                className="relative w-full sm:w-[560px] h-11 p-1 bg-[#FAF9F5] dark:bg-slate-800/80 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 backdrop-blur-md shadow-2xs select-none touch-pan-y cursor-grab active:cursor-grabbing"
-              >
-                {/* Pílula deslizante fluida iOS */}
+              {/* Barra Unificada: Segmented Control de Abas + Seletor de Período */}
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
                 <div
-                  className={`absolute top-1 bottom-1 rounded-xl bg-white dark:bg-slate-900 shadow-2xs border border-[#E5E2DC]/80 dark:border-slate-600 pointer-events-none ${
-                    isTutorTabDragging
-                      ? "transition-none shadow-md scale-[1.01]"
-                      : "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                  }`}
-                  style={{
-                    left:
-                      isTutorTabDragging && tutorTabDragLeftPx !== null
-                        ? `${4 + tutorTabDragLeftPx}px`
-                        : `calc(4px + ${tutorTabIndex} * ((100% - 8px) / 3))`,
-                    width: "calc((100% - 8px) / 3)",
-                  }}
-                />
-
-                <div className="relative z-10 grid grid-cols-3 h-full">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (tutorTabJustDraggedRef.current) return;
-                      setTutorTab("overview");
-                    }}
-                    className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
-                      tutorTab === "overview"
-                        ? "text-[#171715] dark:text-white font-semibold"
-                        : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
+                  ref={tutorTabContainerRef}
+                  onPointerDown={handleTutorTabPointerDown}
+                  onPointerMove={handleTutorTabPointerMove}
+                  onPointerUp={handleTutorTabPointerUp}
+                  onPointerCancel={handleTutorTabPointerCancel}
+                  role="tablist"
+                  aria-label="Seções do painel da tutoria"
+                  className="segmented-track w-full xl:w-[580px] h-11 select-none touch-pan-y cursor-grab active:cursor-grabbing overflow-x-auto no-scrollbar"
+                >
+                  <div
+                    className={`segmented-pill top-1 bottom-1 pointer-events-none ${
+                      isTutorTabDragging
+                        ? "transition-none scale-[1.01]"
+                        : "transition-all duration-200 ease-out"
                     }`}
-                  >
-                    <LayoutDashboard className="h-3.5 w-3.5 shrink-0" />
-                    <span className="hidden sm:inline truncate">Visão Geral & Presença</span>
-                    <span className="sm:hidden font-medium">Visão Geral</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (tutorTabJustDraggedRef.current) return;
-                      setTutorTab("audit");
+                    style={{
+                      left:
+                        isTutorTabDragging && tutorTabDragLeftPx !== null
+                          ? `${4 + tutorTabDragLeftPx}px`
+                          : `calc(4px + ${tutorTabIndex} * ((100% - 8px) / 3))`,
+                      width: "calc((100% - 8px) / 3)",
                     }}
-                    className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
-                      tutorTab === "audit"
-                        ? "text-[#171715] dark:text-white font-semibold"
-                        : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
-                    }`}
-                  >
-                    <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-                    <span className="hidden sm:inline truncate">Auditoria da Tutoria</span>
-                    <span className="sm:hidden font-medium">Auditoria</span>
-                    {studentsUnderFourHoursCount > 0 && (
-                      <span className="inline-flex items-center justify-center bg-rose-500 text-white rounded-full h-4 min-w-[16px] px-1 text-[10px] font-bold shrink-0">
-                        {studentsUnderFourHoursCount}
-                      </span>
-                    )}
-                  </button>
+                  />
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (tutorTabJustDraggedRef.current) return;
-                      setTutorTab("records");
-                    }}
-                    className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-xl text-xs font-medium transition-colors duration-200 cursor-pointer h-full ${
-                      tutorTab === "records"
-                        ? "text-[#171715] dark:text-white font-semibold"
-                        : "text-[#57534E] dark:text-slate-400 hover:text-[#171715] dark:hover:text-white"
-                    }`}
-                  >
-                    <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />
-                    <span className="hidden sm:inline truncate">Histórico & Relatórios</span>
-                    <span className="sm:hidden font-medium">Histórico</span>
-                  </button>
+                  <div className="relative z-10 grid grid-cols-3 h-full">
+                    {(
+                      [
+                        {
+                          key: "overview",
+                          icon: LayoutDashboard,
+                          full: "Visão Geral & Presença",
+                          short: "Visão Geral",
+                        },
+                        {
+                          key: "audit",
+                          icon: ShieldCheck,
+                          full: "Auditoria da Tutoria",
+                          short: "Auditoria",
+                        },
+                        {
+                          key: "records",
+                          icon: FileSpreadsheet,
+                          full: "Histórico & Relatórios",
+                          short: "Histórico",
+                        },
+                      ] as const
+                    ).map(({ key, icon: Icon, full, short }) => {
+                      const active = tutorTab === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          role="tab"
+                          aria-selected={active}
+                          onClick={() => {
+                            if (tutorTabJustDraggedRef.current) return;
+                            setTutorTab(key);
+                          }}
+                          className={`inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 rounded-lg text-xs transition-colors duration-150 cursor-pointer h-full ${
+                            active
+                              ? "text-slate-900 dark:text-white font-semibold"
+                              : "text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-white"
+                          }`}
+                        >
+                          <Icon
+                            className={`h-3.5 w-3.5 shrink-0 ${
+                              active ? "text-orange-500 dark:text-amber-400" : ""
+                            }`}
+                          />
+                          <span className="hidden sm:inline truncate">{full}</span>
+                          <span className="sm:hidden">{short}</span>
+                          {key === "audit" && studentsUnderFourHoursCount > 0 && (
+                            <span
+                              className="inline-flex items-center justify-center bg-rose-500 text-white rounded-full h-4 min-w-[16px] px-1 text-[10px] font-mono-data font-bold tabular-nums shrink-0"
+                              aria-label={`${studentsUnderFourHoursCount} abaixo da meta`}
+                            >
+                              {studentsUnderFourHoursCount}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              {/* Seletor de Período Global da Tutoria (Compartilhado entre todas as abas) */}
-              <div className="pt-0.5">
-                <PeriodSelector
-                  period={period}
-                  range={range}
-                  onPeriod={(p) => {
-                    setPeriod(p);
-                    if (p !== "custom") {
-                      setCustomFrom("");
-                      setCustomTo("");
-                    }
-                  }}
-                  customFrom={customFrom}
-                  customTo={customTo}
-                  onCustomRange={(from, to) => {
-                    setCustomFrom(from);
-                    setCustomTo(to);
-                  }}
-                />
+                <div className="flex-1">
+                  <PeriodSelector
+                    period={period}
+                    range={range}
+                    onPeriod={(p) => {
+                      setPeriod(p);
+                      if (p !== "custom") {
+                        setCustomFrom("");
+                        setCustomTo("");
+                      }
+                    }}
+                    customFrom={customFrom}
+                    customTo={customTo}
+                    onCustomRange={(from, to) => {
+                      setCustomFrom(from);
+                      setCustomTo(to);
+                    }}
+                  />
+                </div>
               </div>
 
               {/* ABA 1 DO TUTOR: Visão Geral & Presença */}
               {tutorTab === "overview" && (
                 <div className="space-y-6 animate-fade-in-up">
-                  {/* KPI Cards do Tutor */}
                   {loading && members.length === 0 ? (
                     <KpiSkeleton />
                   ) : (
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                      {/* Presentes Agora */}
-                      <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs hover:shadow-sm hover:border-emerald-300 dark:hover:border-emerald-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
-                            Presentes agora
-                          </span>
-                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
-                            <Radio className="h-4 w-4 text-emerald-500 animate-pulse" />
-                          </span>
-                        </div>
-                        <div className="mt-2.5 flex items-center gap-2">
-                          <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight leading-none">
-                            {presentCount}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/80 dark:bg-emerald-950/80 border border-emerald-300/80 dark:border-emerald-700/60 pl-2 pr-2.5 py-0.5 text-2xs font-semibold text-emerald-800 dark:text-emerald-300 font-sans shadow-2xs leading-none select-none">
-                            <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
-                              <span className="absolute h-1.5 w-1.5 rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                              <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <KpiCard
+                        label="Presentes agora ao vivo"
+                        icon={Radio}
+                        accent="emerald"
+                        value={presentCount}
+                        badge={
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                            <span className="relative flex h-1.5 w-1.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                             </span>
-                            <span className="leading-none">ao vivo</span>
+                            ao vivo
                           </span>
-                        </div>
-                        <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1.5 truncate">
-                          No laboratório agora
-                        </p>
-                      </div>
-
-                      {/* Total de Horas */}
-                      <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs hover:shadow-sm hover:border-orange-300 dark:hover:border-orange-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#C15F3D] to-orange-500" />
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
-                            Total de horas
-                          </span>
-                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/60 border border-orange-200/80 dark:border-orange-800/60 text-[#C15F3D] dark:text-orange-400 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
-                            <Hourglass className="h-4 w-4 text-orange-500" />
-                          </span>
-                        </div>
-                        <div className="mt-2.5">
-                          <span className="text-xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
-                            {formatDuration(totalLabSeconds)}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 truncate">
-                          Acumuladas no período
-                        </p>
-                      </div>
-
-                      {/* Integrantes Ativos */}
-                      <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs hover:shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
-                            Integrantes ativos
-                          </span>
-                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/60 text-indigo-800 dark:text-indigo-400 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
-                            <UserCheck className="h-4 w-4 text-indigo-500" />
-                          </span>
-                        </div>
-                        <div className="mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                          <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
-                            {activeMembersCount}
-                          </span>
-                          <span className="text-2xs font-mono-data text-[#57534E] dark:text-slate-400">de {members.length}</span>
-                        </div>
-                        <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 truncate">
-                          Com presença no filtro
-                        </p>
-                      </div>
-
-                      {/* Total de Sessões */}
-                      <div className="group relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs hover:shadow-sm hover:border-amber-300 dark:hover:border-amber-700 hover:-translate-y-0.5 transition-all duration-300 ease-out min-h-[124px] flex flex-col justify-between">
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-yellow-500" />
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-sans font-medium text-[#57534E] dark:text-slate-400">
-                            Total de sessões
-                          </span>
-                          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-400 text-xs shadow-2xs group-hover:scale-105 transition-transform duration-200">
-                            <Layers className="h-4 w-4 text-amber-500" />
-                          </span>
-                        </div>
-                        <div className="mt-2.5">
-                          <span className="text-2xl sm:text-3xl font-semibold text-[#171715] dark:text-slate-100 font-mono-data tracking-tight">
-                            {totalSessionsCount}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 truncate">
-                          Registros computados
-                        </p>
-                      </div>
+                        }
+                        caption="Sessões abertas neste instante"
+                      />
+                      <KpiCard
+                        label="Total de horas"
+                        icon={Hourglass}
+                        accent="orange"
+                        value={formatDuration(totalLabSeconds)}
+                        caption="Permanência útil acumulada"
+                      />
+                      <KpiCard
+                        label="Integrantes ativos"
+                        icon={UserCheck}
+                        accent="indigo"
+                        value={activeMembersCount}
+                        suffix={`de ${members.length}`}
+                        caption="Com presença registrada no filtro"
+                      />
+                      <KpiCard
+                        label="Total de sessões"
+                        icon={Layers}
+                        accent="amber"
+                        value={totalSessionsCount}
+                        caption="Check-ins válidos computados"
+                      />
                     </div>
                   )}
 
                   {/* Integrantes Presentes em Tempo Real */}
                   {presentMembers.length > 0 && (
-                    <div className="rounded-3xl border border-emerald-200/70 dark:border-emerald-800/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 sm:p-5 animate-fade-in-up">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-900 dark:text-emerald-200 font-mono-data">
-                            Integrantes no Laboratório Agora ({presentMembers.length})
+                    <section
+                      className="surface-card p-4 sm:p-5 animate-fade-in-up"
+                      aria-labelledby="present-now-title"
+                    >
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <div className="flex items-center gap-2.5">
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                          </span>
+                          <h3
+                            id="present-now-title"
+                            className="text-sm font-bold tracking-tight text-slate-900 dark:text-white"
+                          >
+                            Integrantes no Laboratório Agora
                           </h3>
+                          <span className="rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 px-2 py-0.5 text-2xs font-mono-data tabular-nums font-bold">
+                            {presentMembers.length}
+                          </span>
                         </div>
+                        <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-400">
+                          Clique em um integrante para inspecionar sessões
+                        </span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                         {presentMembers.map((t) => (
@@ -676,74 +761,104 @@ export function Dashboard() {
                             key={t.member.id}
                             type="button"
                             onClick={() => setSelectedMemberId(t.member.id)}
-                            className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-900/60 shadow-2xs hover:shadow-xs hover:border-emerald-400 dark:hover:border-emerald-600 transition-all duration-200 text-left cursor-pointer"
+                            className="group flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#161F30] hover:bg-white dark:hover:bg-[#1E293B] hover:border-emerald-500/40 transition-all duration-150 text-left cursor-pointer"
                           >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="relative">
-                                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 font-semibold text-xs">
-                                  {t.member.name.charAt(0).toUpperCase()}
-                                </span>
-                                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
-                              </div>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <MemberAvatar
+                                name={t.member.name}
+                                src={t.member.avatarUrl}
+                                size="md"
+                                highlight={Boolean(t.member.isTutor)}
+                                present
+                              />
                               <div className="min-w-0">
-                                <p className="text-xs font-semibold text-[#171715] dark:text-slate-100 truncate">
+                                <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors">
                                   {t.member.name}
                                 </p>
-                                <p className="text-[10px] font-mono-data text-stone-500 dark:text-slate-400">
-                                  {t.member.matricula ?? "Discente"}
+                                <p className="text-2xs font-mono-data tabular-nums text-slate-500 dark:text-slate-400 truncate">
+                                  {t.member.matricula ? `#${t.member.matricula}` : "Discente"}
                                 </p>
                               </div>
                             </div>
-                            <span className="font-mono-data text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0 ml-2">
-                              {formatDuration(t.totalSeconds)}
+                            <span className="font-mono-data tabular-nums text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                              {formatDuration(t.totalSeconds, true)}
                             </span>
                           </button>
                         ))}
                       </div>
-                    </div>
+                    </section>
                   )}
 
                   {/* Gráfico Semanal de Frequência (Dias Úteis) */}
                   {!loading && totals.length > 0 && (
-                    <div className="transition-all duration-300">
-                      <WeeklyChart rows={filteredTotals} range={range} sessions={weekdaySessions} />
-                    </div>
+                    <WeeklyChart
+                      rows={filteredTotals}
+                      range={range}
+                      sessions={weekdaySessions}
+                    />
                   )}
                 </div>
               )}
             </div>
           ) : (
-            /* ── 2. Painel do Aluno / Discente (Sem login, com senha de presença makers) ── */
+            /* ── 2. Painel do Aluno / Discente (Público) ── */
             <div className="space-y-6 animate-fade-in-up">
-              {/* Cabeçalho Limpo e Acolhedor do Aluno */}
-              <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-                <div>
-                  <h2 className="font-editorial text-2xl sm:text-3xl font-normal text-[#171715] dark:text-slate-100 tracking-tight">
+              {/* Hero Executivo do Painel do Aluno */}
+              <div className="surface-card relative overflow-hidden p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                <div
+                  className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-emerald-500/10 blur-3xl"
+                  aria-hidden="true"
+                />
+                <div className="relative space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-orange-500/10 text-orange-600 dark:text-amber-400 ring-1 ring-orange-500/20 px-2 py-0.5 text-[10px] font-mono-data font-bold uppercase tracking-wider">
+                      Telemetria Acadêmica · Seg–Sex
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsHowItWorksOpen(true)}
+                      className="inline-flex items-center gap-1 rounded-md bg-slate-100/80 dark:bg-[#161F30] border border-slate-200/80 dark:border-white/[0.08] px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-orange-600 dark:hover:text-amber-400 transition-colors cursor-pointer"
+                    >
+                      <Cpu className="h-3 w-3 text-orange-500 dark:text-amber-400" />
+                      <span>Como funciona a biometria?</span>
+                    </button>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
                     Painel do Aluno
-                  </h2>
-                  <p className="text-xs sm:text-sm text-[#57534E] dark:text-slate-400 font-sans mt-1">
-                    Acompanhe em tempo real a lotação do laboratório, horários de pico e a melhor hora para estudar.
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+                    Consulte a lotação do laboratório em tempo real, planeje seus horários de estudo e acompanhe sua carga horária semanal.
                   </p>
                 </div>
 
-                {/* Badge Vivo com Nível de Ocupação */}
-                <div className="inline-flex items-center gap-2.5 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-800/90 px-4 py-2.5 shadow-2xs self-start sm:self-auto">
-                  <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-                    <span className="absolute h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                    <span className="relative h-2 w-2 rounded-full bg-emerald-500" />
+                {/* Indicador Semafórico Ao Vivo no Topo */}
+                <div
+                  className={`relative flex items-center gap-3.5 rounded-2xl px-4 py-3 self-start lg:self-auto ${crowd.badge}`}
+                  aria-live="polite"
+                >
+                  <span className="relative flex h-3 w-3 items-center justify-center shrink-0">
+                    <span
+                      className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${crowd.ping}`}
+                    />
+                    <span className={`relative h-2.5 w-2.5 rounded-full ${crowd.dot}`} />
                   </span>
                   <div>
-                    <div className="text-xs font-mono-data font-bold text-[#171715] dark:text-slate-100">
-                      {presentCount} {presentCount === 1 ? "discente agora" : "discentes agora"}
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl sm:text-2xl font-bold font-mono-data tabular-nums text-slate-900 dark:text-white leading-none">
+                        {presentCount}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                        {presentCount === 1 ? "presente agora" : "presentes agora"}
+                      </span>
                     </div>
-                    <div className="text-[10px] font-sans font-medium text-[#706E6A] dark:text-slate-400">
-                      Lotação: <strong className="text-emerald-700 dark:text-emerald-400">{occupancyInsights.currentCrowdLevel}</strong>
+                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                      Status: <strong className={crowd.text}>{crowd.label}</strong>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Seletor de Período Integrado com Animação Fluida iOS */}
+              {/* Seletor de Período */}
               <PeriodSelector
                 period={period}
                 range={range}
@@ -762,144 +877,209 @@ export function Dashboard() {
                 }}
               />
 
-              {/* Cards de Insights de Ocupação do Laboratório (Mais úteis para os alunos) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                {/* 1. Status de Lotação Ao Vivo */}
-                <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[136px] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-sans font-semibold text-[#57534E] dark:text-slate-400">
-                      Lotação Atual
-                    </span>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
-                      <Radio className="h-4 w-4 animate-pulse" />
+              {/* Bento Grid de KPIs do Painel do Aluno (4 Colunas) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. Card Destaque — Lotação Atual ao Vivo */}
+                <div className="surface-card surface-card-interactive p-5 flex flex-col justify-between gap-4 min-h-[158px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="eyebrow">Lotação Atual</span>
+                    <span
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${crowd.tile}`}
+                    >
+                      <Radio className="h-4 w-4" />
                     </span>
                   </div>
                   <div>
-                    <div className="text-xl sm:text-2xl font-bold font-mono-data text-[#171715] dark:text-slate-100">
-                      {occupancyInsights.currentCrowdLevel}
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span
+                        className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums ${crowd.text}`}
+                      >
+                        {crowd.label}
+                      </span>
+                      <span className="text-xs font-mono-data tabular-nums font-semibold text-slate-500 dark:text-slate-400">
+                        {presentCount} {presentCount === 1 ? "ativo" : "ativos"}
+                      </span>
                     </div>
-                    <p className="text-[11px] text-[#57534E] dark:text-slate-400 mt-1 leading-snug">
-                      {presentCount < 3
-                        ? "Espaço calmo · Ótimo para leitura e estudos individuais"
-                        : presentCount < 8
-                        ? "Movimento equilibrado · Bom para colaborar e focar"
-                        : "Laboratório movimentado com equipes ativas"}
+                    <div
+                      className="mt-3 grid grid-cols-3 gap-1.5"
+                      role="meter"
+                      aria-valuemin={1}
+                      aria-valuemax={3}
+                      aria-valuenow={crowd.level}
+                      aria-label={`Nível de lotação: ${crowd.label}`}
+                    >
+                      {[1, 2, 3].map((lvl) => (
+                        <span
+                          key={lvl}
+                          className={`h-2 rounded-full transition-colors duration-300 ${
+                            lvl <= crowd.level
+                              ? crowd.bar
+                              : "bg-slate-200/80 dark:bg-white/[0.07]"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2.5 leading-snug">
+                      {crowd.hint}
                     </p>
                   </div>
                 </div>
 
-                {/* 2. Horário com Mais Discentes (Pico) */}
-                <div className="rounded-3xl border border-amber-200/80 dark:border-amber-800/50 bg-amber-50/40 dark:bg-amber-950/20 backdrop-blur-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[136px] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-sans font-semibold text-amber-900 dark:text-amber-300">
-                      Horário com Mais Discentes
-                    </span>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100/80 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300">
+                {/* 2. Horário de Pico */}
+                <div className="surface-card surface-card-interactive p-5 flex flex-col justify-between gap-4 min-h-[158px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="eyebrow">Horário de Pico</span>
+                    <span className="w-9 h-9 rounded-lg flex items-center justify-center bg-amber-500/10 ring-1 ring-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
                       <SunMedium className="h-4 w-4" />
                     </span>
                   </div>
                   <div>
-                    <div className="text-xl sm:text-2xl font-bold font-mono-data text-amber-900 dark:text-amber-200">
-                      {occupancyInsights.peakHour ? occupancyInsights.peakHour.label : occupancyInsights.peakShift.name}
-                    </div>
-                    <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-1 leading-snug">
+                    <div className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-mono-data tabular-nums">
                       {occupancyInsights.peakHour
-                        ? `${occupancyInsights.peakHour.sessionsCount} presenças no pico · Turno da ${occupancyInsights.peakShift.name}`
-                        : `${occupancyInsights.peakShift.hoursDescription} (${occupancyInsights.peakShift.sessionsCount} presenças)`}
+                        ? occupancyInsights.peakHour.label
+                        : occupancyInsights.peakShift.name}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-snug tabular-nums">
+                      {occupancyInsights.peakHour ? (
+                        <>
+                          <strong className="font-mono-data font-semibold text-amber-600 dark:text-amber-400">
+                            {occupancyInsights.peakHour.sessionsCount}
+                          </strong>{" "}
+                          presenças no pico · Turno da {occupancyInsights.peakShift.name}
+                        </>
+                      ) : (
+                        <>
+                          {occupancyInsights.peakShift.hoursDescription} (
+                          <span className="font-mono-data">
+                            {occupancyInsights.peakShift.sessionsCount}
+                          </span>{" "}
+                          presenças)
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
 
-                {/* 3. Horário Mais Tranquilo (Menos Discentes) */}
-                <div className="rounded-3xl border border-indigo-200/80 dark:border-indigo-800/50 bg-indigo-50/40 dark:bg-indigo-950/20 backdrop-blur-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[136px] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-sans font-semibold text-indigo-900 dark:text-indigo-300">
-                      Horário Mais Tranquilo
-                    </span>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-100/80 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
+                {/* 3. Horário Mais Tranquilo */}
+                <div className="surface-card surface-card-interactive p-5 flex flex-col justify-between gap-4 min-h-[158px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="eyebrow">Mais Tranquilo</span>
+                    <span className="w-9 h-9 rounded-lg flex items-center justify-center bg-indigo-500/10 ring-1 ring-indigo-500/20 text-indigo-600 dark:text-indigo-400 shrink-0">
                       <Coffee className="h-4 w-4" />
                     </span>
                   </div>
                   <div>
-                    <div className="text-xl sm:text-2xl font-bold font-mono-data text-indigo-900 dark:text-indigo-200">
-                      {occupancyInsights.quietHour ? occupancyInsights.quietHour.label : occupancyInsights.quietShift.name}
-                    </div>
-                    <p className="text-[11px] text-indigo-800/80 dark:text-indigo-300/80 mt-1 leading-snug">
+                    <div className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-mono-data tabular-nums">
                       {occupancyInsights.quietHour
-                        ? `${occupancyInsights.quietHour.sessionsCount} presenças · Intervalo favorável para foco`
-                        : `${occupancyInsights.quietShift.hoursDescription} · Menor fluxo para foco`}
+                        ? occupancyInsights.quietHour.label
+                        : occupancyInsights.quietShift.name}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-snug tabular-nums">
+                      {occupancyInsights.quietHour ? (
+                        <>
+                          <strong className="font-mono-data font-semibold text-indigo-600 dark:text-indigo-400">
+                            {occupancyInsights.quietHour.sessionsCount}
+                          </strong>{" "}
+                          presenças · Janela ideal para foco individual
+                        </>
+                      ) : (
+                        `${occupancyInsights.quietShift.hoursDescription} · Menor fluxo para foco`
+                      )}
                     </p>
                   </div>
                 </div>
 
-                {/* 4. Distribuição de Turnos */}
-                <div className="rounded-3xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[136px] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-sans font-semibold text-[#57534E] dark:text-slate-400">
-                      Distribuição por Turnos
-                    </span>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FAF5F0] dark:bg-slate-800 text-[#C15F3D] dark:text-amber-400">
+                {/* 4. Distribuição por Turnos (Manhã / Tarde / Noite) */}
+                <div className="surface-card surface-card-interactive p-5 flex flex-col justify-between gap-4 min-h-[158px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="eyebrow">Distribuição por Turnos</span>
+                    <span className="w-9 h-9 rounded-lg flex items-center justify-center bg-orange-500/10 ring-1 ring-orange-500/20 text-orange-600 dark:text-amber-400 shrink-0">
                       <Sparkles className="h-4 w-4" />
                     </span>
                   </div>
-                  <div className="space-y-1.5 pt-2">
-                    <div className="flex items-center justify-between text-2xs font-mono-data">
-                      <span className="text-[#57534E] dark:text-slate-400">Manhã:</span>
-                      <strong className="text-[#171715] dark:text-slate-100">{occupancyInsights.shiftsSummary.morning.percent}%</strong>
+                  <div>
+                    <div
+                      className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+                      aria-hidden="true"
+                    >
+                      {shiftSegments.map((seg) =>
+                        seg.percent > 0 ? (
+                          <span
+                            key={seg.key}
+                            className={`h-full ${seg.bar} transition-all duration-500 first:rounded-l-full last:rounded-r-full`}
+                            style={{ width: `${seg.percent}%` }}
+                          />
+                        ) : null
+                      )}
                     </div>
-                    <div className="flex items-center justify-between text-2xs font-mono-data">
-                      <span className="text-[#57534E] dark:text-slate-400">Tarde:</span>
-                      <strong className="text-[#171715] dark:text-slate-100">{occupancyInsights.shiftsSummary.afternoon.percent}%</strong>
-                    </div>
-                    <div className="flex items-center justify-between text-2xs font-mono-data">
-                      <span className="text-[#57534E] dark:text-slate-400">Noite:</span>
-                      <strong className="text-[#171715] dark:text-slate-100">{occupancyInsights.shiftsSummary.evening.percent}%</strong>
-                    </div>
+                    <ul className="mt-3 grid grid-cols-3 gap-2">
+                      {shiftSegments.map((seg) => (
+                        <li
+                          key={seg.key}
+                          className="rounded-lg bg-slate-100/70 dark:bg-[#161F30] px-2 py-1.5 text-center"
+                        >
+                          <div className="flex items-center justify-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span className={`h-2 w-2 rounded-full ${seg.bar} shrink-0`} />
+                            <span className="truncate">{seg.label}</span>
+                          </div>
+                          <strong className="block font-mono-data tabular-nums text-xs font-bold text-slate-900 dark:text-white mt-0.5">
+                            {seg.percent}%
+                          </strong>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               </div>
 
-              {/* Gráfico de Dias Úteis com Dia de Pico Destacado (Segunda a Sexta) */}
+              {/* Gráfico de Dias Úteis com Dia de Pico Destacado */}
               {!loading && totals.length > 0 && (
-                <div className="transition-all duration-300">
-                  <WeeklyChart rows={filteredTotals} range={range} sessions={weekdaySessions} />
-                </div>
+                <WeeklyChart
+                  rows={filteredTotals}
+                  range={range}
+                  sessions={weekdaySessions}
+                />
               )}
 
-              {/* Tabela de Discentes com Busca Reativa (Visual original refinado estilo Apple) */}
-              <div className="space-y-4">
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-stone-400 dark:text-slate-400 group-focus-within:text-[#C15F3D] dark:group-focus-within:text-amber-400 transition-colors">
-                    <Search className="h-4 w-4" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Filtrar por seu nome ou matrícula..."
-                    value={searchInput}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    className="w-full h-11 rounded-2xl border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl py-2 pl-10 pr-9 text-xs sm:text-sm text-[#171715] dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 font-sans font-medium shadow-xs focus:border-[#C15F3D] focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-[#C15F3D]/20 transition-all"
-                  />
-                  {searchInput && (
-                    <button
-                      type="button"
-                      onClick={clearSearch}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-700 dark:hover:text-white cursor-pointer"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-
-                <TotalsTable
-                  rows={filteredTotals}
-                  onSelectMember={(row) => setSelectedMemberId(row.member.id)}
+              {/* Seção de Busca + Filtros Ativos + Tabela de Integrantes */}
+              <div className="space-y-3">
+                <SearchField
+                  inputRef={searchInputRef}
+                  value={searchInput}
+                  onChange={handleSearchChange}
+                  onClear={clearSearch}
+                  placeholder="Buscar integrante por nome ou matrícula..."
+                  resultCount={searchQuery ? filteredTotals.length : undefined}
+                  className="surface-card !rounded-xl"
                 />
+
+                {/* Chips Removíveis de Filtros Ativos (H6 — Reconhecimento em vez de Memorização) */}
+                {hasActiveFilters && (
+                  <ActiveFilterChips
+                    period={period}
+                    searchQuery={searchQuery}
+                    onResetPeriod={resetPeriodToDefault}
+                    onClearSearch={clearSearch}
+                  />
+                )}
+
+                {loading && members.length === 0 ? (
+                  <TableSkeleton />
+                ) : (
+                  <TotalsTable
+                    rows={filteredTotals}
+                    totalCount={totals.length}
+                    searchActive={Boolean(searchQuery.trim())}
+                    onClearSearch={clearSearch}
+                    onSelectMember={(row) => setSelectedMemberId(row.member.id)}
+                  />
+                )}
               </div>
             </div>
           )}
 
           {/* ABA 2 DO TUTOR: Auditoria & Metas Semanais (4h) */}
-          {user && tutorTab === "audit" && (
+          {user && !isStudentView && tutorTab === "audit" && (
             <div className="space-y-6 animate-fade-in-up">
               {!loading && (
                 <TutorInsightsCard
@@ -910,7 +1090,6 @@ export function Dashboard() {
                 />
               )}
 
-              {/* Painel Completo de Notificações e Advertências Acadêmicas (Direto na Página, Sem Modal) */}
               {!loading && (
                 <TutorWarningPanel
                   members={members}
@@ -925,31 +1104,24 @@ export function Dashboard() {
           )}
 
           {/* ABA 3 DO TUTOR: Histórico Completo, Filtros e Exportação */}
-          {user && tutorTab === "records" && (
+          {user && !isStudentView && tutorTab === "records" && (
             <div className="space-y-4 animate-fade-in-up">
-              {/* Barra de Busca, Alternância e Exportação */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-3xl p-3 sm:p-3.5 border border-[#E5E2DC] dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs transition-all duration-300">
-                <div className="relative flex-1 group">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-stone-400 dark:text-slate-400 group-focus-within:text-[#C15F3D] dark:group-focus-within:text-amber-400 transition-colors">
-                    <Search className="h-4 w-4" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Filtrar por nome ou matrícula..."
-                    value={searchInput}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    className="w-full h-10 rounded-2xl border border-stone-200 dark:border-slate-700 bg-[#FAF9F5] dark:bg-slate-950/60 py-2 pl-10 pr-9 text-xs sm:text-sm text-[#171715] dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 font-sans font-medium focus:border-[#C15F3D] focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-[#C15F3D]/20 transition-all"
-                  />
-                  {searchInput && (
-                    <button
-                      type="button"
-                      onClick={clearSearch}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-700 dark:hover:text-white cursor-pointer"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
+              <div className="surface-card flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 p-2.5">
+                <SearchField
+                  inputRef={searchInputRef}
+                  value={searchInput}
+                  onChange={handleSearchChange}
+                  onClear={clearSearch}
+                  placeholder="Filtrar por nome ou matrícula..."
+                  resultCount={
+                    searchQuery
+                      ? view === "totals"
+                        ? filteredTotals.length
+                        : filteredDays.reduce((acc, d) => acc + d.entries.length, 0)
+                      : undefined
+                  }
+                  className="flex-1 surface-muted"
+                />
 
                 <div className="flex items-center gap-2 flex-wrap">
                   <ViewSelector view={view} onViewChange={setView} />
@@ -963,15 +1135,23 @@ export function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setIsOfficialReportOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-2xl border border-[#E5E2DC] dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-sans font-medium text-[#57534E] dark:text-slate-300 hover:border-[#C15F3D]/50 hover:text-[#171715] dark:hover:text-slate-100 hover:bg-[#FAF9F5] dark:hover:bg-slate-700 active:scale-[0.97] shadow-2xs transition-all cursor-pointer min-h-[38px]"
+                    className="btn-secondary"
                   >
-                    <FileText className="h-3.5 w-3.5 text-[#C15F3D] dark:text-amber-400" />
+                    <FileText className="h-3.5 w-3.5 text-orange-500 dark:text-amber-400" />
                     <span>Relatório Oficial (PDF)</span>
                   </button>
                 </div>
               </div>
 
-              {/* Tabela ou Histórico */}
+              {hasActiveFilters && (
+                <ActiveFilterChips
+                  period={period}
+                  searchQuery={searchQuery}
+                  onResetPeriod={resetPeriodToDefault}
+                  onClearSearch={clearSearch}
+                />
+              )}
+
               {loading && members.length === 0 ? (
                 <TableSkeleton />
               ) : (
@@ -979,6 +1159,9 @@ export function Dashboard() {
                   {view === "totals" ? (
                     <TotalsTable
                       rows={filteredTotals}
+                      totalCount={totals.length}
+                      searchActive={Boolean(searchQuery.trim())}
+                      onClearSearch={clearSearch}
                       onSelectMember={(row) => setSelectedMemberId(row.member.id)}
                     />
                   ) : (
@@ -988,28 +1171,20 @@ export function Dashboard() {
               )}
             </div>
           )}
-
-          {/* Alerta de Erro Resiliente */}
-          {error && (
-            <div className="flex items-center justify-between rounded-2xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 p-4 text-sm text-rose-700 dark:text-rose-300 animate-slide-down" role="alert">
-              <span className="flex items-center gap-1.5"><AlertCircle className="h-4 w-4 shrink-0" />{error}</span>
-              <button
-                type="button"
-                onClick={() => refreshData(false)}
-                className="font-bold underline hover:text-rose-900 cursor-pointer min-h-[44px] px-2"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          )}
-
         </div>
       </main>
 
-      {/* Rodapé simples com status de sincronização */}
+      {/* Rodapé com status de sincronização e atalhos de ajuda/privacidade */}
       <Footer
         lastRefreshed={lastRefreshed}
         onOpenTerms={() => setIsTermsOpen(true)}
+        onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+      />
+
+      {/* Modal Como Funciona (H10) */}
+      <HowItWorksModal
+        isOpen={isHowItWorksOpen}
+        onClose={() => setIsHowItWorksOpen(false)}
       />
 
       {/* Modal de Termos LGPD */}
@@ -1079,6 +1254,242 @@ export function Dashboard() {
           await refreshData(true);
         }}
       />
+    </div>
+  );
+}
+
+// ── Configuração Semafórica de Lotação (Seção 3.1 & 4.2) ──────────────────────
+const CROWD_STYLES = {
+  Tranquilo: {
+    label: "Tranquilo",
+    level: 1,
+    hint: "Espaço calmo · Excelente para leitura, pesquisa e foco individual",
+    dot: "bg-emerald-500",
+    ping: "bg-emerald-500",
+    bar: "bg-emerald-500",
+    text: "text-emerald-600 dark:text-emerald-400",
+    tile: "bg-emerald-500/10 ring-1 ring-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+    badge: "bg-emerald-500/10 ring-1 ring-emerald-500/20",
+  },
+  Moderado: {
+    label: "Moderado",
+    level: 2,
+    hint: "Movimento equilibrado · Ideal para trabalho em dupla e projetos",
+    dot: "bg-amber-500",
+    ping: "bg-amber-500",
+    bar: "bg-amber-500",
+    text: "text-amber-600 dark:text-amber-400",
+    tile: "bg-amber-500/10 ring-1 ring-amber-500/20 text-amber-600 dark:text-amber-400",
+    badge: "bg-amber-500/10 ring-1 ring-amber-500/20",
+  },
+  Movimentado: {
+    label: "Cheio",
+    level: 3,
+    hint: "Alta ocupação · Equipes ativas em bancadas e reuniões",
+    dot: "bg-rose-500",
+    ping: "bg-rose-500",
+    bar: "bg-rose-500",
+    text: "text-rose-600 dark:text-rose-400",
+    tile: "bg-rose-500/10 ring-1 ring-rose-500/20 text-rose-600 dark:text-rose-400",
+    badge: "bg-rose-500/10 ring-1 ring-rose-500/20",
+  },
+} as const;
+
+// ── KPI Card Executivo da Tutoria (Seção 4.2) ─────────────────────────────────
+const KPI_ACCENTS = {
+  emerald: {
+    tile: "bg-emerald-500/10 ring-1 ring-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+    glow: "from-emerald-500/15",
+  },
+  orange: {
+    tile: "bg-orange-500/10 ring-1 ring-orange-500/20 text-orange-600 dark:text-amber-400",
+    glow: "from-orange-500/15",
+  },
+  indigo: {
+    tile: "bg-indigo-500/10 ring-1 ring-indigo-500/20 text-indigo-600 dark:text-indigo-400",
+    glow: "from-indigo-500/15",
+  },
+  amber: {
+    tile: "bg-amber-500/10 ring-1 ring-amber-500/20 text-amber-600 dark:text-amber-400",
+    glow: "from-amber-500/15",
+  },
+} as const;
+
+interface KpiCardProps {
+  label: string;
+  icon: LucideIcon;
+  accent: keyof typeof KPI_ACCENTS;
+  value: React.ReactNode;
+  suffix?: string;
+  badge?: React.ReactNode;
+  caption: string;
+}
+
+function KpiCard({
+  label,
+  icon: Icon,
+  accent,
+  value,
+  suffix,
+  badge,
+  caption,
+}: KpiCardProps) {
+  const a = KPI_ACCENTS[accent];
+  return (
+    <div className="surface-card surface-card-interactive group relative overflow-hidden p-5 min-h-[136px] flex flex-col justify-between">
+      <div
+        className={`pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-gradient-to-br ${a.glow} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+        aria-hidden="true"
+      />
+      <div className="relative flex items-center justify-between gap-2">
+        <span className="eyebrow truncate">{label}</span>
+        <span
+          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${a.tile}`}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+      </div>
+      <div className="relative mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-mono-data tabular-nums leading-none">
+          {value}
+        </span>
+        {suffix && (
+          <span className="text-xs font-mono-data tabular-nums text-slate-500 dark:text-slate-400">
+            {suffix}
+          </span>
+        )}
+        {badge}
+      </div>
+      <p className="relative text-xs text-slate-500 dark:text-slate-400 mt-2 truncate">
+        {caption}
+      </p>
+    </div>
+  );
+}
+
+// ── Campo de Busca com Atalho "/" e "⌘K" (Heurísticas #3 e #7) ────────────────
+interface SearchFieldProps {
+  inputRef?: React.RefObject<HTMLInputElement | null>;
+  value: string;
+  onChange: (value: string) => void;
+  onClear: () => void;
+  placeholder: string;
+  resultCount?: number;
+  className?: string;
+}
+
+function SearchField({
+  inputRef,
+  value,
+  onChange,
+  onClear,
+  placeholder,
+  resultCount,
+  className = "",
+}: SearchFieldProps) {
+  return (
+    <div className={`relative group flex items-center ${className}`}>
+      <Search
+        className="pointer-events-none absolute left-3.5 h-4 w-4 text-slate-400 group-focus-within:text-orange-500 dark:group-focus-within:text-amber-400 transition-colors"
+        aria-hidden="true"
+      />
+      <input
+        ref={inputRef}
+        type="search"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && value) {
+            e.stopPropagation();
+            onClear();
+          }
+        }}
+        aria-label={placeholder}
+        className={`w-full h-11 rounded-xl border-0 bg-transparent py-2 pl-10 ${
+          typeof resultCount === "number"
+            ? "pr-36"
+            : value
+            ? "pr-11"
+            : "pr-4 sm:pr-20"
+        } text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/40 [&::-webkit-search-cancel-button]:hidden`}
+      />
+      <div className="absolute right-2.5 flex items-center gap-1.5">
+        {!value && (
+          <kbd
+            className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-slate-200 dark:border-white/[0.1] bg-slate-100/80 dark:bg-[#161F30] px-1.5 py-0.5 text-[10px] font-mono-data font-semibold text-slate-500 dark:text-slate-400 pointer-events-none select-none"
+            title="Pressione / ou Ctrl+K para buscar rapidamente"
+          >
+            /
+          </kbd>
+        )}
+        {typeof resultCount === "number" && (
+          <span className="rounded-md bg-slate-100 dark:bg-[#161F30] border border-slate-200/80 dark:border-white/[0.08] px-2 py-0.5 text-2xs font-mono-data tabular-nums font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+            {resultCount} {resultCount === 1 ? "resultado" : "resultados"}
+          </span>
+        )}
+        {value && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200/70 hover:text-slate-700 dark:hover:bg-white/[0.1] dark:hover:text-white cursor-pointer"
+            aria-label="Limpar busca"
+            title="Limpar busca (Esc)"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Chips de Filtros Ativos (Heurística #6 — Reconhecimento) ──────────────────
+function ActiveFilterChips({
+  period,
+  searchQuery,
+  onResetPeriod,
+  onClearSearch,
+}: {
+  period: PeriodKey;
+  searchQuery: string;
+  onResetPeriod: () => void;
+  onClearSearch: () => void;
+}) {
+  return (
+    <div
+      className="flex flex-wrap items-center gap-2 text-xs animate-fade-in"
+      aria-label="Filtros ativos"
+    >
+      <span className="text-2xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+        Filtros ativos:
+      </span>
+      {period !== "week" && (
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500/10 text-orange-700 dark:text-amber-300 ring-1 ring-orange-500/25 px-2.5 py-1 text-2xs font-semibold">
+          <span>Período: {PERIOD_LABELS[period]}</span>
+          <button
+            type="button"
+            onClick={onResetPeriod}
+            className="hover:text-orange-900 dark:hover:text-white cursor-pointer"
+            aria-label="Restaurar período para Esta semana"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      )}
+      {searchQuery.trim() && (
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-200/80 dark:bg-[#161F30] text-slate-700 dark:text-slate-200 ring-1 ring-slate-300/80 dark:ring-white/[0.1] px-2.5 py-1 text-2xs font-semibold">
+          <span>Busca: &ldquo;{searchQuery.trim()}&rdquo;</span>
+          <button
+            type="button"
+            onClick={onClearSearch}
+            className="hover:text-slate-950 dark:hover:text-white cursor-pointer"
+            aria-label="Remover filtro de busca"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      )}
     </div>
   );
 }

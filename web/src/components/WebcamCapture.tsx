@@ -104,15 +104,15 @@ export function WebcamCapture({ onCapture, disabled }: WebcamCaptureProps) {
     <div className="flex flex-col items-center gap-4">
       {/* Estado Inicial: Pré-aviso Educativo de Câmera */}
       {permissionState === "idle" && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-line bg-card/60 p-8 text-center max-w-lg w-full gap-4">
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0F1623]/60 p-8 text-center max-w-lg w-full gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-navy/10 text-primary">
             <Camera className="h-8 w-8" />
           </div>
           <div className="space-y-1.5">
-            <h2 className="text-base sm:text-lg font-bold text-ink">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
               Permitir Acesso à Câmera
             </h2>
-            <p className="text-xs sm:text-sm text-muted max-w-sm">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm">
               Sua câmera será utilizada apenas para capturar um frame para análise facial.
               A imagem é descartada da memória imediatamente após o processamento.
             </p>
@@ -129,12 +129,12 @@ export function WebcamCapture({ onCapture, disabled }: WebcamCaptureProps) {
 
       {/* Estado Solicitando Permissão */}
       {permissionState === "requesting" && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-line bg-card p-8 text-center max-w-lg w-full gap-3" role="status">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0F1623] p-8 text-center max-w-lg w-full gap-3" role="status">
           <div className="h-8 w-8 animate-spin rounded-full border-3 border-navy border-t-transparent" />
-          <p className="text-sm font-semibold text-ink">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">
             Aguardando permissão da câmera no navegador...
           </p>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Por favor, selecione "Permitir" na caixa de diálogo do seu navegador.
           </p>
         </div>
@@ -148,7 +148,7 @@ export function WebcamCapture({ onCapture, disabled }: WebcamCaptureProps) {
             <h2 className="text-sm font-bold text-warn">
               Acesso à Câmera Indisponível
             </h2>
-            <p className="text-xs text-ink/80">{errorMessage}</p>
+            <p className="text-xs text-slate-900 dark:text-white/80">{errorMessage}</p>
           </div>
           <div className="flex gap-2 pt-2">
             <button
@@ -159,7 +159,7 @@ export function WebcamCapture({ onCapture, disabled }: WebcamCaptureProps) {
             </button>
             <button
               onClick={() => setPermissionState("idle")}
-              className="rounded-xl border border-line bg-white px-4 py-2 text-xs font-semibold text-ink hover:bg-navy/5 cursor-pointer min-h-[44px]"
+              className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white px-4 py-2 text-xs font-semibold text-slate-900 dark:text-white hover:bg-navy/5 cursor-pointer min-h-[44px]"
             >
               Voltar
             </button>
@@ -169,7 +169,7 @@ export function WebcamCapture({ onCapture, disabled }: WebcamCaptureProps) {
 
       {/* Estado Câmera Conectada */}
       {permissionState === "granted" && (
-        <div className="relative flex flex-col items-center w-full max-w-lg overflow-hidden rounded-2xl border border-line bg-black shadow-md">
+        <div className="relative flex flex-col items-center w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-black shadow-md">
           {/* Feed de Vídeo */}
           <div className="relative aspect-4/3 w-full bg-black">
             <video
@@ -196,10 +196,10 @@ export function WebcamCapture({ onCapture, disabled }: WebcamCaptureProps) {
           </div>
 
           {/* Controles da Câmera */}
-          <div className="flex flex-wrap items-center justify-between gap-3 w-full bg-card p-4 border-t border-line">
+          <div className="flex flex-wrap items-center justify-between gap-3 w-full bg-white dark:bg-[#0F1623] p-4 border-t border-slate-200/80 dark:border-white/[0.08]">
             <button
               onClick={stopCamera}
-              className="rounded-xl border border-line bg-white px-3.5 py-2 text-xs font-semibold text-ink hover:bg-navy/5 cursor-pointer min-h-[44px]"
+              className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white px-3.5 py-2 text-xs font-semibold text-slate-900 dark:text-white hover:bg-navy/5 cursor-pointer min-h-[44px]"
             >
               Desativar
             </button>
@@ -215,7 +215,7 @@ export function WebcamCapture({ onCapture, disabled }: WebcamCaptureProps) {
 
             <button
               onClick={toggleFacingMode}
-              className="rounded-xl border border-line bg-white p-2.5 text-xs font-semibold text-ink hover:bg-navy/5 cursor-pointer min-h-[44px] flex items-center justify-center"
+              className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white p-2.5 text-xs font-semibold text-slate-900 dark:text-white hover:bg-navy/5 cursor-pointer min-h-[44px] flex items-center justify-center"
               title="Alternar Câmera (Frontal / Traseira)"
               aria-label="Alternar Câmera"
             >
