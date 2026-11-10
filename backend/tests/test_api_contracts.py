@@ -1,12 +1,13 @@
 """Testes de contrato de API (Fase 2) para garantir conformidade estrita entre Backend e Clientes (Tablet/Web)."""
 import pytest
 from fastapi.testclient import TestClient
+
 from app.main import app
 from app.routers.contracts import (
     ChallengeResponse,
+    EnrollResponse,
     EventDetail,
     RecognizeResponse,
-    EnrollResponse,
     RevokeConsentResponse,
 )
 
@@ -194,10 +195,12 @@ def test_revoke_consent_contract_resilience():
 
 def test_recognize_checkout_response_serialization_with_float_duration():
     """Garante que o modelo de resposta do FastAPI serializa checkout com float sem erro 500."""
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
+
     from fastapi.testclient import TestClient
-    from app.main import app
+
     from app.config import settings
+    from app.main import app
 
     client = TestClient(app, raise_server_exceptions=True)
 
@@ -221,6 +224,7 @@ def test_recognize_checkout_response_serialization_with_float_duration():
     }
 
     from io import BytesIO
+
     from PIL import Image
 
     buf = BytesIO()
@@ -229,17 +233,27 @@ def test_recognize_checkout_response_serialization_with_float_duration():
 
     mock_db = MagicMock()
 
+    from types import SimpleNamespace
+    fake_kiosk_user = SimpleNamespace(
+        id="kiosk-uuid-1",
+        email="kiosk@kiosk.ailab.invalid",
+        app_metadata={"role": "kiosk"},
+        is_anonymous=False,
+        banned_until=None,
+    )
     with (
-        patch.object(settings, "kiosk_api_key", "test-secret-kiosk"),
+        patch("app.deps._fetch_user", return_value=fake_kiosk_user),
+        patch.object(settings, "persistent_replay_guard", False),
+        patch.object(settings, "enforce_capture_challenge", False),
         patch("app.routers.recognize.identify_frames", return_value=fake_ident),
         patch("app.routers.recognize.register_event", return_value=fake_event),
         patch("app.routers.recognize.get_client", return_value=mock_db),
         patch("app.routers.recognize.verify_and_consume_challenge", return_value=(True, "ok")),
     ):
-        # Envia requisição simulando o Tablet Kiosk clicando em "Saída"
+        # Envia requisição simulando o Tablet Kiosk autenticado clicando em "Saída"
         res = client.post(
             "/api/v1/recognize",
-            headers={"X-Kiosk-Key": "test-secret-kiosk"},
+            headers={"Authorization": "Bearer valid.kiosk.jwt"},
             data={"action": "check_out", "challenge_id": "test_chal_123"},
             files={"frame": ("frame.jpg", valid_jpeg, "image/jpeg")},
         )

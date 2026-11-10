@@ -2,24 +2,23 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
 import logging
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 
 from app.config import settings
 from app.db.supabase_client import get_client
-from app.deps import validate_image, verify_tutor_token, require_tutor_or_window, verify_tutor_or_api_key
+from app.deps import require_tutor_or_window, validate_image, verify_tutor_token
 from app.routers.contracts import EnrollResponse, RevokeConsentResponse
 from app.services.enroll_service import EnrollError, ProfileNotFound, refresh_embedding
-from app.services.face_service import invalidate_embeddings_cache
 from app.services.enrollment_window import is_enrollment_window_active
+from app.services.face_service import invalidate_embeddings_cache
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
 
 
-@router.get("/{profile_id}", dependencies=[Depends(verify_tutor_or_api_key)])
+@router.get("/{profile_id}", dependencies=[Depends(verify_tutor_token)])
 def get_profile(profile_id: str):
     """Consulta metadados do perfil e status de consentimento LGPD."""
     db = get_client()
@@ -81,70 +80,60 @@ async def refresh_embedding_route(
 
 
 
+def _rpc_or_503(name: str, params: dict) -> dict:
+    try:
+        data = get_client().rpc(name, params).execute().data
+    except Exception as exc:
+        log.error("Falha na operação LGPD %s: %s", name, type(exc).__name__)
+        raise HTTPException(status_code=503, detail="Banco indisponível. Nenhuma alteração foi aplicada.") from exc
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=503, detail="Resposta inesperada do banco.")
+    return data
+
+
 @router.post(
     "/{profile_id}/revoke-consent",
     response_model=RevokeConsentResponse,
-    dependencies=[Depends(verify_tutor_token)],
 )
-def revoke_consent(profile_id: str):
-    """Revoga o consentimento LGPD do titular: expurga biometria e inativa o perfil."""
-    db = get_client()
-    now_iso = datetime.now(timezone.utc).isoformat()
-
-    # Verifica se perfil existe
-    check = db.table("profiles").select("id, name, active").eq("id", profile_id).execute()
-    if not check.data:
+def revoke_consent(profile_id: str, tutor: dict = Depends(verify_tutor_token)):
+    """Revoga o consentimento LGPD: inativa o perfil e remove templates numa única transação."""
+    result = _rpc_or_503(
+        "revoke_profile_consent",
+        {"p_profile_id": profile_id, "p_actor": tutor.get("user_id") or None},
+    )
+    if not result.get("found"):
         raise HTTPException(status_code=404, detail="Perfil não encontrado.")
-
-    # 1. Inativa o perfil e marca revogação
-    db.table("profiles").update({
-        "active": False,
-        "consent_given": False,
-        "consent_revoked_at": now_iso,
-    }).eq("id", profile_id).execute()
-
-    # 2. Expurga vetores biométricos associados
-    db.table("face_embeddings").delete().eq("profile_id", profile_id).execute()
-
-    # 3. Invalida cache local do serviço facial
     invalidate_embeddings_cache()
-
-    name = check.data[0].get("name", "") if check.data else ""
-    log.info("Consentimento LGPD revogado para perfil %s (%s). Biometria expurgada.", profile_id, name)
+    log.info("Consentimento revogado para perfil %s.", profile_id)
     return {
         "revoked": True,
         "profile_id": profile_id,
-        "name": name,
-        "revoked_at": now_iso,
+        "name": result.get("name") or "",
+        "revoked_at": str(result.get("revoked_at") or ""),
         "message": "Consentimento revogado. Dados biométricos expurgados e perfil inativado.",
     }
 
 
-@router.delete("/{profile_id}", dependencies=[Depends(verify_tutor_token)])
-def delete_profile(profile_id: str):
-    """Elimina definitivamente o perfil e todos os dados biométricos (LGPD Art. 18)."""
-    db = get_client()
+@router.delete("/{profile_id}")
+def delete_profile(profile_id: str, tutor: dict = Depends(verify_tutor_token)):
+    """Elimina perfil, templates, logs e sessões numa única transação (LGPD Art. 18).
 
-    check = db.table("profiles").select("id, name").eq("id", profile_id).execute()
-    if not check.data:
+    Recusa (409) quando há justificativas de frequência: a política de retenção
+    desse histórico (DP-6) ainda depende de decisão institucional.
+    """
+    result = _rpc_or_503(
+        "delete_profile_cascade",
+        {"p_profile_id": profile_id, "p_actor": tutor.get("user_id") or None},
+    )
+    if not result.get("found"):
         raise HTTPException(status_code=404, detail="Perfil não encontrado.")
-
-    # 1. Remove biometria
-    db.table("face_embeddings").delete().eq("profile_id", profile_id).execute()
-
-    # 2. Remove logs faciais
-    try:
-        db.table("face_logs").delete().eq("profile_id", profile_id).execute()
-    except Exception as exc:  # noqa: BLE001
-        log.warning("Falha ao limpar face_logs para %s: %s", profile_id, exc)
-
-    # 3. Remove perfil (presenças em sessions são mantidas ou deletadas conforme cascade)
-    db.table("profiles").delete().eq("id", profile_id).execute()
-
-    # 4. Invalida cache em memória
+    if not result.get("deleted"):
+        raise HTTPException(
+            status_code=409,
+            detail="Perfil possui justificativas de frequência; exclusão aguarda decisão de retenção (DP-6).",
+        )
     invalidate_embeddings_cache()
-
-    log.info("Perfil %s eliminado definitivamente por solicitação do titular (LGPD).", profile_id)
+    log.info("Perfil %s eliminado definitivamente (LGPD).", profile_id)
     return {
         "deleted": True,
         "profile_id": profile_id,

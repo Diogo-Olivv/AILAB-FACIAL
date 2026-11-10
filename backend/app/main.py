@@ -12,6 +12,7 @@ from app.config import settings
 from app.db.schema_check import validate_schema
 from app.routers import enroll, health, maintenance, profiles, recognize
 from app.services.face_service import warmup
+from app.upload_guard import UploadGuardMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,11 +52,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Limite de corpo e exigência de credencial antes de qualquer parsing multipart.
+# Adicionado por último = executa primeiro (mais externo que o CORS).
+app.add_middleware(UploadGuardMiddleware)
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc: Exception):
     """Intercepta exceções não tratadas, impedindo vazamento de tracebacks e secrets."""
-    log.error("Erro interno não tratado na rota %s: %s", request.url.path, exc, exc_info=True)
+    log.error("Erro interno não tratado na rota %s: %s", request.url.path, type(exc).__name__, exc_info=exc)
     from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=500,

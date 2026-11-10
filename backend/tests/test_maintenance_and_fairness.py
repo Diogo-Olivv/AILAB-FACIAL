@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
-import pytest
 
 from app.routers.maintenance import purge_old_face_logs, run_maintenance_cleanup
 from scripts.fairness_audit import evaluate_biometric_fairness
-
 
 # ── Testes de Retenção de Dados e Expurgo de Logs (LGPD Art. 16) ───────────────
 

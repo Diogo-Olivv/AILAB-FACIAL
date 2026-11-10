@@ -1,9 +1,8 @@
 """Testes unitários de concorrência, histerese, integridade do banco e ciclo de vida de sessões."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
-import pytest
 
 from app.config import settings
 from app.services.session_service import (
@@ -12,7 +11,6 @@ from app.services.session_service import (
     register_event,
     total_hours,
 )
-
 
 # ── Testes de Histerese e Debounce Anti-Flip-Flop ─────────────────────────────
 
@@ -25,7 +23,7 @@ def test_register_event_debounce_prevents_flip_flop():
     # Mock de último evento recente (há 5 segundos)
     recent_ts = now - timedelta(seconds=5)
     with patch("app.services.session_service._last_event_ts", return_value=recent_ts):
-        with patch.object(settings, "debounce_seconds", 60):
+        with patch.object(settings, "debounce_seconds", 60), patch.object(settings, "presence_via_rpc", False):
             res = register_event(profile_id)
             assert res["action"] == "debounced"
             assert res["profile_id"] == profile_id
@@ -45,6 +43,7 @@ def test_register_event_prevents_immediate_accidental_checkout():
         patch("app.services.session_service._last_event_ts", return_value=None),
         patch("app.services.session_service._open_session", return_value=open_sess),
         patch.object(settings, "debounce_seconds", 60),
+        patch.object(settings, "presence_via_rpc", False),
     ):
         # Chamada sem action explícito (tentativa de alternar para saída)
         res = register_event(profile_id, action=None)
@@ -69,6 +68,7 @@ def test_register_event_checkout_computes_fractional_duration_and_updates_db():
         patch("app.services.session_service._open_session", return_value=open_sess),
         patch("app.services.session_service._is_stale", return_value=False),
         patch.object(settings, "debounce_seconds", 60),
+        patch.object(settings, "presence_via_rpc", False),
     ):
         res = register_event(profile_id, action="check_out")
         assert res["action"] == "check_out"
@@ -96,6 +96,7 @@ def test_register_event_handles_concurrent_insert_collision():
         patch("app.services.session_service.get_client", return_value=mock_db),
         patch("app.services.session_service._last_event_ts", return_value=None),
         patch("app.services.session_service._open_session", return_value=None),
+        patch.object(settings, "presence_via_rpc", False),
     ):
         # A requisição deve ser tratada como já presente sem lançar exceção
         res = register_event(profile_id, action="check_in")
@@ -184,8 +185,7 @@ def test_close_stale_sessions_sets_voided_at_and_zero_hours():
 
 def test_close_stale_sessions_midnight_crossing_voids_session():
     """Sessão que cruzou a meia-noite (check-in ontem no fuso BRT) deve ser anulada, mesmo com < 10h."""
-    from zoneinfo import ZoneInfo
-    from app.services.session_service import _is_stale, BRT
+    from app.services.session_service import BRT, _is_stale
 
     # Simula avaliação à meia-noite e 5 minutos de hoje (00:05 BRT de 15/09)
     eval_now = datetime(2026, 9, 15, 0, 5, 0, tzinfo=BRT)
@@ -199,7 +199,7 @@ def test_close_stale_sessions_midnight_crossing_voids_session():
 
 def test_close_stale_sessions_same_day_recent_remains_open():
     """Sessão iniciada hoje no mesmo dia com menos de 10 horas NÃO deve ser anulada."""
-    from app.services.session_service import _is_stale, BRT
+    from app.services.session_service import BRT, _is_stale
 
     # Avaliação às 17:00 BRT de hoje (15/09)
     eval_now = datetime(2026, 9, 15, 17, 0, 0, tzinfo=BRT)
@@ -213,7 +213,7 @@ def test_close_stale_sessions_same_day_recent_remains_open():
 
 def test_close_stale_sessions_same_day_over_10_hours_is_stale():
     """Sessão iniciada hoje no mesmo dia que atingiu 10h de permanência deve ser anulada."""
-    from app.services.session_service import _is_stale, BRT
+    from app.services.session_service import BRT, _is_stale
 
     # Avaliação às 18:30 BRT de hoje (15/09)
     eval_now = datetime(2026, 9, 15, 18, 30, 0, tzinfo=BRT)
@@ -231,6 +231,7 @@ def test_close_stale_sessions_same_day_over_10_hours_is_stale():
 def test_tutor_close_session_unauthorized():
     """Endpoint /sessions/tutor-close exige autenticação de tutor (HTTP 401 sem token)."""
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     client = TestClient(app, raise_server_exceptions=False)
@@ -244,6 +245,7 @@ def test_tutor_close_session_unauthorized():
 def test_tutor_close_session_invalid_action():
     """Ação inválida deve ser rejeitada com validação Pydantic 422."""
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     # Mock do tutor auth para passar da dependência verify_tutor_token
@@ -269,6 +271,7 @@ def test_tutor_close_session_invalid_action():
 def test_tutor_close_session_checkout_success():
     """Tutor encerra sessão com 'checkout': atualiza check_out e retorna sucesso."""
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     mock_user = MagicMock()
@@ -279,9 +282,7 @@ def test_tutor_close_session_checkout_success():
 
     mock_db = MagicMock()
     mock_db.auth.get_user.return_value = mock_resp
-    # Mock da tabela sessions update: .update().eq().is_().execute() -> data=[{"id": 495}]
-    mock_query = mock_db.table.return_value.update.return_value.eq.return_value.is_.return_value
-    mock_query.execute.return_value.data = [{"id": 495}]
+    mock_db.rpc.return_value.execute.return_value.data = {"updated_count": 1}
 
     with (
         patch("app.db.supabase_client.get_client", return_value=mock_db),
@@ -298,16 +299,16 @@ def test_tutor_close_session_checkout_success():
         assert data["success"] is True
         assert data["action"] == "checkout"
         assert data["updated_rows"] == 1
-
-        # Garante que o update foi chamado com check_out e sem voided_at
-        update_args = mock_db.table.return_value.update.call_args[0][0]
-        assert "check_out" in update_args
-        assert "voided_at" not in update_args
+        mock_db.rpc.assert_called_with("tutor_close_session", {
+            "p_profile_id": "334e33f9-3bd0-478e-8e05-e68a4e11ee5a",
+            "p_action": "checkout"
+        })
 
 
 def test_tutor_close_session_void_success():
     """Tutor anula sessão com 'void': atualiza check_out, voided_at e auto_closed=True."""
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     mock_user = MagicMock()
@@ -318,8 +319,7 @@ def test_tutor_close_session_void_success():
 
     mock_db = MagicMock()
     mock_db.auth.get_user.return_value = mock_resp
-    mock_query = mock_db.table.return_value.update.return_value.eq.return_value.is_.return_value
-    mock_query.execute.return_value.data = [{"id": 495}]
+    mock_db.rpc.return_value.execute.return_value.data = {"updated_count": 1}
 
     with (
         patch("app.db.supabase_client.get_client", return_value=mock_db),
@@ -336,10 +336,8 @@ def test_tutor_close_session_void_success():
         assert data["success"] is True
         assert data["action"] == "void"
         assert data["updated_rows"] == 1
-
-        # Garante que o update foi chamado com check_out, voided_at e auto_closed
-        update_args = mock_db.table.return_value.update.call_args[0][0]
-        assert "check_out" in update_args
-        assert "voided_at" in update_args
-        assert update_args["auto_closed"] is True
+        mock_db.rpc.assert_called_with("tutor_close_session", {
+            "p_profile_id": "334e33f9-3bd0-478e-8e05-e68a4e11ee5a",
+            "p_action": "void"
+        })
 

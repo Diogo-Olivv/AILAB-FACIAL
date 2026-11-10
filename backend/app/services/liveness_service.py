@@ -26,6 +26,14 @@ _onnx_initialized = False
 _pad_lock = threading.Lock()
 
 
+class BiometricUnavailable(RuntimeError):
+    """A verificação não pôde ser executada (modelo ausente/falho). Nunca vira aprovação."""
+
+
+def pad_model_loaded() -> bool:
+    return _init_onnx_pad() is not None
+
+
 def _init_onnx_pad():
     """Inicializa a sessão ONNX se houver modelo PAD disponível (thread-safe)."""
     global _onnx_session, _onnx_initialized
@@ -253,6 +261,8 @@ def verify_liveness(
 
     # 1. Pipeline primário: Rede Neural Especializada (MiniFASNetV2 ONNX)
     session = _init_onnx_pad()
+    if session is None and settings.pad_model_required:
+        raise BiometricUnavailable("Modelo PAD obrigatório não carregado.")
     if session is not None:
         try:
             input_name = session.get_inputs()[0].name
@@ -282,6 +292,9 @@ def verify_liveness(
             )
             return is_live, round(live_prob, 4), "onnx_pass" if is_live else "spoof_detected"
         except Exception as exc:
+            if settings.pad_model_required:
+                log.error("Falha na inferência ONNX PAD: %s", type(exc).__name__)
+                raise BiometricUnavailable("Inferência PAD falhou.") from exc
             log.warning("Falha na inferência ONNX PAD: %s. Aplicando analisador estatístico.", exc)
 
     # 2. Pipeline passivo estatístico (LBP + FFT Moiré + Cromática) de contingência
@@ -306,22 +319,29 @@ def verify_liveness(
     return is_live, round(float(final_score), 4), reason
 
 
+def _flash_unable(reason: str) -> tuple[bool, float, str]:
+    """Incapacidade de verificar: nunca é registrada como sucesso da verificação."""
+    if settings.flash_unable_policy.strip().lower() == "reject":
+        return False, 0.0, f"flash_unverifiable:{reason}"
+    return True, 0.0, f"flash_unverified:{reason}"
+
+
 def verify_flash_reflection(
     ambient_bgr: np.ndarray,
     flash_bgr: np.ndarray,
 ) -> tuple[bool, float, str]:
-    """Verifica vivacidade ativa via reflexo fotométrico na sequência multi-frame (3D Flash Liveness).
+    """Heurística fotométrica entre dois frames (NÃO é prova tridimensional nem PAD certificado).
 
-    Implementa critérios da norma ISO/IEC 30107-3 para combate a ataques de apresentação 2D:
-    1. Rejeita frames estáticos/idênticos (ataque de replay de imagem congelada ou tela sem reação).
-    2. Avalia a variação fotométrica (delta de luminância Y) provocada pelo pulso de luz do tablet.
-    3. Analisa a curvatura 3D facial (o centro da face convexa reage de forma não-planar).
+    Único critério decisório: rejeita frames praticamente idênticos (replay estático).
+    delta_y e center_diff são apenas registrados; não há threshold validado para eles.
+    Quando não é possível avaliar, a decisão segue `flash_unable_policy`
+    ("allow" preserva o comportamento histórico; "reject" falha fechado).
     """
     if not settings.flash_liveness_enabled or not settings.liveness_enabled:
         return True, 1.0, "flash_liveness_disabled"
 
     if ambient_bgr is None or flash_bgr is None or ambient_bgr.size == 0 or flash_bgr.size == 0:
-        return True, 1.0, "empty_frame_skip"
+        return _flash_unable("empty_frame")
 
     try:
         # Redimensiona para dimensão padronizada de 112x112 para alinhamento robusto
@@ -331,7 +351,7 @@ def verify_flash_reflection(
         a2 = np.array(img2, dtype=np.float32)
     except Exception as exc:
         log.warning("Falha ao redimensionar frames para flash liveness: %s", exc)
-        return True, 1.0, "resize_error_fallback"
+        return _flash_unable("resize_error")
 
     # Conversão BGR para luminância Y = 0.114*B + 0.587*G + 0.299*R
     y1 = 0.114 * a1[:, :, 0] + 0.587 * a1[:, :, 1] + 0.299 * a1[:, :, 2]

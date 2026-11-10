@@ -1,9 +1,13 @@
-"""Serviço de gerenciamento de desafios temporais (nonces) anti-injeção digital.
+"""Desafio temporal de captura (prova de frescor da requisição).
 
-Implementa controle estrito de vivacidade e presença temporal:
-1. Emissão de tokens de desafio efêmeros assinados com HMAC-SHA256 (TTL padrão de 30s).
-2. Verificação de assinatura em tempo constante (secrets.compare_digest).
-3. Consumo de uso único (one-time nonce) com proteção anti-replay e poda automática de memória.
+O desafio é um token `payload.assinatura` (HMAC-SHA256) com identificador único
+(`cid`), emissão e expiração. Ele prova que a requisição foi iniciada há pouco
+por um dispositivo autenticado; NÃO prova a origem física da imagem e não
+substitui o PAD.
+
+Uso único e idempotência são garantidos no banco (app/services/replay_guard.py,
+tabela recognition_requests). O controle em memória deste módulo existe apenas
+para desenvolvimento/testes sem banco.
 """
 from __future__ import annotations
 
@@ -16,135 +20,145 @@ import secrets
 import threading
 import time
 import uuid
+from dataclasses import dataclass
 
 from app.config import settings
 
 log = logging.getLogger(__name__)
 
-# Cache de nonces consumidos com bloqueio thread-safe para neutralizar ataques de replay
+# Uso único em memória — apenas para o modo sem banco (dev/testes).
 _consumed_challenges: dict[str, float] = {}
 _lock = threading.Lock()
 _LAST_CLEANUP: float = 0.0
 _CLEANUP_INTERVAL_SECONDS: float = 60.0
 
+# Segredo efêmero por processo para desenvolvimento. Nunca usado em produção.
+_ephemeral_secret = secrets.token_bytes(32)
+
+CLOCK_SKEW_SECONDS = 5.0
+
+
+class ChallengeSecretMissing(RuntimeError):
+    """Produção sem CHALLENGE_SECRET configurado: o serviço não emite nem valida desafios."""
+
 
 def _get_signing_key() -> bytes:
-    """Deriva uma chave criptográfica HMAC de 256 bits a partir dos segredos configurados."""
-    secret = (
-        settings.kiosk_api_key
-        or settings.api_key
-        or "ailab-fallback-secret-kiosk-challenge"
-    ).encode("utf-8")
+    """Deriva a chave HMAC do segredo dedicado do desafio.
+
+    Não existe segredo literal de fallback: em produção a ausência de
+    CHALLENGE_SECRET é erro (fail-closed); em desenvolvimento usa-se um segredo
+    aleatório que vive só enquanto o processo existir.
+    """
+    if settings.challenge_secret:
+        secret = settings.challenge_secret.encode("utf-8")
+    elif settings.is_production:
+        raise ChallengeSecretMissing("CHALLENGE_SECRET não configurado.")
+    else:
+        secret = _ephemeral_secret
     return hashlib.sha256(b"ailab:capture_challenge:" + secret).digest()
 
 
-def _prune_consumed_cache(now: float) -> None:
-    """Remove entradas expiradas do cache de desafios consumidos para evitar crescimento de memória."""
-    global _LAST_CLEANUP
-    if now - _LAST_CLEANUP < _CLEANUP_INTERVAL_SECONDS:
-        return
-    _LAST_CLEANUP = now
-    expired = [cid for cid, exp in _consumed_challenges.items() if exp < now]
-    for cid in expired:
-        _consumed_challenges.pop(cid, None)
+def _sign(payload_b64: str) -> str:
+    sig = hmac.new(_get_signing_key(), payload_b64.encode("ascii"), hashlib.sha256).digest()
+    return base64.urlsafe_b64encode(sig).decode("ascii").rstrip("=")
 
 
-def create_capture_challenge(ttl_seconds: int | None = None) -> dict:
-    """Gera um novo desafio efêmero de captura com assinatura HMAC-SHA256.
-
-    Retorna um dicionário contendo o token assinado (challenge_id), timestamp de
-    expiração e tempo de vida (TTL) em segundos.
-    """
+def create_capture_challenge(ttl_seconds: int | None = None, device_id: str | None = None) -> dict:
+    """Gera um desafio efêmero assinado, opcionalmente vinculado a um dispositivo."""
     effective_ttl = ttl_seconds if ttl_seconds is not None else settings.challenge_ttl_seconds
     now = time.time()
     exp = now + effective_ttl
-    cid = str(uuid.uuid4())
 
-    payload_data = {
-        "cid": cid,
-        "iat": int(now),
-        "exp": int(exp),
-    }
+    payload_data: dict = {"cid": str(uuid.uuid4()), "iat": int(now), "exp": int(exp)}
+    if device_id:
+        payload_data["dev"] = device_id
 
     payload_json = json.dumps(payload_data, separators=(",", ":")).encode("utf-8")
     payload_b64 = base64.urlsafe_b64encode(payload_json).decode("ascii").rstrip("=")
 
-    sig = hmac.new(
-        _get_signing_key(),
-        payload_b64.encode("ascii"),
-        hashlib.sha256,
-    ).digest()
-    sig_b64 = base64.urlsafe_b64encode(sig).decode("ascii").rstrip("=")
-
-    challenge_token = f"{payload_b64}.{sig_b64}"
-
     return {
-        "challenge_id": challenge_token,
+        "challenge_id": f"{payload_b64}.{_sign(payload_b64)}",
         "expires_at": int(exp),
         "ttl_seconds": effective_ttl,
     }
 
 
-def verify_and_consume_challenge(challenge_token: str | None) -> tuple[bool, str]:
-    """Valida a integridade, temporalidade e unicidade do desafio de captura.
+@dataclass(frozen=True)
+class ParsedChallenge:
+    cid: str
+    expired: bool
+    device_id: str | None
 
-    Garante que:
-    1. O token está presente e possui o formato payload.signature.
-    2. A assinatura HMAC corresponde à chave do servidor.
-    3. O desafio não está expirado e o timestamp de emissão é plausível.
-    4. O desafio nunca foi utilizado anteriormente (consumo de uso único).
+
+def parse_challenge(challenge_token: str | None) -> tuple[ParsedChallenge | None, str]:
+    """Valida formato e assinatura e informa se o desafio expirou.
+
+    Não consome o desafio: o consumo (claim) é feito de forma atômica pelo
+    replay_guard. Um desafio expirado ainda é devolvido (com `expired=True`) para
+    que um retry legítimo de requisição já concluída receba a resposta original.
     """
     if not challenge_token or not challenge_token.strip():
-        return False, "Desafio de captura ausente."
+        return None, "Desafio de captura ausente."
 
     parts = challenge_token.strip().split(".")
     if len(parts) != 2:
-        return False, "Formato do token de desafio inválido."
-
+        return None, "Formato do token de desafio inválido."
     payload_b64, sig_b64 = parts
 
-    # 1. Verificação da assinatura HMAC em tempo constante
-    expected_sig = hmac.new(
-        _get_signing_key(),
-        payload_b64.encode("ascii"),
-        hashlib.sha256,
-    ).digest()
-    expected_sig_b64 = base64.urlsafe_b64encode(expected_sig).decode("ascii").rstrip("=")
+    try:
+        expected = _sign(payload_b64)
+    except (UnicodeEncodeError, ValueError):
+        return None, "Formato do token de desafio inválido."
+    if not secrets.compare_digest(sig_b64, expected):
+        log.warning("Desafio com assinatura inválida.")
+        return None, "Assinatura criptográfica do desafio inválida."
 
-    if not secrets.compare_digest(sig_b64, expected_sig_b64):
-        log.warning("Tentativa de uso de desafio com assinatura inválida/forjada.")
-        return False, "Assinatura criptográfica do desafio inválida."
-
-    # 2. Decodificação do payload
     try:
         rem = len(payload_b64) % 4
-        padded_b64 = payload_b64 + ("=" * (4 - rem)) if rem else payload_b64
-        payload_bytes = base64.urlsafe_b64decode(padded_b64)
-        data = json.loads(payload_bytes.decode("utf-8"))
-        cid = data["cid"]
+        padded = payload_b64 + ("=" * (4 - rem)) if rem else payload_b64
+        data = json.loads(base64.urlsafe_b64decode(padded).decode("utf-8"))
+        cid = str(data["cid"])
         iat = float(data["iat"])
         exp = float(data["exp"])
-    except Exception as exc:
-        log.warning("Falha ao decodificar payload de desafio: %s", exc)
-        return False, "Payload do desafio corrompido."
+        device_id = data.get("dev")
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Payload de desafio ilegível: %s", type(exc).__name__)
+        return None, "Payload do desafio corrompido."
 
     now = time.time()
+    if iat > now + CLOCK_SKEW_SECONDS:
+        return None, "Carimbo de emissão do desafio no futuro (skew de relógio)."
 
-    # 3. Verificação de expiração e sincronismo temporal
-    if now > exp:
-        return False, f"Desafio de captura expirado (expirou há {int(now - exp)}s)."
+    return ParsedChallenge(cid=cid, expired=now > exp, device_id=str(device_id) if device_id else None), "OK"
 
-    if iat > now + 5.0:
-        return False, "Carimbo de emissão do desafio no futuro (skew de relógio)."
 
-    # 4. Consumo atômico e verificação anti-replay
+def _prune_consumed_cache(now: float) -> None:
+    global _LAST_CLEANUP
+    if now - _LAST_CLEANUP < _CLEANUP_INTERVAL_SECONDS:
+        return
+    _LAST_CLEANUP = now
+    for cid in [c for c, exp in _consumed_challenges.items() if exp < now]:
+        _consumed_challenges.pop(cid, None)
+
+
+def verify_and_consume_challenge(challenge_token: str | None) -> tuple[bool, str]:
+    """Valida e consome o desafio em memória (modo sem banco: dev/testes).
+
+    Em produção o consumo é feito por replay_guard.claim(), no banco.
+    """
+    parsed, reason = parse_challenge(challenge_token)
+    if parsed is None:
+        return False, reason
+    if parsed.expired:
+        return False, "Desafio de captura expirado."
+
+    now = time.time()
     with _lock:
         _prune_consumed_cache(now)
-        if cid in _consumed_challenges:
-            log.warning("Tentativa de replay detectada para o desafio '%s'.", cid)
+        if parsed.cid in _consumed_challenges:
+            log.warning("Tentativa de replay de desafio já utilizado.")
             return False, "Desafio de captura já utilizado (tentativa de repetição/replay)."
-
-        _consumed_challenges[cid] = exp
+        _consumed_challenges[parsed.cid] = now + settings.challenge_ttl_seconds + CLOCK_SKEW_SECONDS
 
     return True, "OK"
 

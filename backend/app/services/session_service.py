@@ -8,8 +8,8 @@ Implementa:
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -130,9 +130,25 @@ def register_event(profile_id: str, action: str | None = None) -> dict[str, Any]
         dict com campo 'action' em
         {check_in, check_out, already_in, not_in, debounced}.
     """
+    if settings.presence_via_rpc:
+        # Caminho transacional (migração 24): lock por perfil no Postgres, debounce,
+        # sessão vencida e intenção explícita decididos numa única transação.
+        res = get_client().rpc(
+            "register_presence_event",
+            {
+                "p_profile_id": profile_id,
+                "p_action": action,
+                "p_debounce_seconds": settings.debounce_seconds,
+                "p_max_session_hours": settings.max_session_hours,
+            },
+        ).execute()
+        if not isinstance(res.data, dict) or "action" not in res.data:
+            raise RuntimeError("Resposta inválida de register_presence_event.")
+        return res.data
+
     now = datetime.now(UTC)
 
-    # 1. Histerese de segurança geral
+    # 1. Histerese de segurança geral (modo legado sem RPC: apenas dev/testes)
     last = _last_event_ts(profile_id)
     if last and (now - last) < timedelta(seconds=settings.debounce_seconds):
         wait = settings.debounce_seconds - int((now - last).total_seconds())

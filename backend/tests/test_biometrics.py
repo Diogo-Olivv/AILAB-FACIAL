@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
+
 import numpy as np
 import pytest
 
@@ -390,6 +391,7 @@ def test_identify_rejects_impostor_below_min_cosine():
         patch.object(settings, "face_min_cosine", 0.68),
         patch.object(settings, "face_uncertain_cosine", 0.62),
         patch.object(settings, "face_threshold", 0.80),
+        patch.object(settings, "use_pgvector", False),
     ):
         result = identify(b"fake_image_bytes")
         assert result["recognized"] is False
@@ -437,6 +439,7 @@ def test_identify_cosine_threshold_is_calibrated_to_068():
         patch.object(settings, "face_min_cosine", 0.68),
         patch.object(settings, "face_uncertain_cosine", 0.62),
         patch.object(settings, "face_threshold", 0.80),
+        patch.object(settings, "use_pgvector", False),
     ):
         result = identify(b"fake_image_bytes")
         # cos=0.60 está abaixo do face_uncertain_cosine (0.62): rejeição definitiva
@@ -576,7 +579,6 @@ def test_biohashing_projection_isometry_linear():
     """Valida que a projeção de BioHashing é uma isometria linear perfeita."""
     from app.services.face_service import (
         apply_template_protection,
-        get_biohash_projection_matrix,
     )
 
     rng = np.random.default_rng(123)

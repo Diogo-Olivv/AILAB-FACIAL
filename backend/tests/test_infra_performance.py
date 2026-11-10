@@ -4,20 +4,19 @@ from __future__ import annotations
 import base64
 import json
 from unittest.mock import MagicMock, patch
+
 import numpy as np
 import pytest
 from fastapi import HTTPException
 
 from app.config import settings
-from app.deps import verify_cron_or_api_key
+from app.deps import verify_admin_or_scheduler
 from app.routers.health import health, readiness
 from app.routers.maintenance import run_maintenance_cleanup
 from app.services.face_service import (
     _match_face_pgvector,
-    is_model_loaded,
     warmup,
 )
-
 
 # ── 1. Testes de Warmup e Readiness Probe ─────────────────────────────────────
 
@@ -61,22 +60,22 @@ def test_warmup_pipeline_execution():
 # ── 2. Testes de Autenticação Cloud Scheduler OIDC e API Key ──────────────────
 
 
-def test_verify_cron_or_api_key_with_valid_api_key():
+def test_verify_admin_or_scheduler_with_valid_admin_key():
     """Permite acesso quando X-API-Key válida é fornecida."""
-    with patch.object(settings, "api_key", "secret-test-key"):
+    with patch.object(settings, "admin_api_key", "secret-test-key"):
         # Não deve lançar exceção
-        verify_cron_or_api_key(api_key="secret-test-key", authorization=None)
+        verify_admin_or_scheduler(admin_key="secret-test-key", authorization=None)
 
 
-def test_verify_cron_or_api_key_rejects_empty_or_invalid():
+def test_verify_admin_or_scheduler_rejects_empty_or_invalid():
     """Rejeita chamada sem credenciais ou com token inválido."""
-    with patch.object(settings, "api_key", "secret-test-key"):
+    with patch.object(settings, "admin_api_key", "secret-test-key"):
         with pytest.raises(HTTPException) as exc:
-            verify_cron_or_api_key(api_key="wrong-key", authorization=None)
+            verify_admin_or_scheduler(admin_key="wrong-key", authorization=None)
         assert exc.value.status_code == 401
 
 
-def test_verify_cron_or_api_key_rejects_unverified_oidc_signature():
+def test_verify_admin_or_scheduler_rejects_unverified_oidc_signature():
     """Token JWT com assinatura falsa ('fake_signature') deve ser REJEITADO.
 
     Guarda contra: OIDC bypass via fallback sem verificação de assinatura
@@ -95,19 +94,19 @@ def test_verify_cron_or_api_key_rejects_unverified_oidc_signature():
     fake_jwt = f"{header}.{payload}.fake_signature"
 
     with (
-        patch.object(settings, "api_key", "secret-key"),
+        patch.object(settings, "admin_api_key", "secret-key"),
         patch.object(settings, "service_url", "https://ailab-facial-backend.a.run.app"),
         patch.object(settings, "cloud_scheduler_sa_email", "ailab-scheduler@gserviceaccount.com"),
     ):
         # Token com assinatura inválida deve ser rejeitado — nunca aceito
         with pytest.raises(HTTPException) as exc:
-            verify_cron_or_api_key(api_key=None, authorization=f"Bearer {fake_jwt}")
+            verify_admin_or_scheduler(admin_key=None, authorization=f"Bearer {fake_jwt}")
         assert exc.value.status_code in (401, 500), (
             f"Esperado 401 ou 500 para token inválido, obtido {exc.value.status_code}"
         )
 
 
-def test_verify_cron_or_api_key_rejects_unauthorized_service_account():
+def test_verify_admin_or_scheduler_rejects_unauthorized_service_account():
     """Rejeita token OIDC cujas claims pertencem a uma Service Account não autorizada.
 
     Simula cenário onde o RSA é válido (mock) mas o e-mail das claims pertence
@@ -154,12 +153,12 @@ def test_verify_cron_or_api_key_rejects_unauthorized_service_account():
 
     try:
         with (
-            patch.object(settings, "api_key", "secret-key"),
+            patch.object(settings, "admin_api_key", "secret-key"),
             patch.object(settings, "service_url", "https://ailab-facial-backend.a.run.app"),
             patch.object(settings, "cloud_scheduler_sa_email", "ailab-scheduler@gserviceaccount.com"),
         ):
             with pytest.raises(HTTPException) as exc:
-                verify_cron_or_api_key(api_key=None, authorization="Bearer any.valid.token")
+                verify_admin_or_scheduler(admin_key=None, authorization="Bearer any.valid.token")
             assert exc.value.status_code == 403
     finally:
         for key, val in modules_backup.items():
@@ -201,17 +200,17 @@ def test_match_face_pgvector_success():
         assert res["confidence"] > 0.80
 
 
-def test_match_face_pgvector_fallback_on_exception():
-    """Se a RPC do pgvector falhar (ex: extensão não habilitada), retorna None acionando fallback."""
+def test_match_face_pgvector_raises_biometric_unavailable_on_rpc_error():
+    """Se a RPC do pgvector falhar, lança BiometricUnavailable (sem fallback inseguro para cache de memória)."""
+    from app.services.face_service import BiometricUnavailable
     mock_db = MagicMock()
     mock_db.rpc.side_effect = Exception("function match_face does not exist")
 
     query_enc = np.ones(512, dtype=np.float64) / np.sqrt(512)
 
     with patch("app.services.face_service.get_client", return_value=mock_db):
-        res = _match_face_pgvector(query_enc)
-        # Deve capturar a exceção e retornar None para acionar o fallback em memória
-        assert res is None
+        with pytest.raises(BiometricUnavailable):
+            _match_face_pgvector(query_enc)
 
 
 # ── 4. Teste de Manutenção e Sweep de Sessões ─────────────────────────────────

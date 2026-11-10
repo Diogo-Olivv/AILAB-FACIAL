@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import io
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
-import pytest
 
 from app.config import settings
 from app.main import app
@@ -115,17 +116,39 @@ def test_verify_and_consume_challenge_rejects_expired():
 # ── Testes de Integração nas Rotas da API (TestClient) ────────────────────────
 
 
-def test_challenge_endpoint_requires_kiosk_key():
-    """GET/POST /api/v1/recognize/challenge exige autenticação de Kiosk."""
-    client = TestClient(app, raise_server_exceptions=False)
-    with patch.object(settings, "kiosk_api_key", "secret-kiosk-999"):
-        res_no_auth = client.post("/api/v1/recognize/challenge")
-        assert res_no_auth.status_code == 401
+def _mock_kiosk_user():
+    from types import SimpleNamespace
+    return SimpleNamespace(
+        id="kiosk-uuid-1",
+        email="kiosk@kiosk.ailab.invalid",
+        app_metadata={"role": "kiosk"},
+        is_anonymous=False,
+        banned_until=None,
+    )
 
-        # Com autenticação válida via X-Kiosk-Key
+
+def test_challenge_endpoint_requires_kiosk_identity():
+    """GET/POST /api/v1/recognize/challenge exige identidade JWT de Kiosk."""
+    from app.deps import clear_identity_cache_for_testing
+    clear_identity_cache_for_testing()
+    client = TestClient(app, raise_server_exceptions=False)
+    
+    # Sem credencial
+    res_no_auth = client.post("/api/v1/recognize/challenge")
+    assert res_no_auth.status_code == 401
+
+    # Chave legada compartilhada é rejeitada (401)
+    res_legacy = client.post(
+        "/api/v1/recognize/challenge",
+        headers={"X-Kiosk-Key": "secret-kiosk-999"},
+    )
+    assert res_legacy.status_code == 401
+
+    # Com JWT de dispositivo Kiosk
+    with patch("app.deps._fetch_user", return_value=_mock_kiosk_user()):
         res_auth = client.post(
             "/api/v1/recognize/challenge",
-            headers={"X-Kiosk-Key": "secret-kiosk-999"},
+            headers={"Authorization": "Bearer valid.kiosk.jwt"},
         )
         assert res_auth.status_code == 200
         body = res_auth.json()
@@ -139,12 +162,13 @@ def test_recognize_rejects_request_without_challenge():
     img_data = _dummy_image_bytes()
 
     with (
-        patch.object(settings, "kiosk_api_key", "secret-kiosk-999"),
+        patch("app.deps._fetch_user", return_value=_mock_kiosk_user()),
+        patch.object(settings, "persistent_replay_guard", False),
         patch.object(settings, "enforce_capture_challenge", True),
     ):
         res = client.post(
             "/api/v1/recognize",
-            headers={"X-Kiosk-Key": "secret-kiosk-999"},
+            headers={"Authorization": "Bearer valid.kiosk.jwt"},
             files={"frame": ("cam.jpg", img_data, "image/jpeg")},
             data={"action": "check_in"},
         )
@@ -154,25 +178,29 @@ def test_recognize_rejects_request_without_challenge():
 
 def test_recognize_rejects_replayed_challenge():
     """POST /api/v1/recognize com challenge_id reutilizado deve falhar com HTTP 403 no segundo envio."""
+    from app.routers.recognize import clear_rate_limits_for_testing
+    clear_rate_limits_for_testing()
     client = TestClient(app, raise_server_exceptions=False)
     img_data = _dummy_image_bytes()
 
     with (
-        patch.object(settings, "kiosk_api_key", "secret-kiosk-999"),
+        patch("app.deps._fetch_user", return_value=_mock_kiosk_user()),
+        patch.object(settings, "persistent_replay_guard", False),
         patch.object(settings, "enforce_capture_challenge", True),
         patch("app.routers.recognize.identify_frames", return_value={"recognized": False, "status": "no_face"}),
     ):
-        # 1. Emite desafio legítimo
+        # 1. Emite desafio legítimo para o dispositivo
         ch_res = client.post(
             "/api/v1/recognize/challenge",
-            headers={"X-Kiosk-Key": "secret-kiosk-999"},
+            headers={"Authorization": "Bearer valid.kiosk.jwt"},
         )
+        assert ch_res.status_code == 200
         challenge_id = ch_res.json()["challenge_id"]
 
         # 2. Primeira requisição: consome o desafio
         res1 = client.post(
             "/api/v1/recognize",
-            headers={"X-Kiosk-Key": "secret-kiosk-999"},
+            headers={"Authorization": "Bearer valid.kiosk.jwt"},
             files={"frame": ("cam.jpg", img_data, "image/jpeg")},
             data={"action": "check_in", "challenge_id": challenge_id},
         )
@@ -181,12 +209,12 @@ def test_recognize_rejects_replayed_challenge():
         # 3. Segunda requisição com o mesmo challenge_id: deve ser barrada por replay
         res2 = client.post(
             "/api/v1/recognize",
-            headers={"X-Kiosk-Key": "secret-kiosk-999"},
+            headers={"Authorization": "Bearer valid.kiosk.jwt"},
             files={"frame": ("cam.jpg", img_data, "image/jpeg")},
             data={"action": "check_in", "challenge_id": challenge_id},
         )
         assert res2.status_code == 403
-        assert "replay" in res2.json().get("detail", "").lower() or "já utilizado" in res2.json().get("detail", "").lower()
+        assert "inválido ou expirado" in res2.json().get("detail", "").lower() or "já utilizado" in res2.json().get("detail", "").lower()
 
 
 def test_recognize_accepts_when_challenge_enforcement_disabled():
@@ -195,13 +223,14 @@ def test_recognize_accepts_when_challenge_enforcement_disabled():
     img_data = _dummy_image_bytes()
 
     with (
-        patch.object(settings, "kiosk_api_key", "secret-kiosk-999"),
+        patch("app.deps._fetch_user", return_value=_mock_kiosk_user()),
+        patch.object(settings, "persistent_replay_guard", False),
         patch.object(settings, "enforce_capture_challenge", False),
         patch("app.routers.recognize.identify_frames", return_value={"recognized": False, "status": "no_face"}),
     ):
         res = client.post(
             "/api/v1/recognize",
-            headers={"X-Kiosk-Key": "secret-kiosk-999"},
+            headers={"Authorization": "Bearer valid.kiosk.jwt"},
             files={"frame": ("cam.jpg", img_data, "image/jpeg")},
             data={"action": "check_in"},
         )
@@ -217,19 +246,21 @@ def test_recognize_accepts_challenge_via_header_token():
     img_data = _dummy_image_bytes()
 
     with (
-        patch.object(settings, "kiosk_api_key", "secret-kiosk-999"),
+        patch("app.deps._fetch_user", return_value=_mock_kiosk_user()),
+        patch.object(settings, "persistent_replay_guard", False),
         patch.object(settings, "enforce_capture_challenge", True),
         patch("app.routers.recognize.identify_frames", return_value={"recognized": True, "status": "ok"}),
     ):
         # 1. Obtém desafio
-        ch_res = client.post("/api/v1/recognize/challenge", headers={"X-Kiosk-Key": "secret-kiosk-999"})
+        ch_res = client.post("/api/v1/recognize/challenge", headers={"Authorization": "Bearer valid.kiosk.jwt"})
+        assert ch_res.status_code == 200
         challenge_id = ch_res.json()["challenge_id"]
 
         # 2. Envia via header X-Challenge-Token (sem challenge_id no form data)
         res = client.post(
             "/api/v1/recognize",
             headers={
-                "X-Kiosk-Key": "secret-kiosk-999",
+                "Authorization": "Bearer valid.kiosk.jwt",
                 "X-Challenge-Token": challenge_id,
             },
             files={"frame": ("cam.jpg", img_data, "image/jpeg")},
@@ -248,7 +279,8 @@ def test_recognize_rate_limiting_exceeded_returns_429():
     img_data = _dummy_image_bytes()
 
     with (
-        patch.object(settings, "kiosk_api_key", "secret-kiosk-999"),
+        patch("app.deps._fetch_user", return_value=_mock_kiosk_user()),
+        patch.object(settings, "persistent_replay_guard", False),
         patch.object(settings, "enforce_capture_challenge", False),
         patch.object(settings, "rate_limit_per_minute", 3),
         patch("app.routers.recognize.identify_frames", return_value={"recognized": False, "status": "no_face"}),
@@ -257,7 +289,7 @@ def test_recognize_rate_limiting_exceeded_returns_429():
         for _ in range(3):
             r = client.post(
                 "/api/v1/recognize",
-                headers={"X-Kiosk-Key": "secret-kiosk-999"},
+                headers={"Authorization": "Bearer valid.kiosk.jwt"},
                 files={"frame": ("cam.jpg", img_data, "image/jpeg")},
             )
             assert r.status_code == 200
@@ -265,7 +297,7 @@ def test_recognize_rate_limiting_exceeded_returns_429():
         # A 4ª requisição deve estourar o limite (HTTP 429)
         r4 = client.post(
             "/api/v1/recognize",
-            headers={"X-Kiosk-Key": "secret-kiosk-999"},
+            headers={"Authorization": "Bearer valid.kiosk.jwt"},
             files={"frame": ("cam.jpg", img_data, "image/jpeg")},
         )
         assert r4.status_code == 429

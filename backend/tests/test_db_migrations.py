@@ -93,7 +93,7 @@ def as_role(conn, role: str, *, sub: str | None = None, app_role: str | None = N
         claims["user_metadata"] = {"role": user_role}
     conn.execute("RESET ROLE")
     conn.execute("SELECT set_config('request.jwt.claims', %s, false)", (json.dumps(claims),))
-    conn.execute(f"SET ROLE {role}")  # noqa: S608 - papel vem de lista fixa dos testes
+    conn.execute(f"SET ROLE {role}")
     return conn
 
 
@@ -149,7 +149,7 @@ def test_anon_cannot_read_tables_after_contract_migration(admin):
     for table in ("profiles", "sessions", "face_embeddings", "face_logs",
                   "attendance_justifications", "recognition_requests", "admin_audit_log"):
         with pytest.raises(INSUFFICIENT):
-            conn.execute(f"SELECT * FROM public.{table} LIMIT 1")  # noqa: S608
+            conn.execute(f"SELECT * FROM public.{table} LIMIT 1")
 
 
 def test_public_stats_exposes_only_aggregates(admin):
@@ -587,7 +587,7 @@ def test_delete_profile_with_sessions_is_all_or_nothing(admin):
     out = svc.execute("SELECT public.delete_profile_cascade(%s, NULL)", (pid,)).fetchone()[0]
     assert out["deleted"] is True and out["sessions"] == 1
     for table in ("profiles", "sessions", "face_logs", "face_embeddings"):
-        assert admin.execute(f"SELECT count(*) FROM public.{table}").fetchone()[0] == 0  # noqa: S608
+        assert admin.execute(f"SELECT count(*) FROM public.{table}").fetchone()[0] == 0
 
 
 def test_delete_profile_refused_when_justifications_exist(admin):

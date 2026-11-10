@@ -8,16 +8,16 @@ Cobre os 4 cenários de aceite definidos no plano de implementação:
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
 
 from app.services.enrollment_window import (
-    is_enrollment_window_active,
-    WINDOW_START,
-    WINDOW_END,
     SP_TZ,
+    WINDOW_END,
+    WINDOW_START,
+    is_enrollment_window_active,
 )
 
 # ── Utilitários de helper ──────────────────────────────────────────────────────
@@ -85,6 +85,7 @@ class TestIsEnrollmentWindowActive:
 def client():
     """Cliente FastAPI com app completo."""
     from fastapi.testclient import TestClient
+
     from app.main import app
     return TestClient(app)
 
@@ -98,13 +99,12 @@ def _patch_window(active: bool):
 
 
 class TestRefreshEmbeddingWindowIntegration:
-    """Testa o endpoint POST /api/v1/profiles/{id}/refresh-embedding."""
+    """Testa o endpoint POST /api/v1/profiles/{id}/refresh-embedding com controle de identidade."""
 
     ENDPOINT = "/api/v1/profiles/dummy-profile-id/refresh-embedding"
 
     def _make_frames(self):
         """Cria 3 frames de imagem JPEG mínimos para satisfazer a validação de quantidade."""
-        # JPEG mínimo válido (magic bytes + EOI)
         min_jpg = b"\xff\xd8\xff\xe0" + b"\x00" * 12 + b"\xff\xd9"
         return [
             ("frames", (f"frame{i}.jpg", min_jpg, "image/jpeg"))
@@ -115,46 +115,54 @@ class TestRefreshEmbeddingWindowIntegration:
         """Sem token + fora da janela → 401 Unauthorized."""
         with _patch_window(False):
             resp = client.post(self.ENDPOINT, files=self._make_frames())
-        assert resp.status_code == 401, f"Esperado 401, recebido {resp.status_code}: {resp.text}"
+        assert resp.status_code == 401
 
-    def test_no_token_inside_window_bypasses_auth(self, client):
-        """Sem token + dentro da janela → não deve retornar 401 (auth dispensada).
-
-        O código pode retornar 404/422 por profile inexistente, mas nunca 401.
-        """
+    def test_no_token_inside_window_still_returns_401(self, client):
+        """Sem token + dentro da janela → 401 (nunca há bypass anônimo sem credencial)."""
         with _patch_window(True):
             resp = client.post(self.ENDPOINT, files=self._make_frames())
-        assert resp.status_code != 401, (
-            f"Auth não deveria ser exigida durante a janela cadastral. "
-            f"Status: {resp.status_code}"
+        assert resp.status_code == 401
+
+    def test_kiosk_token_outside_window_returns_403(self, client):
+        """Dispositivo Kiosk fora da janela cadastral recebe 403 (apenas tutor permitido)."""
+        from types import SimpleNamespace
+        fake_kiosk = SimpleNamespace(
+            id="kiosk-uuid", email="kiosk@kiosk.ailab.invalid", app_metadata={"role": "kiosk"}, is_anonymous=False, banned_until=None
         )
-
-    def test_enrollment_window_header_present_when_active(self, client):
-        """Header X-Enrollment-Window deve indicar 'active' durante a janela.
-
-        Nota: o frame de teste mínimo pode falhar na validação de dimensões (400),
-        mas a autenticação (401) não deve ser levantada — isso confirma o bypass.
-        """
-        with _patch_window(True):
-            resp = client.post(self.ENDPOINT, files=self._make_frames())
-        # Confirmação principal: a autenticação foi dispensada (não é 401)
-        assert resp.status_code != 401, (
-            f"Janela ativa deveria dispensar auth. Status: {resp.status_code}"
-        )
-        # Se chegou a resposta de negócio (4xx de validação de imagem), o header pode não estar presente
-        # pois o erro ocorre antes da construção da resposta. Isso é comportamento aceitável.
-        # O critério de aceite real (bypass de auth) já foi validado acima.
-
-    def test_enrollment_window_header_inactive_outside_window(self, client):
-        """Header X-Enrollment-Window deve indicar 'inactive' fora da janela quando token fornecido."""
-        with _patch_window(False):
+        with _patch_window(False), patch("app.deps._fetch_user", return_value=fake_kiosk):
             resp = client.post(
                 self.ENDPOINT,
-                headers={"Authorization": "Bearer tutor-static-session-token"},
+                headers={"Authorization": "Bearer valid.kiosk.jwt"},
                 files=self._make_frames(),
             )
-        if resp.status_code not in (401,):
-            # Com token válido e janela inativa, header deve ser 'inactive'
-            # (se retornar 404 por profile não existente, ainda verificamos o header)
-            window_val = resp.headers.get("X-Enrollment-Window", "")
-            assert window_val in ("inactive", ""), f"Header inesperado: {window_val}"
+        assert resp.status_code == 403
+
+    def test_kiosk_token_inside_window_is_accepted(self, client):
+        """Dispositivo Kiosk autenticado é aceito durante a janela cadastral."""
+        from types import SimpleNamespace
+        fake_kiosk = SimpleNamespace(
+            id="kiosk-uuid", email="kiosk@kiosk.ailab.invalid", app_metadata={"role": "kiosk"}, is_anonymous=False, banned_until=None
+        )
+        with _patch_window(True), patch("app.deps._fetch_user", return_value=fake_kiosk):
+            resp = client.post(
+                self.ENDPOINT,
+                headers={"Authorization": "Bearer valid.kiosk.jwt"},
+                files=self._make_frames(),
+            )
+        # Passou da autenticação: não deve ser 401 nem 403
+        assert resp.status_code not in (401, 403)
+
+    def test_tutor_token_outside_and_inside_window_is_accepted(self, client):
+        """Tutor autenticado é aceito tanto fora quanto dentro da janela cadastral."""
+        from types import SimpleNamespace
+        fake_tutor = SimpleNamespace(
+            id="tutor-uuid", email="tutor@ailab.org", app_metadata={"role": "tutor"}, is_anonymous=False, banned_until=None
+        )
+        for is_active in (False, True):
+            with _patch_window(is_active), patch("app.deps._fetch_user", return_value=fake_tutor):
+                resp = client.post(
+                    self.ENDPOINT,
+                    headers={"Authorization": "Bearer valid.tutor.jwt"},
+                    files=self._make_frames(),
+                )
+            assert resp.status_code not in (401, 403)

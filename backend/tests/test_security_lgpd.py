@@ -2,154 +2,40 @@
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
-from fastapi import HTTPException
+
 import pytest
+from fastapi import HTTPException
 
 from app.config import settings
-from app.deps import verify_api_key, verify_cron_or_api_key, verify_kiosk_key, verify_tutor_token
-from app.routers.profiles import delete_profile, get_profile, refresh_embedding_route, revoke_consent
+from app.deps import (
+    clear_identity_cache_for_testing,
+    verify_admin_or_scheduler,
+    verify_kiosk_identity,
+    verify_tutor_token,
+)
+from app.routers.profiles import (
+    delete_profile,
+    get_profile,
+    refresh_embedding_route,
+    revoke_consent,
+)
 from app.services.enroll_service import EnrollError, ProfileNotFound
 
-
-# ── Testes de Autenticação Segura & Fail-Closed ───────────────────────────────
-
-
-def test_verify_api_key_fail_closed_when_key_empty():
-    """Se o servidor não possui API_KEY configurada, deve falhar com HTTP 500 (Fail-Closed)."""
-    with patch.object(settings, "api_key", ""):
-        with pytest.raises(HTTPException) as exc_info:
-            verify_api_key(api_key="any-key")
-
-        assert exc_info.value.status_code == 500
-        assert "fail-closed" in str(exc_info.value.detail).lower() or "incompleta" in str(
-            exc_info.value.detail
-        ).lower()
+# ── Testes de Autenticação Segura, Fail-Closed & Identidade Real ──────────────
 
 
-def test_verify_api_key_rejects_missing_or_invalid_key():
-    """Chave ausente ou incorreta deve retornar HTTP 401."""
-    with patch.object(settings, "api_key", "super-secret-token-123"):
-        # Chave ausente (None)
-        with pytest.raises(HTTPException) as exc_none:
-            verify_api_key(api_key=None)
-        assert exc_none.value.status_code == 401
-
-        # Chave vazia
-        with pytest.raises(HTTPException) as exc_empty:
-            verify_api_key(api_key="")
-        assert exc_empty.value.status_code == 401
-
-        # Chave incorreta
-        with pytest.raises(HTTPException) as exc_wrong:
-            verify_api_key(api_key="wrong-token-abc")
-        assert exc_wrong.value.status_code == 401
-
-
-def test_verify_api_key_accepts_valid_key():
-    """Chave correta deve passar sem levantar exceção."""
-    with patch.object(settings, "api_key", "super-secret-token-123"):
-        # Não deve levantar exceção
-        verify_api_key(api_key="super-secret-token-123")
-
-
-def test_verify_api_key_timing_safe_compare():
-    """Garante o uso de secrets.compare_digest para imunidade contra timing attacks."""
-    with patch.object(settings, "api_key", "valid-key-xyz"):
-        with patch("secrets.compare_digest", return_value=True) as mock_compare:
-            verify_api_key(api_key="test-key")
-            assert mock_compare.called
-
-
-# ── Testes dos Endpoints de Direitos do Titular LGPD ─────────────────────────
-
-
-def test_get_profile_not_found():
-    """Perfil inexistente deve retornar HTTP 404."""
-    mock_db = MagicMock()
-    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
-
-    with patch("app.routers.profiles.get_client", return_value=mock_db):
-        with pytest.raises(HTTPException) as exc_info:
-            get_profile("non-existent-uuid")
-        assert exc_info.value.status_code == 404
-
-
-def test_revoke_consent_success():
-    """Revogação de consentimento deve inativar perfil, marcar timestamp e deletar embeddings."""
-    mock_db = MagicMock()
-    # Mock do check se perfil existe
-    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = [
-        {"id": "uuid-123", "name": "Maria Silva", "active": True}
-    ]
-
-    with (
-        patch("app.routers.profiles.get_client", return_value=mock_db),
-        patch("app.routers.profiles.invalidate_embeddings_cache") as mock_invalidate,
-    ):
-        res = revoke_consent("uuid-123")
-
-        assert res["revoked"] is True
-        assert res["profile_id"] == "uuid-123"
-        assert "revogado" in res["message"]
-        # Verifica invalidação de cache
-        assert mock_invalidate.called
-
-
-def test_delete_profile_success():
-    """Eliminação definitiva deve remover embeddings, logs, perfil e invalidar cache."""
-    mock_db = MagicMock()
-    # Mock do check se perfil existe
-    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = [
-        {"id": "uuid-456", "name": "João Santos"}
-    ]
-
-    with (
-        patch("app.routers.profiles.get_client", return_value=mock_db),
-        patch("app.routers.profiles.invalidate_embeddings_cache") as mock_invalidate,
-    ):
-        res = delete_profile("uuid-456")
-
-        assert res["deleted"] is True
-        assert res["profile_id"] == "uuid-456"
-        assert mock_invalidate.called
-
-
-# ── Testes de Separação de Privilégios (P0) ───────────────────────────────────
-
-
-def test_verify_kiosk_key_accepts_valid_kiosk_key():
-    """Chave de kiosk válida deve ser aceita em verify_kiosk_key."""
-    with patch.object(settings, "kiosk_api_key", "kiosk-secret-xyz"):
-        # Não deve levantar exceção
-        verify_kiosk_key(kiosk_key="kiosk-secret-xyz", legacy_key=None)
-
-
-def test_verify_kiosk_key_accepts_legacy_api_key_as_fallback():
-    """Durante a transição, X-API-Key legada deve ser aceita em verify_kiosk_key."""
-    with (
-        patch.object(settings, "kiosk_api_key", ""),  # kiosk_api_key não configurada
-        patch.object(settings, "api_key", "legacy-api-key"),
-    ):
-        verify_kiosk_key(kiosk_key=None, legacy_key="legacy-api-key")
-
-
-def test_verify_kiosk_key_rejects_when_no_keys_configured():
-    """Fail-closed: se nenhuma chave estiver configurada, deve retornar HTTP 500."""
-    with (
-        patch.object(settings, "kiosk_api_key", ""),
-        patch.object(settings, "api_key", ""),
-    ):
-        with pytest.raises(HTTPException) as exc:
-            verify_kiosk_key(kiosk_key="any-key", legacy_key=None)
-        assert exc.value.status_code == 500
-
-
-def test_verify_kiosk_key_rejects_wrong_key():
-    """Chave de kiosk incorreta deve retornar HTTP 401."""
-    with patch.object(settings, "kiosk_api_key", "correct-kiosk-key"):
-        with pytest.raises(HTTPException) as exc:
-            verify_kiosk_key(kiosk_key="wrong-key", legacy_key=None)
-        assert exc.value.status_code == 401
+def _make_user(user_id="user-123", email="user@lab.com", role="tutor", banned_until=None, is_anonymous=False, in_user_meta=False):
+    from types import SimpleNamespace
+    app_meta = {} if in_user_meta else ({"role": role} if role else {})
+    user_meta = ({"role": role} if (in_user_meta and role) else {})
+    return SimpleNamespace(
+        id=user_id,
+        email=email,
+        app_metadata=app_meta,
+        user_metadata=user_meta,
+        banned_until=banned_until,
+        is_anonymous=is_anonymous,
+    )
 
 
 def test_verify_tutor_token_rejects_missing_authorization():
@@ -166,78 +52,191 @@ def test_verify_tutor_token_rejects_non_bearer():
     assert exc.value.status_code == 401
 
 
-def test_verify_tutor_token_rejects_user_without_tutor_role():
-    """Usuário autenticado sem role=tutor em app_metadata deve receber HTTP 403."""
-    mock_user = MagicMock()
-    mock_user.id = "user-uuid"
-    mock_user.email = "aluno@lab.com"
-    mock_user.app_metadata = {"role": "member"}  # não é tutor
-
-    mock_response = MagicMock()
-    mock_response.user = mock_user
-
-    mock_client = MagicMock()
-    mock_client.auth.get_user.return_value = mock_response
-
-    with patch("app.db.supabase_client.get_client", return_value=mock_client):
+def test_verify_tutor_token_rejects_user_metadata_role():
+    """Defesa contra elevação: role em user_metadata JAMAIS autoriza tutor (HTTP 403)."""
+    fake_user = _make_user(role="tutor", in_user_meta=True)
+    with patch("app.deps._fetch_user", return_value=fake_user):
         with pytest.raises(HTTPException) as exc:
-            verify_tutor_token(authorization="Bearer valid.jwt.token")
+            verify_tutor_token(authorization="Bearer jwt.with.user_meta.only")
+        assert exc.value.status_code == 403
+        assert "tutor" in exc.value.detail.lower()
+
+
+def test_verify_tutor_token_rejects_banned_user():
+    """Usuário com conta banida/bloqueada deve ser rejeitado com HTTP 403."""
+    from datetime import datetime, timedelta, timezone
+    future_ban = (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
+    fake_user = _make_user(role="tutor", banned_until=future_ban)
+    with patch("app.deps._fetch_user", return_value=fake_user):
+        with pytest.raises(HTTPException) as exc:
+            verify_tutor_token(authorization="Bearer valid.jwt")
         assert exc.value.status_code == 403
 
 
-def test_verify_tutor_token_accepts_tutor_role():
-    """Usuário com role=tutor deve ser aceito e retornar claims com user_id."""
-    mock_user = MagicMock()
-    mock_user.id = "tutor-uuid"
-    mock_user.email = "professor@lab.com"
-    mock_user.app_metadata = {"role": "tutor"}
-
-    mock_response = MagicMock()
-    mock_response.user = mock_user
-
-    mock_client = MagicMock()
-    mock_client.auth.get_user.return_value = mock_response
-
-    with patch("app.db.supabase_client.get_client", return_value=mock_client):
-        claims = verify_tutor_token(authorization="Bearer valid.jwt.token")
-        assert claims["user_id"] == "tutor-uuid"
+def test_verify_tutor_token_accepts_valid_tutor():
+    """Tutor com role em app_metadata é aceito e retorna claims com user_id."""
+    fake_user = _make_user(user_id="prof-1", email="prof@ailab.org", role="tutor")
+    with patch("app.deps._fetch_user", return_value=fake_user):
+        claims = verify_tutor_token(authorization="Bearer valid.tutor.jwt")
+        assert claims["user_id"] == "prof-1"
         assert claims["role"] == "tutor"
-        assert claims["email"] == "professor@lab.com"
+        assert claims["email"] == "prof@ailab.org"
+
+
+def test_verify_kiosk_identity_accepts_kiosk_and_caches():
+    """Kiosk com role em app_metadata é aceito e armazena em cache curto de validação."""
+    clear_identity_cache_for_testing()
+    fake_kiosk = _make_user(user_id="kiosk-dev-1", email="tablet@kiosk.ailab.invalid", role="kiosk")
+    with patch("app.deps._fetch_user", return_value=fake_kiosk) as mock_fetch:
+        claims1 = verify_kiosk_identity(authorization="Bearer token.kiosk.123")
+        assert claims1["user_id"] == "kiosk-dev-1"
+        assert claims1["role"] == "kiosk"
+
+        # Segunda chamada com o mesmo token não deve consultar Supabase Auth novamente
+        claims2 = verify_kiosk_identity(authorization="Bearer token.kiosk.123")
+        assert claims2["user_id"] == "kiosk-dev-1"
+        assert mock_fetch.call_count == 1
+
+
+def test_verify_kiosk_identity_rejects_non_kiosk_role():
+    """Tutor ou outro usuário sem role=kiosk deve receber HTTP 403 em rotas exclusivas de kiosk."""
+    clear_identity_cache_for_testing()
+    fake_tutor = _make_user(role="tutor")
+    with patch("app.deps._fetch_user", return_value=fake_tutor):
+        with pytest.raises(HTTPException) as exc:
+            verify_kiosk_identity(authorization="Bearer token.tutor.123")
+        assert exc.value.status_code == 403
+
+
+def test_shared_keys_rejected_everywhere():
+    """Chaves compartilhadas legadas (X-API-Key, X-Kiosk-Key) são sumariamente rejeitadas."""
+    with pytest.raises(HTTPException) as exc1:
+        verify_tutor_token(authorization=None)
+    assert exc1.value.status_code == 401
+
+    with pytest.raises(HTTPException) as exc2:
+        verify_kiosk_identity(authorization=None)
+    assert exc2.value.status_code == 401
+
+
+# ── Testes dos Endpoints de Direitos do Titular LGPD (RPCs Atômicas) ─────────
+
+
+def test_get_profile_not_found():
+    """Perfil inexistente deve retornar HTTP 404."""
+    mock_db = MagicMock()
+    mock_db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
+
+    with patch("app.routers.profiles.get_client", return_value=mock_db):
+        with pytest.raises(HTTPException) as exc_info:
+            get_profile("non-existent-uuid")
+        assert exc_info.value.status_code == 404
+
+
+def test_revoke_consent_success():
+    """Revogação de consentimento executa RPC revoke_profile_consent atômica."""
+    mock_db = MagicMock()
+    mock_db.rpc.return_value.execute.return_value.data = {
+        "found": True,
+        "name": "Maria Silva",
+        "revoked_at": "2026-11-10T10:00:00Z",
+        "embeddings_deleted": 1,
+    }
+
+    with (
+        patch("app.routers.profiles.get_client", return_value=mock_db),
+        patch("app.routers.profiles.invalidate_embeddings_cache") as mock_invalidate,
+    ):
+        res = revoke_consent("uuid-123", tutor={"user_id": "tutor-uuid"})
+
+        assert res["revoked"] is True
+        assert res["profile_id"] == "uuid-123"
+        assert "revogado" in res["message"].lower()
+        mock_db.rpc.assert_called_with("revoke_profile_consent", {
+            "p_profile_id": "uuid-123",
+            "p_actor": "tutor-uuid",
+        })
+        assert mock_invalidate.called
+
+
+def test_delete_profile_success():
+    """Eliminação definitiva executa RPC delete_profile_cascade atômica."""
+    mock_db = MagicMock()
+    mock_db.rpc.return_value.execute.return_value.data = {
+        "found": True,
+        "deleted": True,
+        "sessions": 5,
+        "face_logs": 5,
+        "embeddings": 1,
+    }
+
+    with (
+        patch("app.routers.profiles.get_client", return_value=mock_db),
+        patch("app.routers.profiles.invalidate_embeddings_cache") as mock_invalidate,
+    ):
+        res = delete_profile("uuid-456", tutor={"user_id": "tutor-uuid"})
+
+        assert res["deleted"] is True
+        assert res["profile_id"] == "uuid-456"
+        mock_db.rpc.assert_called_with("delete_profile_cascade", {
+            "p_profile_id": "uuid-456",
+            "p_actor": "tutor-uuid",
+        })
+        assert mock_invalidate.called
+
+
+def test_delete_profile_conflict_when_has_justifications():
+    """Recusa (HTTP 409) exclusão quando perfil possui justificativas ativas de frequência."""
+    mock_db = MagicMock()
+    mock_db.rpc.return_value.execute.return_value.data = {
+        "found": True,
+        "deleted": False,
+        "reason": "has_justifications",
+    }
+
+    with patch("app.routers.profiles.get_client", return_value=mock_db):
+        with pytest.raises(HTTPException) as exc:
+            delete_profile("uuid-456", tutor={"user_id": "tutor-uuid"})
+        assert exc.value.status_code == 409
+        assert "justificativas" in exc.value.detail.lower()
 
 
 def test_verify_cron_fails_closed_when_service_url_empty():
     """Fail-closed: OIDC sem SERVICE_URL configurada deve retornar HTTP 500."""
     with (
-        patch.object(settings, "api_key", ""),  # sem API key
-        patch.object(settings, "service_url", ""),  # sem audiência OIDC
+        patch.object(settings, "admin_api_key", ""),
+        patch.object(settings, "service_url", ""),
     ):
         with pytest.raises(HTTPException) as exc:
-            verify_cron_or_api_key(api_key=None, authorization="Bearer any.token.here")
+            verify_admin_or_scheduler(admin_key=None, authorization="Bearer any.token.here")
         assert exc.value.status_code == 500
 
 
 # ── Testes de Integração de Rota (TestClient) ────────────────────────────────
 
 
-def test_enroll_endpoint_rejects_kiosk_key():
-    """Requisição POST /enroll portando apenas X-Kiosk-Key deve ser rejeitada com HTTP 401."""
+def test_enroll_endpoint_rejects_kiosk_identity_or_missing_auth():
+    """Requisição POST /enroll portando identidade de Kiosk deve ser rejeitada com HTTP 403."""
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     client = TestClient(app, raise_server_exceptions=False)
-    with patch.object(settings, "kiosk_api_key", "valid-kiosk-token-123"):
+    fake_kiosk = _make_user(role="kiosk")
+    with patch("app.deps._fetch_user", return_value=fake_kiosk):
         res = client.post(
             "/api/v1/enroll",
-            headers={"X-Kiosk-Key": "valid-kiosk-token-123"},
+            headers={"Authorization": "Bearer valid.kiosk.jwt"},
             data={"name": "Aluno Teste", "matricula": "123456789", "consent": "true"},
         )
-        assert res.status_code == 401
+        assert res.status_code == 403
         assert "tutor" in res.json().get("detail", "").lower()
 
 
 def test_cors_fail_closed_when_empty():
     """Quando cors_origins está vazio, preflight OPTIONS não deve conter allow-origin: *."""
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     with patch.object(settings, "cors_origins", ""):
@@ -258,7 +257,9 @@ def test_oidc_cleanup_does_not_leak_exception_details():
     """Falha de validação OIDC não deve vazar tracebacks ou mensagens cruas de exceção no detail."""
     import sys
     from types import ModuleType
+
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     mock_id_token = MagicMock()
@@ -292,7 +293,8 @@ def test_oidc_cleanup_does_not_leak_exception_details():
         client = TestClient(app, raise_server_exceptions=False)
         with (
             patch.object(settings, "service_url", "https://ailab.run.app"),
-            patch.object(settings, "api_key", "secret-key"),
+            patch.object(settings, "cloud_scheduler_sa_email", "ailab-scheduler@gserviceaccount.com"),
+            patch.object(settings, "admin_api_key", "secret-key"),
         ):
             res = client.post(
                 "/api/v1/maintenance/cleanup",
@@ -317,7 +319,9 @@ def test_oidc_cleanup_does_not_leak_exception_details():
 def test_validate_image_decompression_bomb_rejection():
     """Garante que imagens com dimensões anômalas (> 4096px) sejam rejeitadas para evitar OOM."""
     import io
+
     from PIL import Image
+
     from app.deps import validate_image
 
     # Imagem válida normal (100x100)
@@ -336,29 +340,34 @@ def test_validate_image_decompression_bomb_rejection():
     assert "excedem o limite operacional" in exc_info.value.detail
 
 
-def test_session_stats_accepts_kiosk_key():
-    """Garante que /api/v1/sessions/stats/{profile_id} aceita X-Kiosk-Key do tablet."""
+def test_session_stats_accepts_kiosk_identity_and_rejects_kiosk_key():
+    """Garante que /api/v1/sessions/stats/{profile_id} aceita JWT de Kiosk e rejeita X-Kiosk-Key."""
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     client = TestClient(app, raise_server_exceptions=False)
+    fake_kiosk = _make_user(role="kiosk")
     with (
-        patch.object(settings, "kiosk_api_key", "kiosk-secret-key-123"),
-        patch("app.routers.recognize.total_hours", return_value={"hours": 12.5}),
+        patch("app.deps._fetch_user", return_value=fake_kiosk),
+        patch("app.routers.recognize.total_hours", return_value=12.5),
     ):
-        # Com X-Kiosk-Key válida
+        # Com JWT de Kiosk válido
         res = client.get(
             "/api/v1/sessions/stats/some-uuid",
-            headers={"X-Kiosk-Key": "kiosk-secret-key-123"},
+            headers={"Authorization": "Bearer valid.kiosk.jwt"},
         )
         assert res.status_code == 200
         data = res.json()
         assert data["profile_id"] == "some-uuid"
-        assert data["total_hours"] == {"hours": 12.5}
+        assert data["total_hours"] == 12.5
 
-        # Sem chave de autenticação deve falhar com 401
-        res_no_key = client.get("/api/v1/sessions/stats/some-uuid")
-        assert res_no_key.status_code == 401
+        # Com chave legada X-Kiosk-Key deve falhar com 401
+        res_legacy = client.get(
+            "/api/v1/sessions/stats/some-uuid",
+            headers={"X-Kiosk-Key": "kiosk-secret-key-123"},
+        )
+        assert res_legacy.status_code == 401
 
 
 def test_validate_image_magic_bytes_enforcement():
@@ -386,8 +395,9 @@ def test_validate_image_magic_bytes_enforcement():
 @pytest.mark.anyio
 async def test_refresh_embedding_route_rejects_less_than_3_frames():
     """Deve rejeitar com HTTP 400 se menos de 3 fotos forem enviadas."""
-    from starlette.datastructures import UploadFile
     from io import BytesIO
+
+    from starlette.datastructures import UploadFile
 
     frames = [
         UploadFile(filename="f1.jpg", file=BytesIO(b"data1")),
@@ -402,8 +412,9 @@ async def test_refresh_embedding_route_rejects_less_than_3_frames():
 @pytest.mark.anyio
 async def test_refresh_embedding_route_rejects_excess_frames():
     """Deve rejeitar com HTTP 400 se mais fotos que max_enroll_frames forem enviadas."""
-    from starlette.datastructures import UploadFile
     from io import BytesIO
+
+    from starlette.datastructures import UploadFile
 
     frames = [
         UploadFile(filename=f"f{i}.jpg", file=BytesIO(b"data"))
@@ -418,8 +429,9 @@ async def test_refresh_embedding_route_rejects_excess_frames():
 @pytest.mark.anyio
 async def test_refresh_embedding_route_profile_not_found():
     """ProfileNotFound no serviço deve retornar HTTP 404."""
-    from starlette.datastructures import UploadFile
     from io import BytesIO
+
+    from starlette.datastructures import UploadFile
 
     frames = [
         UploadFile(filename=f"f{i}.jpg", file=BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 30), headers={"content-type": "image/jpeg"})
@@ -438,8 +450,9 @@ async def test_refresh_embedding_route_profile_not_found():
 @pytest.mark.anyio
 async def test_refresh_embedding_route_enroll_error():
     """EnrollError no serviço (ex: inconsistência ou troca de identidade) deve retornar HTTP 422."""
-    from starlette.datastructures import UploadFile
     from io import BytesIO
+
+    from starlette.datastructures import UploadFile
 
     frames = [
         UploadFile(filename=f"f{i}.jpg", file=BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 30), headers={"content-type": "image/jpeg"})
@@ -458,8 +471,9 @@ async def test_refresh_embedding_route_enroll_error():
 @pytest.mark.anyio
 async def test_refresh_embedding_route_success():
     """Atualização biométrica bem-sucedida deve retornar dados do perfil e contagem de fotos."""
-    from starlette.datastructures import UploadFile
     from io import BytesIO
+
+    from starlette.datastructures import UploadFile
 
     frames = [
         UploadFile(filename=f"f{i}.jpg", file=BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 30), headers={"content-type": "image/jpeg"})
@@ -476,3 +490,44 @@ async def test_refresh_embedding_route_success():
 
 
 
+
+
+# ── Testes da Guarda de Upload ASGI (UploadGuardMiddleware) ───────────────────
+
+
+def test_upload_guard_rejects_multipart_without_bearer():
+    """UploadGuardMiddleware rejeita multipart sem cabeçalho Authorization: Bearer."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app, raise_server_exceptions=False)
+    # POST com multipart sem Authorization
+    res = client.post(
+        "/api/v1/recognize",
+        files={"frame": ("cam.jpg", b"fake", "image/jpeg")},
+    )
+    assert res.status_code == 401
+    assert "credencial ausente" in res.json().get("detail", "").lower()
+
+
+def test_upload_guard_rejects_oversized_content_length():
+    """UploadGuardMiddleware rejeita requisições cujo Content-Length excede o limite (HTTP 413)."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app, raise_server_exceptions=False)
+    fake_kiosk = _make_user(role="kiosk")
+    with patch("app.deps._fetch_user", return_value=fake_kiosk):
+        res = client.post(
+            "/api/v1/recognize",
+            headers={
+                "Authorization": "Bearer valid.kiosk.jwt",
+                "Content-Length": str(settings.max_upload_bytes + 1024),
+                "Content-Type": "multipart/form-data; boundary=boundary",
+            },
+            content=b"--boundary--",
+        )
+        assert res.status_code == 413
+        assert "excede o limite" in res.json().get("detail", "").lower()

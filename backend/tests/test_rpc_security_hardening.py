@@ -1,7 +1,6 @@
 """Regressões estáticas para RPCs administrativas SECURITY DEFINER."""
 from pathlib import Path
 
-
 MIGRATION = Path(__file__).parents[1] / "migrations" / "14_harden_tutor_rpc_permissions.sql"
 
 
@@ -25,9 +24,9 @@ def test_admin_rpc_hardening_migration_exists_and_guards_mutations():
     assert "RAISE EXCEPTION" in sql
 
     for function_name in DANGEROUS_FUNCTIONS:
-        assert f"PERFORM public.require_tutor_or_service();" in sql or function_name == "sweep_stale_sessions"
+        assert "PERFORM public.require_tutor_or_service();" in sql or function_name == "sweep_stale_sessions"
         assert f"REVOKE ALL ON FUNCTION public.{function_name}" in sql
-        assert f" TO anon" not in sql.split(f"REVOKE ALL ON FUNCTION public.{function_name}", 1)[1].split(";", 1)[0]
+        assert " TO anon" not in sql.split(f"REVOKE ALL ON FUNCTION public.{function_name}", 1)[1].split(";", 1)[0]
 
 
 def test_maintenance_rpc_is_service_role_only():

@@ -1,8 +1,8 @@
 """Cadastro de integrantes: validação de consistência intra-burst e checagem 1:N."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 
 import numpy as np
 
@@ -44,8 +44,7 @@ def _validate_intra_burst_consistency(
     for i in range(n):
         for j in range(i + 1, n):
             dist = float(np.linalg.norm(encs[i] - encs[j]))
-            if dist > max_dist:
-                max_dist = dist
+            max_dist = max(max_dist, dist)
 
     if max_dist > settings.enroll_max_pairwise_distance:
         log.warning(
@@ -297,18 +296,20 @@ def refresh_embedding(profile_id: str, images: list[bytes]) -> dict:
     for rep in rep_vectors:
         _guard_against_identity_swap(profile_id, rep)
 
-    payloads = [
-        {
-            "profile_id": profile_id,
-            "embedding": rep.tolist(),
-            "vec": rep.tolist(),
-        }
-        for rep in rep_vectors
-    ]
-
-    # Substitui os vetores biométricos existentes pelos novos vetores calibrados
-    db.table("face_embeddings").delete().eq("profile_id", profile_id).execute()
-    db.table("face_embeddings").insert(payloads if len(payloads) > 1 else payloads[0]).execute()
+    # Substituição atômica (migração 26): apagar + inserir na mesma transação, com
+    # lock do perfil; perfil revogado/inativo nunca recebe novos templates.
+    outcome = (
+        db.rpc(
+            "replace_profile_embeddings",
+            {"p_profile_id": profile_id, "p_embeddings": [rep.tolist() for rep in rep_vectors]},
+        )
+        .execute()
+        .data
+    )
+    if not isinstance(outcome, dict) or not outcome.get("found"):
+        raise ProfileNotFound(profile_id)
+    if not outcome.get("replaced"):
+        raise EnrollError("Perfil inativo ou com consentimento revogado; recadastro não permitido.")
 
     invalidate_embeddings_cache()
     return {"profile_id": profile_id, "name": name, "photos_used": photos_used}

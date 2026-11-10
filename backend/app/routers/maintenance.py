@@ -1,13 +1,13 @@
 """Router de manutenção e tarefas periódicas (Cloud Scheduler / Cron)."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 import logging
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends
 
 from app.db.supabase_client import get_client
-from app.deps import verify_cron_or_api_key
+from app.deps import verify_admin_or_scheduler
 from app.services.face_service import invalidate_embeddings_cache
 from app.services.session_service import close_stale_sessions
 
@@ -28,7 +28,7 @@ def purge_old_face_logs(cutoff_iso: str) -> int:
         return 0
 
 
-@router.post("/cleanup", dependencies=[Depends(verify_cron_or_api_key)])
+@router.post("/cleanup", dependencies=[Depends(verify_admin_or_scheduler)])
 def run_maintenance_cleanup():
     """Executa tarefas periódicas de manutenção.
 
@@ -37,7 +37,7 @@ def run_maintenance_cleanup():
     2. Invalida o cache local de embeddings em memória para sincronizar novos integrantes.
     3. Expurga logs de auditoria biométrica antigos (> 90 dias) para conformidade com a LGPD.
 
-    Protegido por token OIDC do Cloud Scheduler (Service Account) ou X-API-Key administrativa.
+    Protegido por token OIDC do Cloud Scheduler (Service Account) ou X-Admin-Key de operação.
     """
     now = datetime.now(timezone.utc)
     log.info("Iniciando rotina de manutenção periódica (cleanup)...")

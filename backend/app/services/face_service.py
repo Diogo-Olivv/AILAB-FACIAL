@@ -24,6 +24,8 @@ from PIL import Image
 from app.config import settings
 from app.db.supabase_client import get_client
 from app.services.liveness_service import (
+    BiometricUnavailable,
+    _flash_unable,
     check_image_quality,
     verify_flash_reflection,
     verify_liveness,
@@ -283,7 +285,7 @@ def extract_primary_face_data(
                 settings.liveness_min_score,
                 pad_reason,
             )
-            return None, None, "spoof_detected", "Falha na verificação de vivacidade presencial."
+            return None, None, "spoof_detected", "Verificação de vivacidade não concluída."
 
     # 3. Extração do Embedding L2 normalizado
     enc = np.array(face.embedding, dtype=np.float64)
@@ -335,6 +337,7 @@ def _load_embeddings(use_cache: bool = True) -> tuple[list[str], list[str], np.n
                     .table("face_embeddings")
                     .select("profile_id, embedding, profiles!inner(active, name)")
                     .eq("profiles.active", True)
+                    .is_("profiles.consent_revoked_at", "null")
                     .range(page_start, page_start + _PAGE_SIZE - 1)
                     .execute()
                 ).data or []
@@ -430,8 +433,9 @@ def _match_face_pgvector(enc: np.ndarray) -> dict | None:
             "similarity": cosine_sim,
         }
     except Exception as exc:
-        log.warning("Falha na busca pgvector via RPC, acionando fallback em memória: %s", exc)
-        return None
+        # Sem fallback para o cache em memória: ele pode conter perfis revogados.
+        log.error("Falha na busca pgvector via RPC: %s", type(exc).__name__)
+        raise BiometricUnavailable("Busca vetorial indisponível.") from exc
 
 
 def identify(image_bytes: bytes) -> dict:
@@ -453,12 +457,11 @@ def identify(image_bytes: bytes) -> dict:
         }
 
     # 1. Tentativa via pgvector HNSW (se habilitado)
-    pg_res = None
+    # Com pgvector ativo a resposta do banco é definitiva (inclusive negativa):
+    # match_face exclui revogados e o cache local nunca a contradiz.
     if settings.use_pgvector:
-        pg_res = _match_face_pgvector(enc)
-        if pg_res is not None and pg_res.get("recognized"):
-            return pg_res
-        log.info("Pgvector não reconheceu com certeza conclusiva. Executando busca exata em memória RAM.")
+        return _match_face_pgvector(enc)
+    pg_res = None
 
     # 2. Busca em memória RAM (matriz NumPy com cache TTL)
     loaded = _load_embeddings()
@@ -553,22 +556,27 @@ def identify_frames(images: list[bytes]) -> dict:
             log.warning("Multi-frame: ataque de apresentação detectado em frame da sequência.")
             return r
 
-    # 2. Vivacidade Ativa Fotométrica (3D Flash Liveness) na sequência multi-frame
+    # 2. Heurística fotométrica entre frames (não é prova 3D)
     if len(images) >= 2 and settings.flash_liveness_enabled and settings.liveness_enabled:
         try:
             crop1, _, st1, _ = extract_primary_face_data(images[0], check_quality=False, check_pad=False)
             crop2, _, st2, _ = extract_primary_face_data(images[1], check_quality=False, check_pad=False)
             if crop1 is not None and crop2 is not None and st1 == "ok" and st2 == "ok":
                 flash_live, flash_score, flash_reason = verify_flash_reflection(crop1, crop2)
-                if not flash_live:
-                    log.warning("Flash PAD rejeitado na rajada: score=%.4f, motivo=%s", flash_score, flash_reason)
-                    return {
-                        "recognized": False,
-                        "status": "spoof_detected",
-                        "message": "Falha na verificação de vivacidade ativa (3D Flash PAD).",
-                    }
-        except Exception as exc:
-            log.warning("Falha na avaliação de Flash PAD: %s", exc)
+            else:
+                flash_live, flash_score, flash_reason = _flash_unable("no_face_pair")
+        except BiometricUnavailable:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Falha na verificação fotométrica: %s", type(exc).__name__)
+            flash_live, flash_score, flash_reason = _flash_unable("error")
+        if not flash_live:
+            log.warning("Verificação fotométrica rejeitada: score=%.4f, motivo=%s", flash_score, flash_reason)
+            return {
+                "recognized": False,
+                "status": "spoof_detected",
+                "message": "Verificação de vivacidade não concluída.",
+            }
 
     # Se há candidatos reconhecidos, seleciona o de maior confiança calibrada
     candidates = [r for r in results if r.get("recognized")]

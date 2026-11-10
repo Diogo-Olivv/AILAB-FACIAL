@@ -9,7 +9,7 @@ oculta a UI de PIN como conveniência — nunca como controle de segurança.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Fuso horário de Brasília (America/Sao_Paulo), sem depender de pytz ou zoneinfo
 # para manter compatibilidade com ambientes de deploy sem tzdata.
