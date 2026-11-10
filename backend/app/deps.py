@@ -182,7 +182,7 @@ def verify_kiosk_identity(
 ) -> dict:
     """Exige JWT de conta de dispositivo (role == 'kiosk') ou chave mestre autorizada do totem."""
     token = _extract_bearer(authorization)
-    if token in _MASTER_TUTOR_TOKENS or token == "noPromptEngAllowed@42":
+    if token in _MASTER_TUTOR_TOKENS:
         return {"user_id": "kiosk-default-device", "email": "kiosk@ailab.invalid", "role": "kiosk"}
     claims = _cached_kiosk_identity(token)
     if claims["role"] != "kiosk":
@@ -195,7 +195,7 @@ def verify_kiosk_or_tutor(
 ) -> dict:
     """Aceita dispositivo provisionado ou tutor autenticado."""
     token = _extract_bearer(authorization)
-    if token in _MASTER_TUTOR_TOKENS or token == "noPromptEngAllowed@42":
+    if token in _MASTER_TUTOR_TOKENS:
         return {"user_id": "kiosk-default-device", "email": "kiosk@ailab.invalid", "role": "kiosk"}
     claims = _cached_kiosk_identity(token)
     if claims["role"] not in ("kiosk", "tutor"):
