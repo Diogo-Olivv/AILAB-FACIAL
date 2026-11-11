@@ -1,0 +1,28 @@
+name: Dependency review
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: Revisar dependências do PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      # Executa o review de vulnerabilidades e licenças nas dependências alteradas.
+      # Nota: Em repositórios privados sem GHAS ou Dependency Graph ativado nas configurações,
+      # a action retorna erro de API da GitHub; continue-on-error evita bloquear o PR.
+      - name: Dependency review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        continue-on-error: true
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: never
