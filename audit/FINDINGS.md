@@ -1,276 +1,90 @@
-# AILAB-FACIAL V5 — CATÁLOGO EXAUSTIVO DE FINDINGS & STATUS DE RESOLUÇÃO
+# Registro de achados (fonte única)
 
-**Data do Laudo:** 13 de Setembro de 2026  
-**Auditoria:** AILAB-FACIAL V5 (Pós-Remediação Integral de Débitos e Vulnerabilidades)  
-**Total de Findings Documentadas:** 15 achados estruturados  
-**Status Consolidado:** 15/15 RESOLVIDOS NO CÓDIGO (0 DÉBITOS TÉCNICOS RESIDUAIS)  
+> Reescrito em 2026-11-11 · base `master@5f1d99c` · substitui o registro `F-xx` de 2026-09-13.
+> Status de cada `AF-xx` está em `REMEDIATION_STATUS.md`. Este arquivo define o que é o achado, a evidência e a severidade.
+> Legenda de classificação: **F** fato reconfirmado nesta revisão · **F\*** relatado por leitura de agente, não reconfirmado · **I** inferência · **H** hipótese · **NV** não verificado.
+> Severidade: **Crítica** explorável agora com impacto sobre dados biométricos ou acesso administrativo · **Alta** explorável com pré-requisito, ou falha de integridade grave · **Média** risco real limitado · **Baixa** higiene, documentação ou robustez.
 
----
+## 1. Equivalência com a numeração antiga
 
-## [FINDING-001] — Inflação de Horas em Sessões Esquecidas no Dashboard Web
+A numeração `F-xx` de 2026-09-13 não é mais usada. Equivalência aproximada:
 
-- **Type:** BUG
-- **Severity:** CRITICAL
-- **Priority:** P0
-- **Status:** **RESOLVED**
-- **Category:** Business Logic Flaw / Data Integrity
-- **Location:** `web/src/lib/aggregate.ts:L14` e `web/src/lib/reports.ts:L38`
-- **Affected Component:** Painel Web dos Tutores (Módulo de Relatórios e Cômputo de Horas)
-- **Root Cause:** A query `fetchSessions` omitia a coluna `voided_at`, e o cálculo de fallback em `sessionSeconds` computava a diferença `checkOut - checkIn` para sessões com `durationS == null`, atribuindo horas fraudulentas a sessões anuladas.
-- **Remediation Applied in V5:**
-  1. Adicionada a coluna `voided_at` à consulta Supabase em `web/src/lib/reports.ts`:
-     ```ts
-     .select("profile_id, check_in, check_out, duration_s, auto_closed, voided_at")
-     ```
-  2. Implementada verificação prioritária em `web/src/lib/aggregate.ts`:
-     ```ts
-     export function sessionSeconds(session: SessionRecord, now: Date): number {
-       if (session.voidedAt != null) return 0;
-       if (session.durationS != null) return session.durationS;
-       ...
-     ```
-- **Automated Verification:** `web/test/aggregate.test.ts` (5 testes unitários executados com `node --test`, 100% passing em 115ms).
-- **Residual Risk:** Nulo.
+| Antigo | Novo | Observação |
+|---|---|---|
+| E-1, INV-06 | AF-01 | "Verificado" antes; falso hoje |
+| F-015 (eas.json sanitizado) | AF-02 | Falso: segredo continua no histórico público |
+| F-002 (captura vinculada) | AF-15 | Reclassificado como risco aceito |
+| F-004 (`verify_kiosk_key`) | — | Símbolo inexistente; ver `API_CONTRACT_AUDIT.md` |
+| F-008 (rate limit) | AF-16, N-23 | |
+| F-009 (lockfile com hashes) | AF-08 | 0 hashes |
+| F-013 (`max_session_cap_hours`) | — | Removido, verificado por teste |
+| F-014 (magic bytes) | — | Implementado; cobertura parcial de rotas (ver `TEST_STRATEGY_AUDIT.md`) |
 
----
+## 2. Achados `AF-xx` (validados)
 
-## [FINDING-002] — Injeção Digital Remota e Ausência de Desafio Temporal
+Lista completa com status e evidência em `REMEDIATION_STATUS.md`. Resumo por severidade:
 
-- **Type:** DESIGN FLAW
-- **Severity:** CRITICAL
-- **Priority:** P0
-- **Status:** **RESOLVED**
-- **Category:** Biometric Decision Chain / Sensor Integrity
-- **Location:** `backend/app/routers/recognize.py` e `backend/app/services/challenge_service.py`
-- **Affected Component:** Pipeline de Entrada de Dados e Reconhecimento Facial
-- **Root Cause:** O endpoint `POST /api/v1/recognize` aceitava uploads de fotos sem comprovação de atualidade temporal ou presença física simultânea.
-- **Remediation Applied in V5:**
-  1. Criado serviço de desafio efêmero (`ChallengeService` em `backend/app/services/challenge_service.py`) gerando nonces com HMAC-SHA256, TTL estrito de 30 segundos e consumo atômico de uso único.
-  2. Criado endpoint `POST /api/v1/recognize/challenge` exigindo `verify_kiosk_key`.
-  3. No endpoint `POST /api/v1/recognize`, validação obrigatória do token de desafio antes de qualquer decodificação de imagem.
-- **Automated Verification:** `backend/tests/test_capture_challenge.py` (12 testes incluindo expiração de TTL, tentativa de replay e validação HMAC, todos passing).
-- **Residual Risk:** Baixo (mitiga injeções automatizadas e replay attacks).
+| Severidade | IDs |
+|---|---|
+| Crítica | AF-01 (credencial mestra), AF-02 (segredo no histórico público), AF-24 (escrita anon, fechada em produção) |
+| Alta | AF-03 (senhas mestras no cliente), AF-04 (fallback de chave no mobile), AF-06 (testes de banco pulados), AF-08 (CI ≠ produção), AF-14 (login legado em produção), AF-23 (`link_tutor_profile` por anon, fechado em produção), AF-25 (SELECT anon em perfis), AF-26 (senhas vazadas), AF-27 (Auto-Scan) |
+| Média | AF-05 (migration 15, corrigida), AF-07, AF-09, AF-10, AF-11, AF-12, AF-13, AF-19, AF-20, AF-22, AF-28, AF-29 |
+| Baixa | AF-16, AF-17 (corrigida), AF-18, AF-21 |
 
----
+## 3. Achados `N-xx` (revisão de backend e banco, 2026-11-11)
 
-## [FINDING-003] — Inversão de Parâmetro e Divergência Crítica na RPC `match_face`
+Origem: leitura completa do backend e das migrations (`FLOWS.md`). Classificação indicada por item.
 
-- **Type:** BUG
-- **Severity:** HIGH
-- **Priority:** P0
-- **Status:** **RESOLVED**
-- **Category:** Database Schema Drift / Biometric Threshold Inversion
-- **Location:** `backend/schema.sql:L185-L215` vs. `backend/migrations/06_recalibrate_biometrics_hnsw.sql`
-- **Affected Component:** Supabase PostgreSQL RPC `match_face` & Serviço Facial Python
-- **Root Cause:** Incompatibilidade semântica onde `schema.sql` interpretava o limiar como similaridade ($\ge 0.38$), enquanto a migração 06 e o serviço Python operavam sob distância cosseno ($\le 0.38$).
-- **Remediation Applied in V5:** Sincronizado o arquivo autoritativo `backend/schema.sql` com a migração 06, adotando formalmente o operador `<=>`, o parâmetro de distância `max_distance = 0.38` e a indexação HNSW com `vector_cosine_ops` ($m=24, ef\_construction=128$).
-- **Automated Verification:** `backend/tests/test_biometrics.py` (21 testes garantindo calibração em 3 zonas: aceite $\le 0.32$, incerto $0.32 < d \le 0.38$, rejeição $> 0.38$).
-- **Residual Risk:** Nulo (requer aplicação do SQL no Supabase em caso de cluster novo).
+### 3.1 Confirmados nesta revisão (F)
 
----
+| ID | Sev. | Evidência | Impacto | Correção sugerida |
+|---|---|---|---|---|
+| N-01 | Alta | `backend/migrations/19_seed_and_auto_sync_tutor_master.sql:2,9,15` semeia uma conta de tutor, com e-mail e senha literais, em `auth.users` (o e-mail não é reproduzido aqui) | Se a 19 for aplicada (ou já foi, em banco que não é o de produção), existe conta de tutor com senha pública | Remover o seed da 19; migration para desativar a conta; mover dados pessoais de seed para fora do repositório |
+| N-04 | Média | `backend/app/deps.py:146` devolve `user_id="tutor-master-id"`; `backend/app/routers/profiles.py:137,161` passa `tutor.get("user_id")` como `p_actor` | Operações LGPD com token mestre falham; cast de tipo (**F\*** para o erro, a passagem é F) | Mapear ator não UUID para nulo e rótulo de texto; tornar falha de auditoria visível |
+| N-13 | Alta | `backend/app/services/face_service.py:349-355` captura qualquer exceção e devolve `rows=[]`; `_load_embeddings` devolve `None` (linha 355); `backend/app/services/enroll_service.py:132-134` trata `None` como "sem cadastrados" e retorna | **Fail-open** na checagem de duplicidade: falha transitória do banco permite cadastrar a mesma pessoa de novo | Falhar fechado (erro 503) em falha de leitura; trava consultiva ou RPC única para checagem + inserção |
 
-## [FINDING-004] — Incompatibilidade de Header de Autenticação em `/sessions/stats/{profile_id}`
+### 3.2 Reportados por leitura de agente (F\*, reconfirmar antes de corrigir)
 
-- **Type:** BUG
-- **Severity:** MEDIUM
-- **Priority:** P1
-- **Status:** **RESOLVED**
-- **Category:** API Authentication & Protocol Drift
-- **Location:** `backend/app/routers/recognize.py:L109` e `mobile/lib/api.ts`
-- **Affected Component:** Router de Reconhecimento e Cliente Móvel do Kiosk
-- **Root Cause:** O endpoint `/sessions/stats/{profile_id}` exigia a dependência de tutor/admin (`verify_api_key`), causando HTTP 401 quando o tablet enviava `X-Kiosk-Key`.
-- **Remediation Applied in V5:** Alterada a dependência da rota para `verify_kiosk_key`, unificando a autenticação do quiosque em todas as chamadas operacionais do tablet.
-- **Automated Verification:** `backend/tests/test_security_lgpd.py::test_kiosk_can_access_sessions_stats` (aprovado).
-- **Residual Risk:** Nulo.
+| ID | Sev. | Resumo | Ref. |
+|---|---|---|---|
+| N-02 | Alta | Pool de identidade de 4 threads sem cache negativo; quatro requisições lentas causam 503 global | `deps.py:46, 98-104` |
+| N-03 | Média (latente) | Caminho de troca de template dentro da janela, sem comparação com o template anterior; janela vencida | `deps.py:206-222`, `enroll_service.py:255-315` |
+| N-05 | Média | Sem auditoria para cadastro, manual, entry, tutor-close, manutenção; `tutor_remove_member` ainda concedido a authenticated; `admin_audit_log` editável por `service_role` | `recognize.py:370-444`, `migrations/14:82-110`, `26` |
+| N-06 | Média | `/sessions/manual` sem validação de intervalo, sobreposição ou perfil; `/sessions/entry` sem lock; tutor-close com fallback silencioso | `recognize.py:375-444` |
+| N-07 | Média | Estatísticas: mês 13 gera 500; sem paginação; kiosk lê horas de qualquer perfil | `session_service.py:231-271` |
+| N-08 | Média | Sessões abertas de perfil revogado continuam aparecendo no totem | `recognize.py:333-345`, `migrations/23` |
+| N-09 | Média | `schema.sql` recria policies anon e `match_face` sem filtro de revogação, desfazendo as migrações 20, 26 e 28 | `backend/schema.sql:142-149, 212-248` |
+| N-10 | Média | Prontidão não verifica RPCs nem versão de migração; falha de schema só gera log | `main.py:28-30`, `health.py`, `db/schema.py` |
+| N-11 | Média | `render.yaml` sem `ENVIRONMENT`, `CHALLENGE_SECRET`, `BIOHASHING_SEED`; deploy usa `requirements.txt` em Python 3.12 e a imagem usa o lock em Python 3.11; deploy não depende do CI | `render.yaml`, `deploy-backend.yml`, `Dockerfile` |
+| N-12 | Média | Semente de BioHash pública por padrão; sem versão de template; rotação silenciosa invalida tudo | `config.py:32-33`, `face_service.py:55-58` |
+| N-14 | Média | Identidade por quadro sem exigir concordância entre frames; checagem de flash cobre só 2 quadros; `flash_unable_policy=allow` | `face_service.py:546-605`, `config.py:78` |
+| N-16 | Média | Logs com dados pessoais (nomes e IDs de candidatos em WARNING) | `face_service.py:402-418` (IDs e nomes a reconfirmar) |
+| N-17 | Média | Sem request ID, métricas, tracing nem evento de segurança para spoof e rejeições | `recognize.py`, `migrations/25` |
+| N-18 | Média | Purga de logs engole erro e devolve 0; `replay_guard.purge()` nunca é chamado; sweeps divergentes; anulação sem `check_out IS NULL` | `maintenance.py:18-28`, `replay_guard.py:134`, `session_service.py` |
+| N-19 | Média | Sessão que atravessa meia-noite ou passa de 10 h é anulada; checkout legítimo vira entrada nova | `migrations/24`, `session_service.py:51-62` |
+| N-21 | Média | Perfil com justificativa não pode ser apagado (RESTRICT + 409); texto livre sensível sem prazo; `terms_version` não é gravado | `migrations/27:23,37-40`, `migrations/26` |
+| N-15 | Baixa | Limiar de distância 0,87 equivale a cosseno ~0,6216; documentação e `.env.example` com outros valores; `ef_search` não aplicado; segunda camada anunciada e não implementada | `face_service.py:7,217-224,412`, `.env.example:14-20` |
+| N-20 | Baixa | `compare_digest` em `str` não ASCII gera 500 (cabeçalho decodificado em latin-1); headers de retry não expostos ao CORS; `Idempotency-Key` validado e ignorado | `challenge_service.py:112`, `deps.py:238`, `main.py:47-57` |
+| N-22 | Baixa | Listagem de kiosks só lê 2000 contas; revogação com cache de 60 s por processo; sem limite de kiosks | `kiosks.py:26-27, 111-127` |
+| N-23 | Baixa | Rate limit em memória por processo, sem dimensão por IP | `recognize.py:57-93` |
+| N-24 | Baixa | `APIKeyHeader` para `Authorization` (OpenAPI errado); respostas sem `response_model`; erros de texto livre; `/docs` público | `deps.py:44`, `main.py:38` |
+| N-25 | Baixa | `fairness_audit` usa vetores aleatórios e sempre passa; `restore_drill` não restaura nada e usa service_role | `backend/scripts/` |
+| N-26 | Baixa | Inicialização do PAD guarda flag antes de carregar: falha vira 503 permanente sem reinício | `liveness_service.py:62` |
+| N-27 | Baixa | "Zero armazenamento de biometria bruta" superestimado: a imagem continua referenciada pelo chamador | `enroll_service.py:186,288`, `enroll.py:76-82` |
 
----
+## 4. Itens fechados nesta revisão
 
-## [FINDING-005] — Vazamento de Metadados e Oráculo Adversarial em Zona Incerta (F-005 & F-005-REV)
+| ID | Como foi fechado | Evidência |
+|---|---|---|
+| AF-05 | Migration 15 corrigida; gate de sintaxe | PR #76, `test_migration_syntax.py` |
+| AF-06 | CI com Postgres 17 e `REQUIRE_DB_TESTS=1` | PR #76, run verde com 254 passed, 0 skipped |
+| AF-17 | Fallback offline corrigido | PR #77, `sw_offline.test.ts` |
+| AF-22 | Fixture recusa host não local | PR #76 |
 
-- **Type:** PRIVACY GAP / ADVERSARIAL ORACLE
-- **Severity:** MEDIUM (Elevado a HIGH na auditoria de ML Security)
-- **Priority:** P1
-- **Status:** **RESOLVED**
-- **Category:** Information Disclosure / Adversarial Hill-Climbing
-- **Location:** `backend/app/services/face_service.py:L350-L380, L450-L460`
-- **Affected Component:** Serviço Facial (`_match_face_pgvector` e `identify`)
-- **Root Cause:** Ao retornar `status="uncertain"` ou `not_recognized`, a API vazava `profile_id`, `name` e métricas numéricas contínuas (`distance`, `cosine_similarity`, `confidence`), permitindo ataques de aproximação iterativa (black-box hill climbing).
-- **Remediation Applied in V5:**
-  1. Suprimidos integralmente `profile_id` e `name` quando `recognized is False`.
-  2. Suprimidas as métricas contínuas `distance`, `cosine_similarity`, `similarity` e `confidence` em respostas `uncertain` e `not_recognized`.
-  3. Retorno padronizado e defensivo: `{"recognized": False, "status": "uncertain", "message": "Similaridade inconclusiva..."}`.
-- **Automated Verification:** `backend/tests/test_biometrics.py::test_pgvector_match_face_uncertain_between_062_and_068` e `test_recognize_returns_uncertain_flow` (aprovados).
-- **Residual Risk:** Nulo.
+## 5. Não verificado (NV)
 
----
-
-## [FINDING-006] — Divergência e Drift na Documentação de Auditoria
-
-- **Type:** DOCUMENTATION DRIFT
-- **Severity:** LOW
-- **Priority:** P3
-- **Status:** **RESOLVED**
-- **Category:** Technical Documentation Alignment
-- **Location:** Diretório `audit/`
-- **Affected Component:** Relatórios Técnicos de Auditoria
-- **Root Cause:** Documentos em `audit/` refletiam o estado vulnerável do commit inicial `d5a0f15`, descompassados dos hotfixes e remediações aplicados.
-- **Remediation Applied in V5:** Atualização integral de todos os relatórios do diretório `audit/` (`AUDIT_REPORT.md`, `EXECUTIVE_SUMMARY.md`, `STATE_MACHINE.md`, `DATA_FLOW.md`, `TRACEABILITY.md`, `FINDINGS.md`, `REMEDIATION_ROADMAP.md`) refletindo o status V5.
-- **Automated Verification:** Inspeção de consistência estática e rastreabilidade total.
-- **Residual Risk:** Nulo.
-
----
-
-## [FINDING-007] — Aceitação Dual-Channel de Desafio e Resiliência de Ingestão
-
-- **Type:** INTEROPERABILITY & SECURITY
-- **Severity:** MEDIUM
-- **Priority:** P1
-- **Status:** **RESOLVED**
-- **Category:** API Protocol Robustness
-- **Location:** `backend/app/routers/recognize.py` e `mobile/lib/api.ts`
-- **Affected Component:** Handshake de Reconhecimento Tablet-Backend
-- **Root Cause:** Risco de inconsistência no parsing de `multipart/form-data` em diferentes plataformas móveis ao transmitir o token de desafio.
-- **Remediation Applied in V5:**
-  1. O backend aceita o token de desafio via multipart body (`challenge_id`) ou via headers (`X-Challenge-Token`, `X-Challenge-Id`).
-  2. O cliente mobile `api.ts` envia o token tanto no corpo multipart quanto nos cabeçalhos HTTP customizados, garantindo redundância total.
-- **Automated Verification:** `backend/tests/test_capture_challenge.py::test_recognize_accepts_challenge_via_header_token` (aprovado).
-- **Residual Risk:** Nulo.
-
----
-
-## [FINDING-008] — Ausência de Semáforo de Concorrência e Rate Limiting na Inferência
-
-- **Type:** RELIABILITY & AVAILABILITY GAP
-- **Severity:** HIGH
-- **Priority:** P1
-- **Status:** **RESOLVED**
-- **Category:** Denial of Service / Resource Starvation
-- **Location:** `backend/app/routers/recognize.py` e `backend/app/config.py`
-- **Affected Component:** Pipeline de Inferência de CPU
-- **Root Cause:** Requisições simultâneas de inferência facial pesada (InsightFace + MiniFASNet) podiam esgotar vCPUs e memória da instância Cloud Run.
-- **Remediation Applied in V5:**
-  1. Implementado semáforo assíncrono `asyncio.Semaphore(settings.max_concurrent_inferences)` limitando o processamento simultâneo a 10 threads de inferência.
-  2. Implementado rate limiter em janela deslizante em memória com bloqueio por lock assíncrono, limitando requisições a 60 por minuto por IP/tablet com resposta HTTP 429 Too Many Requests.
-- **Automated Verification:** `backend/tests/test_capture_challenge.py::test_recognize_rate_limiting_exceeded_returns_429` (aprovado).
-- **Residual Risk:** Nulo em escala de quiosque físico.
-
----
-
-## [FINDING-009] — Falta de Lockfile Determinístico no Backend Python
-
-- **Type:** SUPPLY CHAIN GAP
-- **Severity:** LOW
-- **Priority:** P2
-- **Status:** **RESOLVED**
-- **Category:** Supply Chain Security / Reproducibility
-- **Location:** `backend/requirements.lock`
-- **Affected Component:** Pipeline de Build Docker e CI/CD
-- **Root Cause:** Dependências declaradas com versionamento solto em `requirements.txt` sem hashes criptográficos.
-- **Remediation Applied in V5:** Gerado `backend/requirements.lock` com hashes SHA-256 e versões fixadas para todo o grafo de dependências transitivas.
-- **Automated Verification:** Inspeção estática do arquivo `requirements.lock`.
-- **Residual Risk:** Nulo.
-
----
-
-## [FINDING-010] — Compiladores e Ferramentas de Build Presentes na Imagem Final de Produção
-
-- **Type:** DESIGN FLAW
-- **Severity:** LOW
-- **Priority:** P2
-- **Status:** **RESOLVED**
-- **Category:** Container Hardening / Least Privilege
-- **Location:** `backend/Dockerfile`
-- **Affected Component:** Imagem Docker de Produção
-- **Root Cause:** Pacote `build-essential` permanecia no runtime final do container.
-- **Remediation Applied in V5:** Reescrito o `Dockerfile` em padrão multi-stage build: estágio `builder` compila dependências C/C++, e estágio final `runner` copia apenas os wheels compilados, rodando sob usuário sem privilégios `appuser` (UID 1000).
-- **Automated Verification:** Auditoria estática de sintaxe e camadas do `Dockerfile`.
-- **Residual Risk:** Nulo.
-
----
-
-## [FINDING-011] — Ausência de SHA-256 Pinning para o Pacote de Modelos `buffalo_s` e PAD
-
-- **Type:** SUPPLY CHAIN GAP
-- **Severity:** MEDIUM
-- **Priority:** P1
-- **Status:** **RESOLVED**
-- **Category:** ML Supply Chain & Model Integrity
-- **Location:** `backend/scripts/download_models.py`
-- **Affected Component:** Model Zoo de Visão Computacional
-- **Root Cause:** Download de pesos de redes neurais sem verificação prévia de integridade criptográfica.
-- **Remediation Applied in V5:** Script `backend/scripts/download_models.py` atualizado com tabela de digests SHA-256 obrigatórios para todos os pesos ONNX (`pad.onnx`, `det_500m.onnx`, `w600k_mbf.onnx`).
-- **Automated Verification:** Execução do script com verificação de checksums.
-- **Residual Risk:** Nulo.
-
----
-
-## [FINDING-012] — Risco de Decompression Bomb e Dimensões Excessivas de Imagem
-
-- **Type:** VULNERABILITY
-- **Severity:** MEDIUM
-- **Priority:** P1
-- **Status:** **RESOLVED**
-- **Category:** Resource Exhaustion / Denial of Service
-- **Location:** `backend/app/deps.py:validate_image`
-- **Affected Component:** Validador de Ingestão de Mídia
-- **Root Cause:** Imagens com milhões de megapixels compactadas em poucos kilobytes podiam estourar a memória RAM no momento da descompactação matricial.
-- **Remediation Applied in V5:** Adicionada checagem preguiçosa de dimensões sem decodificação completa via Pillow: rejeição imediata de imagens com largura/altura superiores a 4096px ou total de pixels superior a 16 Megapixels com HTTP 400.
-- **Automated Verification:** `backend/tests/test_security_lgpd.py::test_validate_image_rejects_oversized_dimensions` (aprovado).
-- **Residual Risk:** Nulo.
-
----
-
-## [FINDING-013] — Configuração Abandonada `max_session_cap_hours` como Código Morto
-
-- **Type:** CODE QUALITY / LOGIC GAP
-- **Severity:** INFO
-- **Priority:** P3
-- **Status:** **RESOLVED**
-- **Category:** Dead Code / Specification Drift
-- **Location:** `backend/app/config.py` e `backend/app/services/session_service.py`
-- **Affected Component:** Configuração de Sessão
-- **Root Cause:** Parâmetro inoperante induzia à falsa impressão de que sessões abandonadas recebiam teto de 4 horas, quando na realidade eram anuladas (`voided_at`).
-- **Remediation Applied in V5:** Removido o atributo obsoleto das configurações e alinhada a documentação das regras de negócio.
-- **Automated Verification:** `pytest` completo e checagem de referências.
-- **Residual Risk:** Nulo.
-
----
-
-## [FINDING-014] — Validação de Magic Bytes na Ingestão de Imagens (Evasão MIME)
-
-- **Type:** VULNERABILITY
-- **Severity:** MEDIUM
-- **Priority:** P1
-- **Status:** **RESOLVED**
-- **Category:** Input Validation / File Signature Enforcement
-- **Location:** `backend/app/deps.py:check_image_magic_bytes`
-- **Affected Component:** Dependência de Upload de Imagem (`validate_image`)
-- **Root Cause:** Confiança no header `Content-Type` fornecido pelo cliente sem validação dos primeiros bytes binários (*magic numbers*).
-- **Remediation Applied in V5:**
-  1. Implementada a função `check_image_magic_bytes()` validando as assinaturas:
-     - JPEG: `\xff\xd8\xff`
-     - PNG: `\x89PNG\r\n\x1a\n`
-     - WebP: `RIFF....WEBP`
-  2. Bloqueio imediato com HTTP 400 em caso de assinatura desconhecida ou conflito entre assinatura e MIME type declarado.
-- **Automated Verification:** `backend/tests/test_security_lgpd.py::test_validate_image_magic_bytes_enforcement` (aprovado).
-- **Residual Risk:** Nulo.
-
----
-
-## [FINDING-015] — Exposição Histórica de Chaves no Git e Retenção de Dados LGPD
-
-- **Type:** VULNERABILITY / GOVERNANCE
-- **Severity:** CRITICAL (Histórico) / MEDIUM (LGPD)
-- **Priority:** P0 (Operação) / P2 (Governança)
-- **Status:** **RESOLVED NO CÓDIGO / PROCEDIMENTO OPERACIONAL PENDENTE**
-- **Category:** Credential Hygiene & LGPD Compliance
-- **Location:** `backend/app/routers/maintenance.py`, `scripts/audit_demographic_fairness.py`, `mobile/eas.json`
-- **Affected Component:** Repositório Git, Supabase Console e Rotinas de Purga
-- **Root Cause:** Chave anônima exposta em commits legados e falta de rotina automática de expurgo de logs biométricos antigos.
-- **Remediation Applied in V5:**
-  1. Implementado endpoint de manutenção `POST /api/v1/maintenance/cleanup` com expurgo automático de logs biométricos com mais de 90 dias conforme LGPD Art. 16.
-  2. Implementado script `scripts/audit_demographic_fairness.py` para avaliação de viés e fairness NIST AI RMF.
-  3. Sanitizados todos os arquivos de configuração do repositório (`eas.json`, `.env.example`).
-  4. Emitido procedimento operacional de rotação da chave no Console do Supabase e migrações no banco.
-- **Automated Verification:** `backend/tests/test_security_lgpd.py::test_maintenance_cleanup_purges_old_logs` e execução do script de equidade.
-- **Residual Risk:** Mitigado; condicionado à execução da rotação de chaves no painel do Supabase.
+- Se a migration 19 foi aplicada em algum banco além do de teste (N-01).
+- Variáveis de ambiente do Cloud Run (N-11, N-12).
+- Erro de tipo do `p_actor` (N-04) e fail-open (N-13) não foram reproduzidos em banco de teste ainda.
+- Nomes e IDs de pessoas em log (N-16): o trecho lido registra apenas o tipo de exceção em um caso; os demais precisam de confirmação.
+- pg_cron ativo no projeto (N-18).

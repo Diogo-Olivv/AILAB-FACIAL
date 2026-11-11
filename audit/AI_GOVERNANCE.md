@@ -1,3 +1,5 @@
+> **Estado em 2026-11-11: DESATUALIZADO OU EM REVISÃO.** Este documento é de 2026-09-13 e descreve um sistema anterior (sem migrations 22–29, sem autenticação por JWT de kiosk, sem replay em banco, sem `upload_guard`). Não cite suas afirmações como verdade atual sem reconfirmação. Fontes vigentes: `audit/README.md` (tabela de status), `FINDINGS.md`, `REMEDIATION_STATUS.md` e `FLOWS.md`.
+
 # AILAB-FACIAL V4 — GOVERNANÇA DE INTELIGÊNCIA ARTIFICIAL & GESTÃO DE RISCOS
 
 **Data:** 13 de Setembro de 2026  
