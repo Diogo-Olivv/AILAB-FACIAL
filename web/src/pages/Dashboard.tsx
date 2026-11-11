@@ -636,7 +636,7 @@ export function Dashboard() {
                     className="btn-secondary"
                   >
                     <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-                    <span className="truncate">Acesso @ailab.com</span>
+                    <span className="truncate">Perfil do Tutor</span>
                   </button>
                 </div>
               </div>
@@ -1239,7 +1239,8 @@ export function Dashboard() {
                     className="btn-secondary"
                   >
                     <FileText className="h-3.5 w-3.5 text-orange-500 dark:text-amber-400" />
-                    <span>Relatório Oficial (PDF)</span>
+                    <span className="hidden sm:inline">Relatório Oficial (PDF)</span>
+                    <span className="sm:hidden">Relatório (PDF)</span>
                   </button>
                 </div>
               </div>

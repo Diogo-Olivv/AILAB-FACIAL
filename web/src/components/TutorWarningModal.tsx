@@ -879,7 +879,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 return (
                   <div
                     key={item.member.id}
-                    className={`rounded-2xl border p-3 transition-all flex items-center justify-between gap-3 ${
+                    className={`rounded-xl border p-2.5 sm:p-3 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 ${
                       isSelected
                         ? "border-amber-400 bg-amber-50/70 dark:bg-amber-950/40 dark:border-amber-600 shadow-sm"
                         : item.metTarget
@@ -887,49 +887,70 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                         : "border-amber-500/30 bg-white dark:bg-slate-900 dark:border-amber-800/40"
                     }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelectMember(item.member.id)}
-                        aria-label={`Selecionar ${item.member.name}`}
-                        className="h-4 w-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-sans font-semibold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate block">
-                            {item.member.name}
+                    {/* Linha superior no celular / Bloco de identificação no desktop */}
+                    <div className="flex items-center justify-between sm:justify-start gap-2.5 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectMember(item.member.id)}
+                          aria-label={`Selecionar ${item.member.name}`}
+                          className="h-4 w-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-sans font-semibold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate max-w-[150px] sm:max-w-none">
+                              {item.member.name}
+                            </span>
+                            {item.member.matricula && (
+                              <span className="text-2xs font-mono-data text-slate-500 dark:text-slate-400">
+                                #{item.member.matricula}
+                              </span>
+                            )}
+                            {warning && (
+                              <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[10px] font-bold text-amber-900 dark:text-amber-300 font-mono-data inline-flex items-center gap-0.5">
+                                <AlertCircle className="h-2.5 w-2.5 shrink-0" />
+                                <span>Advertido</span>
+                              </span>
+                            )}
+                          </div>
+                          {/* Métricas no Desktop */}
+                          <div className="hidden sm:flex items-center gap-2 text-2xs text-slate-500 dark:text-slate-400 font-mono-data mt-0.5">
+                            <span><strong className="text-slate-800 dark:text-slate-200">{formatDuration(item.totalSeconds)}</strong></span>
+                            {!item.metTarget ? (
+                              <span className="text-amber-700 dark:text-amber-400 font-semibold">• Faltam {formatDuration(item.deficitSeconds)} ({item.progressPercent}%)</span>
+                            ) : (
+                              <span className="text-emerald-700 dark:text-emerald-400 font-semibold">• Meta cumprida</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Métricas compactas visíveis no Celular à direita da 1ª linha */}
+                      <div className="sm:hidden text-right font-mono-data shrink-0">
+                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
+                          {formatDuration(item.totalSeconds)}
+                        </span>
+                        {!item.metTarget ? (
+                          <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 block">
+                            -{formatDuration(item.deficitSeconds)}
                           </span>
-                          {item.member.matricula && (
-                            <span className="text-2xs font-mono-data text-slate-500 dark:text-slate-400">
-                              {item.member.matricula}
-                            </span>
-                          )}
-                          {warning && (
-                            <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-900 dark:text-amber-300 font-mono-data inline-flex items-center gap-1">
-                              <AlertCircle className="h-2.5 w-2.5 shrink-0" />
-                              <span>Advertido</span>
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-2xs text-slate-500 dark:text-slate-400 font-mono-data mt-0.5">
-                          <span>Permanência: <strong className="text-slate-800 dark:text-slate-200">{formatDuration(item.totalSeconds)}</strong></span>
-                          {!item.metTarget ? (
-                            <span className="text-amber-700 dark:text-amber-400 font-bold">• Faltam {formatDuration(item.deficitSeconds)} ({item.progressPercent}%)</span>
-                          ) : (
-                            <span className="text-emerald-700 dark:text-emerald-400 font-bold">• Meta cumprida</span>
-                          )}
-                        </div>
+                        ) : (
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block">
+                            Meta OK
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Ações: Proporcionais, limpas e sem sobreposição */}
+                    <div className="flex items-center justify-end gap-1.5 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-800">
                       {!item.metTarget && !item.isJustified ? (
                         <>
                           <button
                             type="button"
                             onClick={() => handleSendEmailNotice(item)}
-                            className={`rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer min-h-[34px] inline-flex items-center justify-center gap-1 ${
+                            className={`flex-1 sm:flex-none rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer min-h-[34px] inline-flex items-center justify-center gap-1 ${
                               isEmailPrepared
                                 ? "bg-emerald-600 text-white"
                                 : "bg-amber-600 hover:bg-amber-700 text-white shadow-2xs"
@@ -938,7 +959,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                             {isEmailPrepared ? (
                               <>
                                 <Check className="h-3.5 w-3.5" />
-                                <span>Preparado!</span>
+                                <span>Pronto</span>
                               </>
                             ) : (
                               <>
@@ -950,7 +971,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                           <button
                             type="button"
                             onClick={() => setSelectedJustifyMember({ member: item.member, totalSeconds: item.totalSeconds, justification: null })}
-                            className="rounded-xl px-2.5 py-1.5 text-xs font-bold border border-amber-600/30 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors inline-flex items-center gap-1 min-h-[34px]"
+                            className="flex-1 sm:flex-none rounded-xl px-2.5 py-1.5 text-xs font-bold border border-amber-600/30 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors inline-flex items-center justify-center gap-1 min-h-[34px]"
                           >
                             <FileCheck2 className="h-3.5 w-3.5" />
                             <span>Justificar</span>
@@ -958,14 +979,15 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                           <button
                             type="button"
                             onClick={() => handleOpenWhatsApp(item)}
-                            className="rounded-xl px-2.5 py-1.5 text-xs font-bold border border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors inline-flex items-center gap-1 min-h-[34px]"
+                            title="Abrir no WhatsApp"
+                            className="rounded-xl px-2.5 py-1.5 text-xs font-bold border border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors inline-flex items-center justify-center gap-1 min-h-[34px]"
                           >
                             <Send className="h-3.5 w-3.5" />
-                            <span>Zap</span>
+                            <span className="hidden sm:inline">WhatsApp</span>
                           </button>
                         </>
                       ) : item.isJustified ? (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
                           <span className="text-amber-700 dark:text-amber-400 font-bold text-xs inline-flex items-center gap-1 px-2 py-1 bg-amber-500/10 rounded-lg border border-amber-500/20">
                             <FileCheck2 className="h-3.5 w-3.5" />
                             <span>Justificado</span>
@@ -973,15 +995,15 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                           <button
                             type="button"
                             onClick={() => setSelectedJustifyMember({ member: item.member, totalSeconds: item.totalSeconds, justification: item.justification })}
-                            className="text-2xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline font-medium"
+                            className="text-2xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline font-medium cursor-pointer"
                           >
                             Ver / Revogar
                           </button>
                         </div>
                       ) : (
-                        <span className="text-emerald-700 dark:text-emerald-400 font-bold text-xs inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/10 rounded-lg">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold text-xs inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 rounded-lg">
                           <Check className="h-3.5 w-3.5" />
-                          <span>Ok</span>
+                          <span>Meta OK</span>
                         </span>
                       )}
                     </div>

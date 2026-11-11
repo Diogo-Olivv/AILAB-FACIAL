@@ -108,11 +108,11 @@ export function Login() {
 
             <Link
               to="/dashboard?mode=student"
-              className="btn-secondary group"
+              className="btn-secondary group text-xs !min-h-[36px] !px-3"
               aria-label="Voltar ao Painel Público"
             >
               <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 text-slate-500 dark:text-slate-400" />
-              <span>Voltar ao Painel Público</span>
+              <span>Painel Público</span>
             </Link>
           </div>
         </div>
@@ -144,16 +144,11 @@ export function Login() {
           </div>
 
           {/* Instrução */}
-          <div className="surface-muted p-3.5 text-xs text-slate-700 dark:text-slate-200 flex items-start gap-2.5">
-            <Sparkles className="h-4 w-4 text-orange-500 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <strong className="text-slate-900 dark:text-white font-semibold block">
-                Acesso de Tutoria & Auditoria
-              </strong>
-              <span className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed block">
-                Informe seu e-mail institucional completo e senha cadastrada com permissão de tutor.
-              </span>
-            </div>
+          <div className="surface-muted p-3 text-xs text-slate-700 dark:text-slate-200 flex items-center gap-2.5 rounded-xl">
+            <Sparkles className="h-4 w-4 text-orange-500 dark:text-amber-400 shrink-0" />
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">
+              Credenciais institucionais com perfil de tutor ou coordenação acadêmica.
+            </p>
           </div>
 
           {/* Campo E-mail */}
@@ -237,11 +232,11 @@ export function Login() {
             </div>
           )}
 
-          <div className="space-y-2.5 pt-1">
+          <div className="pt-1">
             <button
               type="submit"
               disabled={busy || !emailInput || !password}
-              className="w-full btn-primary !min-h-[46px] !text-sm"
+              className="w-full btn-primary !min-h-[46px] !text-sm cursor-pointer"
             >
               {busy ? (
                 <>
@@ -252,14 +247,6 @@ export function Login() {
                 <span>Entrar como Tutor</span>
               )}
             </button>
-
-            <Link
-              to="/dashboard?mode=student"
-              className="w-full btn-secondary !min-h-[42px] text-center"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Voltar ao Painel Público</span>
-            </Link>
           </div>
         </form>
       </main>
