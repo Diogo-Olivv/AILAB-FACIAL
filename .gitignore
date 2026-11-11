@@ -55,3 +55,24 @@ web/node_modules/
 # QR codes temporários
 qr_*.png
 
+# Segredos e chaves (nunca versionar; exemplos com sufixo .example são permitidos)
+.env.*
+!.env.example
+!*.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Builds e artefatos
+*.apk
+*.aab
+coverage/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+*.log
+

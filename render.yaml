@@ -1,3 +1,7 @@
+# DESCONTINUADO (2026-11-11). O backend roda no Google Cloud Run (ADR 0004).
+# Este arquivo permanece porque um blueprint do Render ligado ao repositório
+# poderia remover recursos se ele fosse apagado. Remover só após desligar o
+# serviço no Render. Variáveis abaixo estão defasadas (ver audit/FINDINGS.md, N-11).
 services:
   - type: web
     name: ailab-facial-api
