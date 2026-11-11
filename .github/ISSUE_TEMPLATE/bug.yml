@@ -1,0 +1,58 @@
+name: Bug
+description: Algo não funciona como deveria
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Não inclua** imagens de rostos, embeddings, tokens, chaves, senhas ou dados pessoais de integrantes.
+        Vulnerabilidades: use [SECURITY.md](../../SECURITY.md), não esta página.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options:
+        - Backend (API / reconhecimento)
+        - Banco (migrations / RLS)
+        - Web (painel do tutor)
+        - Mobile (totem / tablet)
+        - CI/CD ou implantação
+        - Documentação
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: O que aconteceu?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: O que você esperava?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      placeholder: "1. ...\n2. ...\n3. ..."
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Versão (commit ou data do build)
+      placeholder: "ex.: 5f1d99c ou APK de 2026-11-10"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs ou mensagem de erro
+      description: "Revise antes de colar: remova tokens e dados pessoais."
+      render: text

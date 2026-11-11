@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Vulnerabilidade de segurança
+    url: https://github.com/Diogo-Olivv/AILAB-FACIAL/blob/master/SECURITY.md
+    about: Não abra issue pública para vulnerabilidades. Siga a política de segurança.
+  - name: Dúvidas de uso
+    url: https://github.com/Diogo-Olivv/AILAB-FACIAL/blob/master/SUPPORT.md
+    about: Veja como pedir ajuda antes de abrir uma issue.
