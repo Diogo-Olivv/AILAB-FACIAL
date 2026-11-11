@@ -1,0 +1,46 @@
+name: Funcionalidade
+description: Sugerir algo novo ou uma melhoria
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Descreva o problema antes da solução. Propostas que mudam arquitetura, API ou banco precisam de um ADR (`docs/adr/`) e podem ser pedidas nesta issue.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema ou necessidade
+      description: Quem sente o problema? Em que situação?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposta
+    validations:
+      required: true
+
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Impacto em privacidade e dados pessoais
+      description: A mudança coleta, guarda, mostra ou apaga dados de integrantes? Como isso é justificado e limitado?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Escopo
+      options:
+        - label: Toca autenticação, autorização ou RLS
+        - label: Toca biometria (captura, embedding, limiares, PAD)
+        - label: Exige migration de banco
+        - label: Muda contrato de API (web ou mobile)

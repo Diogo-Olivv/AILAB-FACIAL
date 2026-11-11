@@ -1,0 +1,22 @@
+# Responsáveis por revisão. Cada padrão aplica-se ao próprio caminho e a subpastas.
+# A última regra que casa com o arquivo tem precedência.
+# Ajustar quando houver mantenedores por área (ver GOVERNANCE.md).
+
+*                                   @Diogo-Olivv
+
+# Backend, banco e biometria: revisão obrigatória do mantenedor
+/backend/                           @Diogo-Olivv
+/backend/migrations/                @Diogo-Olivv
+/backend/app/deps.py                @Diogo-Olivv
+/backend/app/services/              @Diogo-Olivv
+
+# Web e mobile
+/web/                               @Diogo-Olivv
+/mobile/                            @Diogo-Olivv
+
+# Infra, CI/CD e governança
+/.github/                           @Diogo-Olivv
+/render.yaml                        @Diogo-Olivv
+/SECURITY.md                        @Diogo-Olivv
+/GOVERNANCE.md                      @Diogo-Olivv
+/audit/                             @Diogo-Olivv

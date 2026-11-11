@@ -1,0 +1,24 @@
+name: Documentação
+description: Algo na documentação está errado, faltando ou desatualizado
+labels: ["documentation", "triage"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Onde está o problema?
+      description: Arquivo e seção, por exemplo `README.md#deploy` ou `docs/reference/env-vars.md`
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: O que está errado ou falta?
+    validations:
+      required: true
+
+  - type: textarea
+    id: correct
+    attributes:
+      label: O que deveria estar escrito?
+      description: Se souber, indique o comando, arquivo ou linha que comprova.

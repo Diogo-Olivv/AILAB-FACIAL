@@ -1,0 +1,12 @@
+AILAB-FACIAL
+Copyright 2026 AILAB-FACIAL contributors
+
+This product includes software developed by its contributors (see the commit history).
+
+Third-party components keep their own licenses. Notable examples:
+
+- mobile/LICENSE: MIT License, template de origem Expo (650 Industries, Inc.), mantido sem alterações.
+- Modelos de reconhecimento (InsightFace buffalo_s) e de PAD (MiniFASNetV2) NÃO são distribuídos neste repositório. São baixados por backend/scripts/download_models.py e possuem licenças próprias, que devem ser verificadas antes de uso comercial.
+- Dependências Python, npm e Expo mantêm as licenças declaradas em seus pacotes.
+
+Licença deste repositório: Apache License 2.0 (arquivo LICENSE).
