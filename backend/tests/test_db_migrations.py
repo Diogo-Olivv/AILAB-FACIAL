@@ -386,7 +386,10 @@ def test_twenty_concurrent_check_ins_open_exactly_one_session(admin):
 
 def test_kiosk_and_tutor_racing_keep_state_consistent(admin):
     pid = make_profile(admin)
-    admin.execute("INSERT INTO public.sessions (profile_id, check_in) VALUES (%s, now() - interval '2 hours')", (pid,))
+    # Sessão aberta "agora", e não "2 horas atrás": com uma entrada de 2 h, o teste ficava
+    # sujeito à virada de dia em Brasília (00:00–02:00 UTC-3), quando register_presence_event
+    # anula a sessão como vencida e nenhum dos dois fecha. Ver audit/FINDINGS.md, N-19.
+    admin.execute("INSERT INTO public.sessions (profile_id, check_in) VALUES (%s, now() - interval '1 second')", (pid,))
     tutor, _ = tutor_conn(admin)
     barrier = threading.Barrier(2)
     out: dict = {}
