@@ -12,6 +12,8 @@ O formato segue [Keep a Changelog 1.1.0](https://keepachangelog.com/pt-BR/1.1.0/
 
 ### Corrigido
 
+- Backend: removidos os tokens mestres compartilhados (AF-01). Tutor e totem passam a ser aceitos apenas com JWT do Supabase Auth. Totens precisam estar ativados por conta própria.
+
 - Teste de regressão do fallback offline do service worker (`web/src/lib/sw_offline.test.ts`), PR #77.
 - Migration 15 com sintaxe válida e gate de parse de todas as migrations, PR #76.
 - Modo obrigatório de banco de testes no CI com Postgres 17 e pgvector, PR #76.
