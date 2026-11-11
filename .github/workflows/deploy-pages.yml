@@ -46,6 +46,8 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_VIEWER_EMAIL: ${{ secrets.VITE_VIEWER_EMAIL }}
+          # Capacidade do laboratório (pessoas). Não é segredo; base da classificação de lotação.
+          VITE_LAB_CAPACITY: "20"
 
       - name: SPA fallback
         run: cp dist/index.html dist/404.html
