@@ -38,12 +38,26 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      python-minor-and-patch:
+        update-types: ["minor", "patch"]
     labels:
       - "security"
       - "dependencies"
       - "backend"
 
-  # 4. Actions e Workflows de CI/CD
+  # 4. Imagem base do Docker (python:3.11-slim)
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "security"
+      - "dependencies"
+      - "backend"
+
+  # 5. Actions e Workflows de CI/CD
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
