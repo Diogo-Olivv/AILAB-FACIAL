@@ -56,6 +56,12 @@ O perfil `preview` embute `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_API_URL`, `EX
 
 `EXPO_PUBLIC_KIOSK_KEY` foi removida de `mobile/eas.json`. O código não a lê mais.
 
+### E a OTA, precisa dessas variáveis?
+
+As variáveis `EXPO_PUBLIC_*` são embutidas **quando o pacote é gerado**, e `eas update` roda na sua máquina, onde as variáveis do perfil `preview` de `eas.json` não existem. Isso não quebra a atualização: o app tem valores padrão para a URL da API (`mobile/lib/api.ts`, linhas 5 a 9) e para a URL e a chave anon do Supabase (`mobile/lib/supabase.ts`, linhas 6 a 8), que apontam para o projeto atual.
+
+A exceção: se você mudar de projeto Supabase ou de URL da API, defina as variáveis no terminal **antes** de rodar `eas update`, senão a OTA continuaria apontando para o projeto antigo.
+
 ## Depois de publicar
 
 - Conferir no tablet que a versão nova chegou.
