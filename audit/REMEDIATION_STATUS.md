@@ -27,7 +27,7 @@
 | AF-11 | `flash_unable_policy="allow"` | **Aberto** | — | `backend/app/config.py:78` | Decisão de produto: manter `allow` ou usar `reject` |
 | AF-12 | Limiares de teste diferentes da produção | **Aberto** | — | `test_biometrics.py:391-392,439-440` | — |
 | AF-13 | `hnsw_ef_search` sem efeito | **Aberto** | — | `config.py:56` sem uso | Confirmar `hnsw.ef_search` com `EXPLAIN` |
-| AF-14 | Login legado com literal ainda existe em produção | **Aberto** | — | Snapshot seção 2 | Migration 22 em produção, depois de verificação; desativar a conta semeada |
+| AF-14 | Login legado com literal ainda existe em produção | **Parcial** | Migration 22 aplicada na produção em 2026-11-11 | `verify_tutor_login` e `sync_tutor_credentials` removidas (catálogo conferido) | Desativar a conta semeada |
 | AF-15 | Challenge não prova origem física | **Aceito (risco)** | — | `challenge_service.py:3-5` | Aceite formal do mantenedor |
 | AF-16 | Rate limit por processo | **Aceito (risco)** | — | `recognize.py:57-59` | Verificar `max-instances` no Cloud Run |
 | AF-17 | Fallback offline do service worker | **Fechado** | #77 (`0806d3d`) | `web/src/lib/sw_offline.test.ts`: 2 falhas no original, 3 passam no corrigido | — |
@@ -50,7 +50,7 @@
 1. **Tablet**: ativar o totem pelo app (precisa de um build com a tela de ativação). Pré-requisito de AF-01 e AF-04.
 2. **Contas de tutor individuais** (T0.2): criar uma conta por tutor, com senha única. Pré-requisito de AF-03.
 3. **Rotação** da senha colada no chat e do valor de `eas.json` (AF-02).
-4. **Decidir a migration 22 e a 28** em produção, depois de teste local.
+4. **Decidir a migration 28** em produção, depois de confirmar a tela pública. As migrations 22 a 26 já foram aplicadas em 2026-11-11 (ver `CODE_DB_DRIFT.md`, seção 6).
 5. **Branch protection, secret scanning, push protection, Dependabot alerts, relato privado de vulnerabilidade**: diff a ser apresentado antes de aplicar.
 6. **Canal de conduta e encarregado (LGPD)**: definir nomes e canais.
 7. **Proteção contra senhas vazadas** no Supabase (AF-26).

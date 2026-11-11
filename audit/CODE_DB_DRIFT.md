@@ -1,6 +1,7 @@
 # Drift entre código, banco de produção e registro de migrations
 
 > Revisado em 2026-11-11 · base `master@5f1d99c` · snapshot `PROD_STATE_SNAPSHOT.md` (03:08 UTC)
+> **Atualização de 2026-11-11 (~11:55 UTC):** as migrations 22 a 26 foram aplicadas na produção (ver seção 6). D-01, D-02, D-03 e D-06 estão fechados; D-04, D-05 (parte), D-08 e D-09 seguem abertos.
 > Legenda: **F** fato · **I** inferência · **H** hipótese · **NV** não verificado
 
 Drift = diferença entre o que o código do repositório **espera** do banco, o que o banco **tem**, e o que o registro de migrations **diz** que foi aplicado. Os três precisam convergir.
@@ -57,3 +58,18 @@ Nada disso é feito por este documento. Cada passo é uma decisão do mantenedor
 - **I:** a produção pode diferir do repositório de formas que não aparecem nas consultas feitas. A verificação completa exige diff de catálogo, não só contagens.
 - **H:** o backend implantado pode ter variáveis de ambiente que desligam as flags de RPC (NV). Se for o caso, o drift D-01 e D-02 não são falha ativa, mas o código do repositório continua não reproduzindo o ambiente.
 - **NV:** conteúdo exato das funções presentes em produção (só o nome e os metadados foram verificados).
+
+## 6. Aplicação das migrations 22 a 26 na produção (2026-11-11)
+
+**Sintoma (F):** o totem ativado mostrava "serviço de reconhecimento indisponível" ao escanear. O app exibe esse texto para qualquer resposta 503 (`mobile/lib/errors.ts`). Em produção o backend força o guarda de replay persistente (`config.py:93-95`) e chama `claim_recognition_request`, que não existia (**I**: causa do 503; os logs do Cloud Run não estavam acessíveis).
+
+**Ação (F):** aprovada pelo mantenedor no chat e aplicada uma migration por vez, pelo Supabase, na ordem 22, 23, 24, 25, 26. Cada uma devolveu sucesso e entrou no registro como `022_` a `026_`. O conteúdo é o dos arquivos de `backend/migrations/`, sem os `BEGIN/COMMIT` (o aplicador já abre transação).
+
+**Verificação depois (F):**
+- Existem `recognition_requests`, `admin_audit_log` e as funções `claim_`, `complete_`, `fail_` e `purge_recognition_request(s)`, `register_presence_event`, `presence_lock_key`, `kiosk_presence`, `kiosk_directory`, `public_lab_stats`, `revoke_profile_consent`, `delete_profile_cascade` e `replace_profile_embeddings`.
+- `verify_tutor_login` e `sync_tutor_credentials` foram removidas.
+- `anon` não executa `claim_recognition_request`; `authenticated` não executa `register_presence_event`; `service_role` executa.
+- As contagens de dados não mudaram (53 perfis, 1432 sessões, 72 templates).
+- O mantenedor confirmou que o escaneamento no tablet voltou a funcionar.
+
+**Limites:** a 28 não foi aplicada (revoga leitura anônima das tabelas e depende de confirmar a tela pública). O catálogo da produção não foi comparado função a função com os arquivos (NV).
