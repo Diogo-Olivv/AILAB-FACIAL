@@ -1,6 +1,11 @@
--- Schema autoritativo do Supabase para o backend AILAB-FACIAL.
--- Fonte de verdade: deve refletir exatamente o que o codigo em app/ acessa.
--- Idempotente: pode ser rodado no SQL Editor do Supabase a qualquer momento.
+-- HISTÓRICO / DESCONTINUADO (AF-21)
+-- ATENÇÃO: NÃO EXECUTE ESTE ARQUIVO DIRETAMENTE NO SUPABASE DE PRODUÇÃO.
+-- A fonte autoritativa de verdade do banco de dados são as migrations sequenciais
+-- versionadas em backend/migrations/ (migrations 01 a 29).
+-- Este arquivo representa apenas um snapshot do schema inicial de setembro de 2026
+-- e não contém as proteções de segurança, revogações de privilégio anon e
+-- hardening aplicadas nas migrations 15 a 29. Consulte backend/migrations/.
+-- =============================================================================
 
 -- ── Extensões ─────────────────────────────────────────────────────────────────
 create extension if not exists vector;

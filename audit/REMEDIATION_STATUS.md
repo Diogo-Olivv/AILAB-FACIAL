@@ -31,10 +31,10 @@
 | AF-15 | Challenge não prova origem física | **Aceito (risco)** | — | `challenge_service.py:3-5` | Aceite formal do mantenedor |
 | AF-16 | Rate limit por processo | **Aceito (risco)** | — | `recognize.py:57-59` | Verificar `max-instances` no Cloud Run |
 | AF-17 | Fallback offline do service worker | **Fechado** | #77 (`0806d3d`) | `web/src/lib/sw_offline.test.ts`: 2 falhas no original, 3 passam no corrigido | — |
-| AF-18 | Código morto de sandbox | **Aberto** | — | `web/src/components/AnalysisWorkflow.tsx` sem importadores | — |
+| AF-18 | Código morto de sandbox | **Fechado** | Limpeza do repositório | Removidos componentes protótipo sem uso (`AnalysisWorkflow`, `WebcamCapture`, etc.) e `mobile/App.tsx` | — |
 | AF-19 | Mobile sem testes | **Aberto** | — | `mobile/package.json` sem runner | — |
 | AF-20 | Contrato API sem fixture compartilhada | **Aberto** | — | `API_CONTRACT_AUDIT.md` | — |
-| AF-21 | `schema.sql` reintroduz exposição | **Aberto** | — | `backend/schema.sql` | Marcar como histórico |
+| AF-21 | `schema.sql` reintroduz exposição | **Fechado** | Limpeza do repositório | `backend/schema.sql` marcado como histórico/descontinuado apontando para `backend/migrations/` | — |
 | AF-22 | Teste de banco pode apagar banco real | **Fechado** | #76 (`46006af`) | Fixture recusa host não local (`test_db_migrations.py`) | — |
 | AF-23 | `link_tutor_profile` executável por `anon` | **Fechado em produção; Parcial no repo** | Produção: revogado manualmente em 2026-11-10. Repo: migration 29 em #76 | `test_anon_cannot_execute_link_tutor_profile` | Confirmar na próxima captura do snapshot |
 | AF-24 | `anon` com escrita e TRUNCATE nas tabelas biométricas | **Fechado em produção; Parcial no repo** | Produção: revogado em 2026-11-10. Repo: migration 29 em #76 | `test_anon_lacks_write_privileges_on_data_tables` (30 casos) | — |
