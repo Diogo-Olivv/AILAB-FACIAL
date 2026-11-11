@@ -6,7 +6,7 @@ import { getKioskAccessToken } from "@/lib/supabase";
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ??
   process.env.EXPO_PUBLIC_API_URL ??
-  "http://localhost:8000";
+  "https://ailab-facial-api-948162587922.southamerica-east1.run.app";
 
 /** Tempo máximo de uma requisição comum e de um upload de frames. */
 const DEFAULT_TIMEOUT_MS = 12_000;
