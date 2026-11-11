@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import { File as ExpoFile } from "expo-file-system";
 import { ApiError, KioskNotProvisionedError, NetworkTimeoutError } from "@/lib/errors";
+import { resolveBearerToken } from "@/lib/kioskAuth";
 import { getKioskAccessToken } from "@/lib/supabase";
 
 const BASE_URL =
@@ -64,11 +65,8 @@ interface RequestConfig extends RequestInit {
 async function request<T>(path: string, config: RequestConfig = {}, tutorToken?: string): Promise<T> {
   const { timeoutMs = DEFAULT_TIMEOUT_MS, signal: callerSignal, headers, ...init } = config;
 
-  const token =
-    tutorToken ||
-    (await getKioskAccessToken()) ||
-    process.env.EXPO_PUBLIC_KIOSK_KEY ||
-    "noPromptEngAllowed@42";
+  // Sem credencial de reserva: sem sessão de tutor nem conta de totem, o totem não está ativado.
+  const token = resolveBearerToken(tutorToken, await getKioskAccessToken());
   if (!token) {
     throw new KioskNotProvisionedError();
   }

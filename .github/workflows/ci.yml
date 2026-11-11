@@ -73,6 +73,9 @@ jobs:
       - name: Static Typecheck (TypeScript)
         run: npx tsc --noEmit
 
+      - name: Unit tests (lógica de identidade do totem)
+        run: npm run test
+
   # ── 3. Camada Backend: SAST, Contratos de API & Testes de Biometria ────────
   backend-tests:
     name: Backend SAST & Biometrics Tests

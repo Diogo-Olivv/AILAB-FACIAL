@@ -67,27 +67,6 @@ export function TutorPinModal({ visible, onSuccess, onCancel, isDark = false }: 
       return;
     }
 
-    const MASTER_TUTOR_PASSWORDS = [
-      "ailab_makers",
-      "admin123",
-      "tutor_makers",
-      "ailab2026",
-      "presenca_makers",
-      "noPromptEngAllowed@42",
-      "1234",
-    ];
-
-    if (
-      MASTER_TUTOR_PASSWORDS.includes(cleanPassword) ||
-      (process.env.EXPO_PUBLIC_TUTOR_PIN && cleanPassword === process.env.EXPO_PUBLIC_TUTOR_PIN)
-    ) {
-      setEmail("");
-      setPassword("");
-      setShowPassword(false);
-      onSuccess("tutor-master-local-session");
-      return;
-    }
-
     setLoading(true);
     setErrorMsg(null);
 
