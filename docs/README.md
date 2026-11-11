@@ -5,10 +5,10 @@ Organizada pelo modelo [Diátaxis](https://diataxis.fr/): cada documento serve a
 | Você quer... | Vá para |
 |---|---|
 | Rodar o sistema pela primeira vez, no seu computador | [tutorials/first-run-local.md](tutorials/first-run-local.md) |
-| Resolver uma tarefa específica (deploy, rotação, migration) | [how-to/](how-to/) |
-| Consultar uma variável, uma rota ou um código de erro | [reference/](reference/) |
-| Entender por que o sistema é assim | [explanation/](explanation/) e [adr/](adr/) |
-| Responder a um incidente | [runbooks/](runbooks/) |
+| Resolver uma tarefa específica (deploy, rotação, migration) | [how-to/](how-to/): [ativar um totem](how-to/provision-kiosk.md), [atualizar o tablet](how-to/build-apk-and-ota.md), [criar um tutor](how-to/add-tutor.md), [reverter](how-to/rollback.md) |
+| Consultar uma variável, uma rota ou um código de erro | [reference/](reference/): [variáveis](reference/env-vars.md), [API](reference/api.md), [workflows](reference/ci-workflows.md), [mapa do repositório](reference/repo-map.md) |
+| Entender por que o sistema é assim | [explanation/](explanation/) ([arquitetura](explanation/architecture.md), [reconhecimento](explanation/sequence-recognition.md), [cadastro](explanation/sequence-enrollment.md)) e [adr/](adr/) |
+| Responder a um incidente ou a uma situação de rotina | [runbooks/](runbooks/): [incidente](runbooks/incident-response.md), [primeira requisição lenta](runbooks/cold-start.md), [sessões esquecidas](runbooks/stale-sessions.md) |
 | Saber o que a lei exige e o que está pendente | [privacy/](privacy/) e [audit/LGPD_GAP_ANALYSIS.md](../audit/LGPD_GAP_ANALYSIS.md) |
 | Entender a qualidade do reconhecimento | [ml/model-card.md](ml/model-card.md) |
 | Ver o que está aberto e quem decide | [audit/REMEDIATION_STATUS.md](../audit/REMEDIATION_STATUS.md) e [ROADMAP.md](ROADMAP.md) |

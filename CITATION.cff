@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "Se você usar este software em pesquisa, cite-o como abaixo. / If you use this software in research, please cite it as below."
+title: "AILAB-FACIAL: controle de presença por reconhecimento facial"
+type: software
+abstract: >-
+  Sistema de controle de presença por reconhecimento facial para um laboratório
+  de extensão universitário: app de totem (Expo), API (FastAPI) com verificação
+  de prova de vida, busca vetorial em PostgreSQL com pgvector, segurança por
+  row-level security e documentação pública de auditoria, decisões de arquitetura
+  e lacunas de privacidade.
+authors:
+  - name: "AILAB-FACIAL contributors"
+repository-code: "https://github.com/Diogo-Olivv/AILAB-FACIAL"
+url: "https://github.com/Diogo-Olivv/AILAB-FACIAL"
+license: Apache-2.0
+keywords:
+  - face recognition
+  - attendance
+  - biometrics
+  - presentation attack detection
+  - LGPD
+  - pgvector
+  - FastAPI
+  - Expo
