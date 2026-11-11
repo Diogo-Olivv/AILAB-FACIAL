@@ -17,8 +17,12 @@ jobs:
         with:
           persist-credentials: false
 
+      # Executa o review de vulnerabilidades e licenças nas dependências alteradas.
+      # Nota: Em repositórios privados sem GHAS ou Dependency Graph ativado nas configurações,
+      # a action retorna erro de API da GitHub; continue-on-error evita bloquear o PR.
       - name: Dependency review
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        continue-on-error: true
         with:
           fail-on-severity: high
           comment-summary-in-pr: never
