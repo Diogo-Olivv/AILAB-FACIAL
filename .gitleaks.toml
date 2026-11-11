@@ -1,0 +1,10 @@
+title = "AILAB-FACIAL gitleaks"
+
+# Mantém todas as regras padrão do gitleaks.
+[extend]
+useDefault = true
+
+# Exceção estreita e justificada. Não afrouxa nenhuma regra: ignora apenas este texto exato.
+[allowlist]
+description = "Nome de região do Google Cloud usado nos comandos de gcloud da documentação. Não é segredo; a cadeia tem entropia alta e dispara a regra generic-api-key."
+regexes = ['''southamerica-east1''']
