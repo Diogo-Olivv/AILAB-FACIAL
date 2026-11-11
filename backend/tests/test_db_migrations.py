@@ -37,7 +37,7 @@ BACKEND = Path(__file__).resolve().parents[1]
 SQL_FILES = [
     BACKEND / "db" / "test" / "00_supabase_shim.sql",
     BACKEND / "db" / "test" / "01_baseline_schema.sql",
-    *sorted((BACKEND / "migrations").glob("2[2-8]_*.sql")),
+    *sorted((BACKEND / "migrations").glob("2[2-9]_*.sql")),
 ]
 
 
@@ -860,3 +860,37 @@ def test_list_enforces_range_limit_and_paginates_deterministically(admin):
         "SELECT public.list_attendance_justifications(%s, %s, NULL, true, 100000)", (monday, monday + timedelta(days=6))
     ).fetchone()[0]
     assert len(one["items"]) == 5
+
+
+# ── Privilégios do role anon após a migration 29 (AF-01/AF-02 contenção) ─────
+
+
+@pytest.mark.parametrize("table", ["profiles", "sessions", "face_logs", "face_embeddings", "sync_cursor"])
+def test_anon_has_no_write_or_truncate_on_data_tables(admin, table):
+    conn = as_role(_connect(), "anon")
+    for stmt in (
+        f"INSERT INTO public.{table} DEFAULT VALUES",
+        f"UPDATE public.{table} SET id = id",
+        f"DELETE FROM public.{table}",
+        f"TRUNCATE public.{table}",
+    ):
+        with pytest.raises(INSUFFICIENT):
+            conn.execute(stmt)
+        conn.rollback()
+
+
+def test_anon_cannot_execute_link_tutor_profile(admin):
+    make_profile(admin, "Aluno", "555444333")
+    conn = as_role(_connect(), "anon")
+    with pytest.raises(INSUFFICIENT):
+        conn.execute("SELECT public.link_tutor_profile('555444333', 'x@ailab.test')")
+    conn.rollback()
+    row = admin.execute("SELECT is_tutor FROM public.profiles WHERE matricula = '555444333'").fetchone()
+    assert row[0] is False
+
+
+def test_authenticated_cannot_truncate_data_tables(admin):
+    conn, _uid = tutor_conn(admin, "tutor-trunc@example.test")
+    with pytest.raises(INSUFFICIENT):
+        conn.execute("TRUNCATE public.profiles")
+    conn.rollback()
