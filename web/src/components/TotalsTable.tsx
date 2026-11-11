@@ -170,7 +170,7 @@ export function TotalsTable({
             [
               { id: "all", label: "Todos", count: filterCounts.all },
               { id: "present", label: "Ao Vivo", count: filterCounts.present, dot: "bg-emerald-500" },
-              { id: "goalMet", label: "≥ 4h no período", count: filterCounts.goalMet },
+              { id: "goalMet", label: "Meta (≥ 4h)", count: filterCounts.goalMet },
               { id: "tutors", label: "Tutores", count: filterCounts.tutors },
             ] as const
           ).map((chip) => {

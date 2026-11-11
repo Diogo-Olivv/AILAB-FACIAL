@@ -74,7 +74,7 @@ export function TutorWarningModal({
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [batchCopied, setBatchCopied] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isCompactView, setIsCompactView] = useState(false);
+  const [isCompactView, setIsCompactView] = useState(true);
   const [justifications, setJustifications] = useState<Record<string, AttendanceJustification>>({});
   const [selectedJustifyMember, setSelectedJustifyMember] = useState<{
     member: Member;
@@ -600,7 +600,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
         )}
       </div>
 
-        {/* Resumo de Indicadores Ampliado para Celular com Estilo Claude / Perplexity */}
+        {/* Resumo de Indicadores da Tutoria */}
         <div className="shrink-0 p-3 sm:p-5 border-b border-slate-200/70 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-800/60 grid grid-cols-3 gap-2.5 sm:gap-4">
           {/* Total */}
           <div className="claude-card rounded-2xl p-3 sm:p-4 text-center sm:text-left dark:bg-slate-800 dark:border-slate-700">
@@ -609,9 +609,6 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
             </span>
             <span className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-slate-100 mt-1 block font-mono-data tracking-apple-tightest">
               {totalStudents}
-            </span>
-            <span className="hidden sm:inline-block text-2xs text-slate-400 font-medium mt-0.5">
-              {totalStudents > 0 ? Math.round((metTargetCount / totalStudents) * 100) : 0}% em conformidade
             </span>
           </div>
 
@@ -628,15 +625,12 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 &lt; 4h
               </span>
             </div>
-            <span className="hidden sm:inline-block text-2xs text-amber-700 dark:text-amber-400 font-medium mt-0.5">
-              {totalStudents > 0 ? Math.round((underTargetStudents.length / totalStudents) * 100) : 0}% pendentes
-            </span>
           </div>
 
           {/* Regularizados */}
           <div className="claude-card rounded-2xl border-emerald-500/30 dark:border-emerald-700/30 bg-gradient-to-br from-emerald-500/[0.12] via-emerald-500/[0.04] to-white dark:from-emerald-500/[0.15] dark:via-emerald-500/[0.06] dark:to-transparent dark:bg-slate-800 p-3 sm:p-4 text-center sm:text-left">
             <span className="text-2xs sm:text-xs font-bold uppercase tracking-widest text-emerald-800 dark:text-emerald-300 block truncate font-sans">
-              Cumprida
+              Meta Cumprida
             </span>
             <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2 mt-1">
               <span className="text-2xl sm:text-4xl font-extrabold text-emerald-900 dark:text-emerald-200 font-mono-data tracking-apple-tightest">
@@ -646,27 +640,21 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 &ge; 4h
               </span>
             </div>
-            <span className="hidden sm:inline-block text-2xs text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">
-              {totalStudents > 0 ? Math.round((metTargetCount / totalStudents) * 100) : 0}% da turma
-            </span>
           </div>
         </div>
 
         {/* Alerta de Ausentes Completos */}
         {neverPresentStudents.length > 0 && (
-          <div className="shrink-0 px-3 sm:px-5 py-2.5 border-b border-slate-200/70 dark:border-slate-800 bg-rose-50/60 dark:bg-rose-950/20 flex items-center gap-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-500/20 dark:bg-rose-500/30 text-rose-600 dark:text-rose-400">
-              <Ban className="h-4 w-4" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <span className="text-xs font-bold text-rose-800 dark:text-rose-300">
-                {neverPresentStudents.length} {neverPresentStudents.length === 1 ? 'aluno ausente' : 'alunos ausentes'} {period === "week" ? "esta semana" : "no período"}
+          <div className="shrink-0 px-3.5 sm:px-5 py-2 border-b border-slate-200/70 dark:border-slate-800 bg-rose-50/50 dark:bg-rose-950/20 flex items-center justify-between gap-2.5 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400">
+                <Ban className="h-3 w-3" />
               </span>
-              <span className="text-2xs text-rose-600/80 dark:text-rose-400/80 ml-1.5 font-sans">
-                — sem nenhum registro de presença
+              <span className="font-semibold text-rose-800 dark:text-rose-300 truncate">
+                {neverPresentStudents.length} ausentes sem registro {period === "week" ? "esta semana" : "no período"}
               </span>
             </div>
-            <span className="text-2xs font-mono-data text-rose-700 dark:text-rose-400 shrink-0 font-bold">
+            <span className="text-2xs font-mono-data text-rose-700/80 dark:text-rose-400/80 shrink-0 font-medium">
               {neverPresentStudents.map(s => s.member.name.split(' ')[0]).slice(0, 3).join(', ')}{neverPresentStudents.length > 3 ? ` +${neverPresentStudents.length - 3}` : ''}
             </span>
           </div>
@@ -808,8 +796,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                     </>
                   ) : (
                     <>
-                      <span className="hidden sm:inline">Selecionar todos em débito ({underTargetStudents.length})</span>
-                      <span className="sm:hidden">Selecionar débitos ({underTargetStudents.length})</span>
+                      <span>Selecionar débitos ({underTargetStudents.length})</span>
                     </>
                   )}
                 </span>
@@ -842,7 +829,7 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
               ) : (
                 <>
                   <LayoutGrid className="h-3.5 w-3.5 shrink-0 transition-transform duration-300" />
-                  <span className="hidden sm:inline">Modo Compacto (50+ alunos)</span>
+                  <span className="hidden sm:inline">Modo Compacto</span>
                   <span className="sm:hidden">Compacto</span>
                 </>
               )}

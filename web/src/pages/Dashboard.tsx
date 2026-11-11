@@ -19,13 +19,11 @@ import {
   Sparkles,
   SunMedium,
   Coffee,
-  Cpu,
   RotateCcw,
-  KeyRound,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
   fetchMembers,
   fetchPresentIds,
@@ -603,18 +601,15 @@ export function Dashboard() {
                   )}
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="eyebrow text-orange-600 dark:text-amber-400">
-                        Workspace Administrativo
-                      </span>
-                      <span className="font-mono-data rounded-md bg-slate-100 dark:bg-[#161F30] border border-slate-200/80 dark:border-white/[0.08] px-2 py-0.5 text-2xs font-semibold text-slate-700 dark:text-slate-300">
+                      <span className="font-mono-data rounded-md bg-orange-500/10 text-orange-600 dark:text-amber-400 border border-orange-500/20 px-2 py-0.5 text-2xs font-semibold">
                         {user.email ? user.email.replace(/@ailab\.com$/i, "") : "Tutor"}
                       </span>
                     </div>
-                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">
-                      Painel da Tutoria & Auditoria
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+                      Painel da Tutoria
                     </h1>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Vigilância da meta semanal de <span className="tabular-nums font-semibold">4h</span>, registro de contingência e relatórios oficiais.
+                      Gestão de presença, auditoria da meta semanal de 4h e emissão de relatórios.
                     </p>
                   </div>
                 </div>
@@ -674,19 +669,19 @@ export function Dashboard() {
                         {
                           key: "overview",
                           icon: LayoutDashboard,
-                          full: "Visão Geral & Presença",
+                          full: "Visão Geral",
                           short: "Visão Geral",
                         },
                         {
                           key: "audit",
                           icon: ShieldCheck,
-                          full: "Auditoria da Tutoria",
+                          full: "Auditoria",
                           short: "Auditoria",
                         },
                         {
                           key: "records",
                           icon: FileSpreadsheet,
-                          full: "Histórico & Relatórios",
+                          full: "Histórico",
                           short: "Histórico",
                         },
                       ] as const
@@ -866,6 +861,16 @@ export function Dashboard() {
                       sessions={weekdaySessions}
                     />
                   )}
+
+                  {/* Insights Analíticos de Retenção e Turnos */}
+                  {!loading && (
+                    <TutorInsightsCard
+                      members={members}
+                      sessions={weekdaySessions}
+                      now={now}
+                      onSelectMember={(id) => setSelectedMemberId(id)}
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -878,25 +883,12 @@ export function Dashboard() {
                   className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-emerald-500/10 blur-3xl"
                   aria-hidden="true"
                 />
-                <div className="relative space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-orange-500/10 text-orange-600 dark:text-amber-400 ring-1 ring-orange-500/20 px-2 py-0.5 text-[10px] font-mono-data font-bold uppercase tracking-wider">
-                      Telemetria Acadêmica · Seg–Sex
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setIsHowItWorksOpen(true)}
-                      className="inline-flex items-center gap-1 rounded-md bg-slate-100/80 dark:bg-[#161F30] border border-slate-200/80 dark:border-white/[0.08] px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-orange-600 dark:hover:text-amber-400 transition-colors cursor-pointer"
-                    >
-                      <Cpu className="h-3 w-3 text-orange-500 dark:text-amber-400" />
-                      <span>Como funciona a biometria?</span>
-                    </button>
-                  </div>
+                <div className="relative space-y-1">
                   <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
                     Painel do Aluno
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
-                    Consulte a lotação do laboratório em tempo real, planeje seus horários de estudo e acompanhe sua carga horária semanal.
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xl">
+                    Lotação em tempo real, melhores horários de estudo e consulta de permanência semanal.
                   </p>
                 </div>
 
@@ -1145,36 +1137,18 @@ export function Dashboard() {
               </div>
 
               {/* Aviso Institucional & Resguardo LGPD */}
-              <div className="surface-card p-6 border-l-4 border-l-orange-500 bg-gradient-to-r from-orange-500/5 via-transparent to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="eyebrow text-orange-600 dark:text-amber-400">
-                      Privacidade & Minimização de Dados (LGPD Art. 11)
-                    </span>
-                    <span className="rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 text-2xs px-2 py-0.5 font-bold">
-                      DP-1 Ativa
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Painel Público de Ocupação & Telemetria Agregada
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
-                    Em estrita conformidade com a LGPD e as normas de governança biométrica do laboratório, a consulta pública exibe somente métricas de lotação agregadas. Nomes, matrículas e auditoria individual de horas são exclusivos para tutores autenticados.
-                    {publicStats && (
-                      <span className="block mt-1 font-mono-data text-2xs text-slate-500">
-                        Janela agregada: {publicStats.windowDays} dias · {publicStats.totalSessions} sessões computadas no período ({publicStats.timezone}).
-                      </span>
-                    )}
-                  </p>
+              <div className="surface-card p-4 sm:p-5 border-l-4 border-l-orange-500 bg-gradient-to-r from-orange-500/5 via-transparent to-transparent">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="eyebrow text-orange-600 dark:text-amber-400">
+                    Privacidade & Governança (LGPD Art. 11)
+                  </span>
+                  <span className="rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20 text-2xs px-2 py-0.5 font-bold">
+                    DP-1 Ativa
+                  </span>
                 </div>
-                <Link
-                  to="/login"
-                  className="btn-primary shrink-0 !min-h-[42px] !px-4"
-                  title="Acessar o workspace administrativo de tutores"
-                >
-                  <KeyRound className="h-4 w-4" />
-                  <span>Acesso Tutor</span>
-                </Link>
+                <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+                  Em conformidade com a LGPD, o painel público exibe apenas dados de lotação agregados. Auditoria individual de horas é restrita à tutoria e coordenação acadêmica.
+                </p>
               </div>
             </div>
           )}
@@ -1182,15 +1156,6 @@ export function Dashboard() {
           {/* ABA 2 DO TUTOR: Auditoria & Metas Semanais (4h) */}
           {user && !isStudentView && tutorTab === "audit" && (
             <div className="space-y-6 animate-fade-in-up">
-              {!loading && (
-                <TutorInsightsCard
-                  members={members}
-                  sessions={weekdaySessions}
-                  now={now}
-                  onSelectMember={(id) => setSelectedMemberId(id)}
-                />
-              )}
-
               {!loading && (
                 <TutorWarningPanel
                   members={members}

@@ -163,12 +163,12 @@ export function Header({
             <button
               type="button"
               onClick={onOpenHowItWorks}
-              className="hidden md:inline-flex btn-secondary !min-h-[38px] !px-3"
+              className="hidden xl:inline-flex btn-secondary !min-h-[38px] !px-3"
               title="Entenda o pipeline biométrico InsightFace ArcFace 512-D"
               aria-label="Como funciona o reconhecimento facial"
             >
               <Cpu className="h-3.5 w-3.5 text-orange-500 dark:text-amber-400 shrink-0" />
-              <span className="hidden lg:inline">Como Funciona</span>
+              <span>Como Funciona</span>
             </button>
           )}
 
@@ -176,12 +176,12 @@ export function Header({
           <button
             type="button"
             onClick={onOpenTerms}
-            className="hidden md:inline-flex btn-secondary !min-h-[38px] !px-3"
+            className="hidden xl:inline-flex btn-secondary !min-h-[38px] !px-3"
             title="Políticas de Privacidade Biométrica (LGPD Art. 11)"
             aria-label="Políticas de Privacidade Biométrica LGPD"
           >
             <Scale className="h-3.5 w-3.5 text-orange-500 dark:text-amber-400 shrink-0" />
-            <span className="hidden lg:inline">Termos LGPD</span>
+            <span>Termos LGPD</span>
           </button>
 
           {/* Instalação PWA */}
