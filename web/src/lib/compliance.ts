@@ -199,9 +199,11 @@ function isRpcMissingError(err: any): boolean {
   return (
     code === "PGRST202" ||
     code === "42883" ||
+    code === "42501" ||
     msg.includes("schema cache") ||
     msg.includes("not find the function") ||
     msg.includes("does not exist") ||
+    msg.includes("permission denied") ||
     msg.includes("failed to fetch")
   );
 }
