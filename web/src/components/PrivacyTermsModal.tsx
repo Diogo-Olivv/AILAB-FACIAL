@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Scale, X } from "lucide-react";
 
 interface Props {
@@ -25,7 +26,7 @@ export function PrivacyTermsModal({ isOpen, onClose }: Props) {
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
@@ -141,4 +142,9 @@ export function PrivacyTermsModal({ isOpen, onClose }: Props) {
       </div>
     </div>
   );
+
+  if (typeof document !== "undefined") {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
 }

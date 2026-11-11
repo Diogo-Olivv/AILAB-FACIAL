@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { GraduationCap, X, Lightbulb, Camera, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../auth/useAuth";
 import { supabase } from "../lib/supabase";
@@ -195,7 +196,7 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
     }
   };
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-3 sm:p-4 animate-fade-in"
       onClick={onClose}
@@ -463,4 +464,9 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
       </div>
     </div>
   );
+
+  if (typeof document !== "undefined") {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Camera,
   ClockAlert,
@@ -231,7 +232,7 @@ export function MemberDetailDrawer({
     : 0;
   const isLongSession = isPresent && openSessionSeconds >= 6 * 3600;
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/60 backdrop-blur-sm transition-opacity animate-fade-in"
       onClick={onClose}
@@ -797,4 +798,9 @@ export function MemberDetailDrawer({
       </div>
     </div>
   );
+
+  if (typeof document !== "undefined") {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
 }

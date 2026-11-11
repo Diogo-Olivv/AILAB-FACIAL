@@ -1,5 +1,6 @@
 import { WEEKLY_TARGET_SECONDS } from "../lib/attendanceTarget";
 import { useEffect, useMemo, useState, useRef, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { JustifyModal } from "./JustifyModal";
 import {
   type AttendanceJustification,
@@ -1340,9 +1341,9 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
         )}
 
         {/* Modal de Pré-visualização do Comunicado em Lote */}
-        {isPreviewOpen && (
+        {isPreviewOpen && typeof document !== "undefined" && createPortal(
           <div
-            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in"
             role="dialog"
             aria-modal="true"
             aria-labelledby="preview-batch-title"
@@ -1404,7 +1405,8 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Footer com Safe-Area para Celular */}
@@ -1455,10 +1457,10 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
     return modalWithJustify;
   }
 
-  return (
+  const fullModalContent = (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-hidden animate-fade-in"
+        className="fixed inset-0 z-[80] flex items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-hidden animate-fade-in"
         onClick={onClose}
         role="dialog"
         aria-modal="true"
@@ -1489,6 +1491,11 @@ Pedimos que regularize seu horário para manter sua situação acadêmica regula
       )}
     </>
   );
+
+  if (typeof document !== "undefined") {
+    return createPortal(fullModalContent, document.body);
+  }
+  return fullModalContent;
 }
 
 export function TutorWarningPanel({

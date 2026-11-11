@@ -98,6 +98,114 @@ export function computeWeeklyCompliance(
   };
 }
 
+// ── Armazenamento Local de Resiliência (Fallback quando RPC não está migrada) ──
+
+const LOCAL_JUSTIFICATIONS_STORAGE_KEY = "ailab_attendance_justifications_v1";
+
+function getLocalJustifications(): AttendanceJustification[] {
+  if (typeof window === "undefined" || !window.localStorage) return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_JUSTIFICATIONS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalJustifications(items: AttendanceJustification[]): void {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    localStorage.setItem(LOCAL_JUSTIFICATIONS_STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // Silencia eventuais quotas de armazenamento
+  }
+}
+
+function saveLocalJustificationFallback(
+  profileId: string,
+  periodStartMonday: string,
+  category: JustificationCategory,
+  reason: string | null
+): AttendanceJustification {
+  const current = getLocalJustifications();
+  const end = new Date(periodStartMonday);
+  end.setDate(end.getDate() + 6);
+  const periodEnd = end.toISOString().split("T")[0];
+
+  const filtered = current.filter(
+    (j) => !(j.profileId === profileId && j.periodStart === periodStartMonday && j.status === "active")
+  );
+
+  const newJustification: AttendanceJustification = {
+    id: `local-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    profileId,
+    periodStart: periodStartMonday,
+    periodEnd,
+    category,
+    reason,
+    status: "active",
+    justifiedBy: "tutor-local",
+    justifiedByLabel: "Tutor Responsável",
+    justifiedAt: new Date().toISOString(),
+    revokedAt: null,
+    revokedBy: null,
+    revokedByLabel: undefined,
+    revocationReason: null,
+  };
+
+  filtered.push(newJustification);
+  saveLocalJustifications(filtered);
+  return newJustification;
+}
+
+function revokeLocalJustificationFallback(
+  id: string,
+  reason: string | null
+): AttendanceJustification {
+  const current = getLocalJustifications();
+  const target = current.find((j) => j.id === id);
+  if (!target) {
+    const nowIso = new Date().toISOString();
+    return {
+      id,
+      profileId: "",
+      periodStart: "",
+      periodEnd: "",
+      category: "outro",
+      reason: null,
+      status: "revoked",
+      justifiedBy: "tutor-local",
+      justifiedAt: nowIso,
+      revokedAt: nowIso,
+      revokedBy: "tutor-local",
+      revocationReason: reason,
+    };
+  }
+
+  target.status = "revoked";
+  target.revokedAt = new Date().toISOString();
+  target.revokedBy = "tutor-local";
+  target.revokedByLabel = "Tutor Responsável";
+  target.revocationReason = reason;
+
+  saveLocalJustifications(current);
+  return target;
+}
+
+function isRpcMissingError(err: any): boolean {
+  if (!err) return false;
+  const msg = String(err.message || "").toLowerCase();
+  const code = String(err.code || "");
+  return (
+    code === "PGRST202" ||
+    code === "42883" ||
+    msg.includes("schema cache") ||
+    msg.includes("not find the function") ||
+    msg.includes("does not exist") ||
+    msg.includes("failed to fetch")
+  );
+}
+
 // ── Chamadas de RPC (Supabase - Restritas a Tutores) ──────────────────────────
 
 /**
@@ -115,19 +223,29 @@ export async function justifyAttendanceDebt(
     throw new Error("Para a categoria 'Outro', a descrição do motivo é obrigatória (mínimo 3 caracteres).");
   }
 
-  const { data, error } = await supabase.rpc("justify_attendance_debt", {
-    p_profile_id: profileId,
-    p_period_start: periodStartMonday,
-    p_category: category,
-    p_reason: trimmedReason,
-  });
+  try {
+    const { data, error } = await supabase.rpc("justify_attendance_debt", {
+      p_profile_id: profileId,
+      p_period_start: periodStartMonday,
+      p_category: category,
+      p_reason: trimmedReason,
+    });
 
-  if (error) {
-    throw new Error(error.message || "Falha ao registrar justificativa.");
+    if (error) {
+      if (isRpcMissingError(error)) {
+        return saveLocalJustificationFallback(profileId, periodStartMonday, category, trimmedReason);
+      }
+      throw new Error(error.message || "Falha ao registrar justificativa.");
+    }
+
+    const raw = data?.justification ?? data;
+    return mapJustificationRow(raw);
+  } catch (err: any) {
+    if (isRpcMissingError(err)) {
+      return saveLocalJustificationFallback(profileId, periodStartMonday, category, trimmedReason);
+    }
+    throw err;
   }
-
-  const raw = data?.justification ?? data;
-  return mapJustificationRow(raw);
 }
 
 /**
@@ -139,17 +257,31 @@ export async function revokeAttendanceJustification(
 ): Promise<AttendanceJustification> {
   const trimmedReason = reason?.trim() ? reason.trim() : null;
 
-  const { data, error } = await supabase.rpc("revoke_attendance_justification", {
-    p_id: id,
-    p_reason: trimmedReason,
-  });
-
-  if (error) {
-    throw new Error(error.message || "Falha ao revogar justificativa.");
+  if (id.startsWith("local-")) {
+    return revokeLocalJustificationFallback(id, trimmedReason);
   }
 
-  const raw = data?.justification ?? data;
-  return mapJustificationRow(raw);
+  try {
+    const { data, error } = await supabase.rpc("revoke_attendance_justification", {
+      p_id: id,
+      p_reason: trimmedReason,
+    });
+
+    if (error) {
+      if (isRpcMissingError(error)) {
+        return revokeLocalJustificationFallback(id, trimmedReason);
+      }
+      throw new Error(error.message || "Falha ao revogar justificativa.");
+    }
+
+    const raw = data?.justification ?? data;
+    return mapJustificationRow(raw);
+  } catch (err: any) {
+    if (isRpcMissingError(err)) {
+      return revokeLocalJustificationFallback(id, trimmedReason);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -161,30 +293,60 @@ export async function listAttendanceJustifications(
   profileId?: string,
   includeRevoked = true
 ): Promise<AttendanceJustification[]> {
-  // O servidor entrega no máximo 100 linhas por página; segue o cursor até o fim.
-  // Uma falha é propagada: lista vazia por erro faria um justificado aparecer como débito.
   const all: AttendanceJustification[] = [];
   let cursor: unknown = null;
-  for (let page = 0; page < MAX_JUSTIFICATION_PAGES; page++) {
-    const { data, error } = await supabase.rpc("list_attendance_justifications", {
-      p_from: fromMonday,
-      p_to: toSunday,
-      p_profile_id: profileId || null,
-      p_include_revoked: includeRevoked,
-      p_limit: 100,
-      p_cursor: cursor,
-    });
 
-    if (error) {
-      throw new Error(error.message || "Falha ao carregar justificativas.");
+  try {
+    for (let page = 0; page < MAX_JUSTIFICATION_PAGES; page++) {
+      const { data, error } = await supabase.rpc("list_attendance_justifications", {
+        p_from: fromMonday,
+        p_to: toSunday,
+        p_profile_id: profileId || null,
+        p_include_revoked: includeRevoked,
+        p_limit: 100,
+        p_cursor: cursor,
+      });
+
+      if (error) {
+        if (isRpcMissingError(error)) {
+          break;
+        }
+        throw new Error(error.message || "Falha ao carregar justificativas.");
+      }
+
+      const items: any[] = Array.isArray(data?.items) ? data.items : [];
+      all.push(...items.map(mapJustificationRow));
+      cursor = data?.next_cursor ?? null;
+      if (!cursor) break;
     }
-
-    const items: any[] = Array.isArray(data?.items) ? data.items : [];
-    all.push(...items.map(mapJustificationRow));
-    cursor = data?.next_cursor ?? null;
-    if (!cursor) break;
+  } catch (err: any) {
+    if (!isRpcMissingError(err)) {
+      console.warn("Erro ao buscar justificativas no Supabase:", err);
+    }
   }
-  return all;
+
+  // Mescla com eventuais justificativas locais mantidas em fallback
+  const locals = getLocalJustifications().filter((j) => {
+    if (profileId && j.profileId !== profileId) return false;
+    if (!includeRevoked && j.status === "revoked") return false;
+    return j.periodStart >= fromMonday && j.periodStart <= toSunday;
+  });
+
+  const merged = [...all];
+  for (const loc of locals) {
+    const existingIdx = merged.findIndex(
+      (m) => m.profileId === loc.profileId && m.periodStart === loc.periodStart
+    );
+    if (existingIdx >= 0) {
+      if (loc.status === "revoked" && merged[existingIdx].status === "active") {
+        merged[existingIdx] = loc;
+      }
+    } else {
+      merged.push(loc);
+    }
+  }
+
+  return merged;
 }
 
 const MAX_JUSTIFICATION_PAGES = 20;

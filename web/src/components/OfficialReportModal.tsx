@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   FileText,
   Printer,
@@ -422,7 +423,7 @@ export function OfficialReportModal({
     URL.revokeObjectURL(url);
   };
 
-  return (
+  const modalContent = (
     <div role="dialog" aria-modal="true" aria-label="Relatório oficial de frequência" className="report-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/60 backdrop-blur-sm animate-fade-in">
       <style>{`
         @media print {
@@ -762,4 +763,9 @@ export function OfficialReportModal({
       </div>
     </div>
   );
+
+  if (typeof document !== "undefined") {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
 }
