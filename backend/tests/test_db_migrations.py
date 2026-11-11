@@ -23,9 +23,16 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-psycopg = pytest.importorskip("psycopg")
+# REQUIRE_DB_TESTS=1 (CI): dependência ausente ou banco indisponível é FALHA, nunca skip (AF-06).
+REQUIRE_DB = os.environ.get("REQUIRE_DB_TESTS") == "1"
+if REQUIRE_DB:
+    import psycopg
+else:
+    psycopg = pytest.importorskip("psycopg")
 
 DB_URL = os.environ.get("TEST_DATABASE_URL", "postgresql://postgres:test@localhost:55432/postgres")
+# Escopo destrutivo: a fixture faz DROP SCHEMA; só aceita host local (AF-22).
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 BACKEND = Path(__file__).resolve().parents[1]
 SQL_FILES = [
     BACKEND / "db" / "test" / "00_supabase_shim.sql",
@@ -40,9 +47,16 @@ def _connect(autocommit: bool = True):
 
 @pytest.fixture(scope="session")
 def database():
+    from urllib.parse import urlparse
+
+    host = urlparse(DB_URL).hostname or ""
+    if host not in _LOCAL_HOSTS:
+        pytest.fail(f"TEST_DATABASE_URL aponta para host não local ({host!r}); recusado (fixture destrutiva).")
     try:
         conn = _connect()
     except Exception as exc:  # noqa: BLE001
+        if REQUIRE_DB:
+            pytest.fail(f"Postgres de teste indisponível com REQUIRE_DB_TESTS=1: {exc}")
         pytest.skip(f"Postgres de teste indisponível em TEST_DATABASE_URL: {exc}")
     with conn:
         conn.execute("DROP SCHEMA IF EXISTS public CASCADE")

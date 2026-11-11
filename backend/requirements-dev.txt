@@ -1,0 +1,5 @@
+# Dependências exclusivas de teste/CI. Não entram na imagem de produção.
+-r requirements.txt
+
+# Driver dos testes de banco (tests/test_db_migrations.py). Obrigatório com REQUIRE_DB_TESTS=1.
+psycopg[binary]==3.3.8
