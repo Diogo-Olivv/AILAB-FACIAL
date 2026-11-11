@@ -22,7 +22,7 @@
 | AF-06 | Testes de banco pulados no CI | **Fechado** | #76 (`46006af`) | CI com Postgres 17 e `REQUIRE_DB_TESTS=1`: 254 passed, 23 xfailed, 0 skipped | Configurar branch protection para exigir o job (ver `CI_CD_AUDIT.md`) |
 | AF-07 | Baseline derivado de produção, não histórico | **Aberto** | — | `backend/db/test/01_baseline_schema.sql` | Decisão sobre baseline histórico (`CODE_DB_DRIFT.md` seção 4) |
 | AF-08 | CI e Docker com dependências diferentes | **Aberto** | — | `Dockerfile`, `requirements.lock` sem hashes | Nenhuma (trabalho de repositório) |
-| AF-09 | Deploy não depende do CI | **Aberto** | — | `.github/workflows/deploy-backend.yml` | Branch protection e environment com aprovação |
+| AF-09 | Deploy não depende do CI | **Fechado no workflow** | #82 | `deploy-backend.yml` exige job `test` com Postgres 17 e environment `production` | Configurar environment protection rule no GitHub (opcional) |
 | AF-10 | Caminhos de produção sem teste Python | **Parcial** | #76 (migration 29 e testes de privilégio) | Testes de banco cobrem RLS/privilégios; replay/presença em produção-config ainda sem teste dedicado | — |
 | AF-11 | `flash_unable_policy="allow"` | **Aberto** | — | `backend/app/config.py:78` | Decisão de produto: manter `allow` ou usar `reject` |
 | AF-12 | Limiares de teste diferentes da produção | **Aberto** | — | `test_biometrics.py:391-392,439-440` | — |
