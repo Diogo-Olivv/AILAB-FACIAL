@@ -4,6 +4,7 @@ import { GraduationCap, X, Lightbulb, Camera, Loader2, AlertCircle, CheckCircle2
 import { useAuth } from "../auth/useAuth";
 import { supabase } from "../lib/supabase";
 import { compressImageToBase64 } from "../lib/reports";
+import { safeAvatarUrl } from "../lib/authDecision";
 
 interface Props {
   isOpen: boolean;
@@ -260,7 +261,7 @@ export function TutorProfileModal({ isOpen, onClose }: Props) {
               <div className="relative group shrink-0">
                 {avatarUrl ? (
                   <img
-                    src={avatarUrl}
+                    src={safeAvatarUrl(avatarUrl) ?? undefined}
                     alt="Foto do Tutor"
                     className="h-12 w-12 sm:h-14 sm:w-14 min-w-[3rem] aspect-square shrink-0 rounded-full object-cover ring-2 ring-[#C15F3D]/25 dark:ring-amber-500/30 shadow-md"
                   />
