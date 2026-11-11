@@ -35,3 +35,14 @@ Lista publicada pelo próprio serviço em `/openapi.json` (17 caminhos em produ�
 | `db/test/` | Shim do Supabase e baseline para testes de banco |
 | `tests/` | Testes |
 | `scripts/` | Obtenção de modelos e auditorias pontuais |
+
+## Dependências travadas
+
+A imagem de produção e o CI instalam de `requirements.lock` e `requirements-dev.lock`, com hash de cada arquivo (`pip install --require-hashes`). As faixas de versão ficam em `requirements.txt` e `requirements-dev.txt`. Depois de mudar uma faixa (ou quando o Dependabot abrir um PR), regere os locks, a partir de `backend/`:
+
+```bash
+uv pip compile requirements.txt --python-version 3.12 --python-platform linux --generate-hashes --upgrade -o requirements.lock
+uv pip compile requirements-dev.txt --python-version 3.12 --python-platform linux --generate-hashes --upgrade -o requirements-dev.lock
+```
+
+A versão do Python do lock é a da imagem (`python:3.12-slim`, fixada por digest no `Dockerfile`).

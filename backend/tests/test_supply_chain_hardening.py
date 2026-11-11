@@ -9,20 +9,37 @@ from unittest.mock import MagicMock, patch
 from app.config import settings
 
 
+def _parse_lock(path: str) -> dict[str, list[str]]:
+    """Lê um lock do uv: cada entrada `nome==versão` é seguida de linhas `--hash=sha256:...`."""
+    entries: dict[str, list[str]] = {}
+    current: str | None = None
+    with open(path, "r", encoding="utf-8") as f:
+        for raw in f:
+            line = raw.strip().rstrip("\\").strip()
+            if not line or line.startswith("#") or line.startswith("via"):
+                continue
+            if line.startswith("--hash=sha256:"):
+                assert current is not None, f"hash sem dependência em {path}"
+                entries[current].append(line.removeprefix("--hash=sha256:"))
+            else:
+                assert "==" in line, f"Dependência '{line}' deve estar congelada estritamente com =="
+                current = line.split(";")[0].strip()
+                entries[current] = []
+    return entries
+
+
 def test_requirements_lock_exists_and_pinned():
-    """Garante que o lockfile determinístico de dependências existe e contém versões congeladas."""
+    """Os locks existem, congelam cada dependência com == e trazem o hash SHA-256 de cada uma."""
     backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    lockfile_path = os.path.join(backend_dir, "requirements.lock")
 
-    assert os.path.exists(lockfile_path), "backend/requirements.lock deve existir para garantir builds determinísticos"
-
-    with open(lockfile_path, "r", encoding="utf-8") as f:
-        lines = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-
-    assert len(lines) > 15, "Lockfile deve conter dependências diretas e transitivas"
-
-    for line in lines:
-        assert "==" in line, f"Dependência '{line}' no lockfile deve estar congelada estritamente com =="
+    for name, minimum in (("requirements.lock", 15), ("requirements-dev.lock", 15)):
+        path = os.path.join(backend_dir, name)
+        assert os.path.exists(path), f"backend/{name} deve existir para garantir builds determinísticos"
+        entries = _parse_lock(path)
+        assert len(entries) > minimum, f"{name} deve conter dependências diretas e transitivas"
+        for dep, hashes in entries.items():
+            assert hashes, f"{dep} em {name} está sem hash (instalação com --require-hashes falharia)"
+            assert all(len(h) == 64 for h in hashes), f"hash inválido para {dep} em {name}"
 
 
 def test_max_session_cap_hours_removed_from_settings():

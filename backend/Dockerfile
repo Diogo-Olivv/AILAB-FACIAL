@@ -1,5 +1,5 @@
 # ── Estágio 1: Builder (Compilação e Resolução de Dependências) ───────────────
-FROM python:3.11-slim AS builder
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b AS builder
 
 WORKDIR /build
 
@@ -14,14 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Instala dependências usando requirements.lock determinístico
-COPY requirements.lock requirements.txt ./
-RUN pip install --no-cache-dir --upgrade pip && \
-    if [ -f requirements.lock ]; then \
-        pip install --no-cache-dir -r requirements.lock; \
-    else \
-        pip install --no-cache-dir -r requirements.txt; \
-    fi
+# Instala somente o que está no lock, com verificação de hash (falha se algo divergir)
+COPY requirements.lock ./
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 
 # Pré-carrega o pacote buffalo_s e PAD com verificação de integridade
 ENV INSIGHTFACE_ROOT=/build/.insightface
@@ -33,7 +28,7 @@ RUN python scripts/download_models.py && chmod -R a+rX /build/.insightface
 
 
 # ── Estágio 2: Runner de Produção (Hardened & Sem Compiladores) ────────────────
-FROM python:3.11-slim AS runner
+FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b AS runner
 
 # Dependências estritamente dinâmicas em runtime (sem build-essential, gcc ou make)
 RUN apt-get update && apt-get install -y --no-install-recommends \

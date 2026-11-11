@@ -15,6 +15,5 @@ numpy>=2.5.4,<3
 # Cloud Scheduler & GCP Auth
 google-auth>=2.62.1
 
-# Testing & Client
+# Client HTTP
 httpx>=0.28.1
-pytest>=9.1.1

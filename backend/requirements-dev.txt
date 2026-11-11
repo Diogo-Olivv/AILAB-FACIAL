@@ -1,8 +1,14 @@
 # Dependências exclusivas de teste/CI. Não entram na imagem de produção.
 -r requirements.txt
 
+pytest>=9.1.1
+
 # Driver dos testes de banco (tests/test_db_migrations.py). Obrigatório com REQUIRE_DB_TESTS=1.
 psycopg[binary]==3.3.8
 
 # Parser oficial do PostgreSQL para o gate de sintaxe das migrations (tests/test_migration_syntax.py).
 pglast==8.7
+
+# Análise estática do CI (ruff e bandit). Versões travadas por hash em requirements-dev.lock.
+ruff>=0.15
+bandit>=1.9

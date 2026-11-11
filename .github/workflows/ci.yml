@@ -108,13 +108,11 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: backend/requirements-dev.txt
+          cache-dependency-path: backend/requirements-dev.lock
 
       - name: Install Dependencies & Security Scanners
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-          pip install ruff bandit
+          pip install --require-hashes -r requirements-dev.lock
 
       - name: SAST - Static Code & Security Analysis (Ruff)
         run: ruff check app/ --select E,F,W,B,S --ignore E501,B008
@@ -124,3 +122,19 @@ jobs:
 
       - name: Run Pytest Suite (Contracts, Biometrics, LGPD, Concurrency)
         run: python -m pytest
+
+  backend-image:
+    name: Backend Docker Image Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Constrói a mesma imagem que o deploy usa: o lock com hashes é aplicado e os modelos são baixados.
+      - name: Build image
+        run: docker build -t ailab-backend:ci backend
+
+      - name: Smoke test (bibliotecas biométricas importam)
+        run: |
+          docker run --rm ailab-backend:ci python -c "import insightface, onnxruntime, numpy, PIL, cv2, fastapi; print('ok', numpy.__version__, PIL.__version__, onnxruntime.__version__)"
+
