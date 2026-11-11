@@ -31,6 +31,13 @@ updates:
       - dependency-name: "react-native-safe-area-context"
       - dependency-name: "typescript"
       - dependency-name: "@types/react"
+      # Pacotes do Expo seguem a versão do SDK (57.x). Subir um deles para 58.x isoladamente
+      # quebra o app (expo-doctor reprova). O SDK é atualizado de propósito, com
+      # `npx expo install --fix`, e não por PR automático de um pacote só.
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo-*"
+        update-types: ["version-update:semver-major"]
 
   # 3. Dependências do Backend (Python FastAPI + Supabase + InsightFace)
   - package-ecosystem: "pip"
@@ -52,6 +59,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3
+    # A versão do Python da imagem é uma decisão, não uma atualização automática: o lock de
+    # produção fixa numpy, onnxruntime e pillow que só têm pacotes até o Python 3.12, e o CI
+    # não constrói a imagem, então um PR "verde" de 3.11 para 3.15 não prova nada.
+    # Só chegam PRs de patch da mesma versão (3.11.x).
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     labels:
       - "security"
       - "dependencies"
