@@ -1,27 +1,37 @@
-# AILAB-FACIAL API
+# Backend (FastAPI)
 
-Backend de reconhecimento facial e controle de presença do AILAB.
-FastAPI + InsightFace (buffalo_s, CPU) + Supabase, servido em container Docker.
+API de reconhecimento facial e de controle de presença. Roda no Cloud Run e usa o Supabase (Postgres 17 com pgvector).
 
-## Endpoints
+Documentação completa em [../docs/README.md](../docs/README.md). Referências úteis:
 
-- `GET /health` - checagem de disponibilidade
-- `POST /recognize` - identifica um integrante a partir de um frame
-- `POST /enroll` - cadastra um novo integrante a partir de varios frames
+- Variáveis de ambiente: [../docs/reference/env-vars.md](../docs/reference/env-vars.md)
+- Como rodar os testes de banco: [../docs/how-to/run-db-tests.md](../docs/how-to/run-db-tests.md)
+- Como aplicar uma migration: [../docs/how-to/apply-migration.md](../docs/how-to/apply-migration.md)
+- Fluxos e caminhos de falha: [../audit/FLOWS.md](../audit/FLOWS.md)
 
-As rotas de reconhecimento e cadastro exigem o header `X-API-Key`.
+## Comandos
 
-## Variaveis de ambiente
+```bash
+pip install -r requirements-dev.txt
+python -m pytest -q                                  # testes sem banco
+REQUIRE_DB_TESTS=1 TEST_DATABASE_URL=postgresql://postgres:test@localhost:5432/postgres \
+  python -m pytest tests/test_db_migrations.py -q    # testes de banco
+ruff check app/ --select E,F,W,B,S --ignore E501,B008
+uvicorn app.main:app --reload --port 8000
+```
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_KEY`
-- `API_KEY`
-- `FACE_THRESHOLD` (opcional, padrao 0.55)
-- `DEBOUNCE_SECONDS` (opcional, padrao 60)
+## Rotas
 
-## Notas de memoria
+Lista publicada pelo próprio serviço em `/openapi.json` (17 caminhos em produção, em 2026-11-11). A autenticação por rota está em [../audit/API_CONTRACT_AUDIT.md](../audit/API_CONTRACT_AUDIT.md), seção 3.
 
-Para caber em instancias de 512MB o servico carrega apenas os modelos de
-deteccao e reconhecimento, limita threads (`OMP_NUM_THREADS=1`) e reduz as
-arenas do malloc (`MALLOC_ARENA_MAX=2`). O buffalo_s e baixado no build da
-imagem e carregado no startup (`warmup`), evitando latencia no primeiro request.
+## Diretórios
+
+| Pasta | Conteúdo |
+|---|---|
+| `app/routers/` | Rotas HTTP |
+| `app/services/` | Regras: reconhecimento, cadastro, sessões, desafio, replay, PAD |
+| `app/deps.py` | Autenticação e autorização por dependência |
+| `migrations/` | Migrations SQL, numeradas (01 a 29) |
+| `db/test/` | Shim do Supabase e baseline para testes de banco |
+| `tests/` | Testes |
+| `scripts/` | Obtenção de modelos e auditorias pontuais |
