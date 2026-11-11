@@ -6,7 +6,14 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/deploy-backend.yml"
+  # Disparo manual roda SÓ os testes por padrão. Para implantar, marque "deploy".
+  # (Antes, o disparo manual sempre implantava.)
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Implantar após os testes (false = só rodar os testes)"
+        type: boolean
+        default: false
 
 concurrency:
   group: cloud-run-backend
@@ -16,29 +23,48 @@ env:
   SERVICE: ailab-facial-api
   REGION: southamerica-east1
 
+# Mínimo por padrão. O deploy declara o seu próprio escopo.
+permissions:
+  contents: read
+
 jobs:
-  # ── Gate: testes automáticos obrigatórios antes de qualquer deploy ─────────
+  # ── Gate: mesmo conjunto de testes do job backend-tests de ci.yml ──────────
+  # Postgres 17 com pgvector e REQUIRE_DB_TESTS=1: ausência do banco é falha.
   test:
-    name: Unit Tests (backend)
+    name: Unit and database tests (backend)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/postgres
+      REQUIRE_DB_TESTS: "1"
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: "3.12"
           cache: "pip"
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: backend/requirements-dev.txt
 
       - name: Install dependencies
+        working-directory: backend
         run: |
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          pip install -r requirements-dev.txt
 
       - name: Run test suite
         working-directory: backend
@@ -51,19 +77,26 @@ jobs:
     needs: [test]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Em disparo manual, só implanta se "deploy" estiver marcado.
+    # success() é obrigatório: com "if" próprio, o GitHub não aplica sozinho a
+    # exigência de que o job "test" tenha passado. Sem ele, um teste vermelho
+    # ainda implantaria.
+    if: ${{ success() && (github.event_name != 'workflow_dispatch' || inputs.deploy == true) }}
+    # Environment permite aprovação manual e segredos com escopo, quando configurados no GitHub.
+    environment: production
     permissions:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Deploy to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v3
+        uses: google-github-actions/deploy-cloudrun@2028e2d7d30a78c6910e0632e48dd561b064884d # v3
         with:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
