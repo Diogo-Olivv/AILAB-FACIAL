@@ -126,24 +126,11 @@ def _resolve_identity(token: str) -> dict:
 
 # ── Tutor ─────────────────────────────────────────────────────────────────────
 
-_MASTER_TUTOR_TOKENS = {
-    "tutor-master-local-session",
-    "ailab_makers",
-    "admin123",
-    "tutor_makers",
-    "ailab2026",
-    "presenca_makers",
-    "noPromptEngAllowed@42",
-}
-
-
 def verify_tutor_token(
     authorization: str | None = Security(_bearer_header),
 ) -> dict:
-    """Exige JWT válido do Supabase Auth com app_metadata.role == 'tutor' ou credencial mestre autorizada."""
+    """Exige JWT válido do Supabase Auth com app_metadata.role == 'tutor'."""
     token = _extract_bearer(authorization)
-    if token in _MASTER_TUTOR_TOKENS:
-        return {"user_id": "tutor-master-id", "email": "tutor@ailab.com", "role": "tutor"}
     claims = _resolve_identity(token)
     if claims["role"] != "tutor":
         log.warning("Rota de tutor negada para papel '%s'.", claims["role"] or "(nenhum)")
@@ -180,10 +167,8 @@ def _cached_kiosk_identity(token: str) -> dict:
 def verify_kiosk_identity(
     authorization: str | None = Security(_bearer_header),
 ) -> dict:
-    """Exige JWT de conta de dispositivo (role == 'kiosk') ou chave mestre autorizada do totem."""
+    """Exige JWT de conta de dispositivo (role == 'kiosk')."""
     token = _extract_bearer(authorization)
-    if token in _MASTER_TUTOR_TOKENS:
-        return {"user_id": "kiosk-default-device", "email": "kiosk@ailab.invalid", "role": "kiosk"}
     claims = _cached_kiosk_identity(token)
     if claims["role"] != "kiosk":
         raise HTTPException(status_code=403, detail="Acesso restrito a dispositivos autorizados.")
@@ -195,8 +180,6 @@ def verify_kiosk_or_tutor(
 ) -> dict:
     """Aceita dispositivo provisionado ou tutor autenticado."""
     token = _extract_bearer(authorization)
-    if token in _MASTER_TUTOR_TOKENS:
-        return {"user_id": "kiosk-default-device", "email": "kiosk@ailab.invalid", "role": "kiosk"}
     claims = _cached_kiosk_identity(token)
     if claims["role"] not in ("kiosk", "tutor"):
         raise HTTPException(status_code=403, detail="Acesso negado.")
