@@ -38,11 +38,11 @@ O deploy em produção está formalmente **AUTORIZADO**, condicionado apenas à 
 
 ### [R-01 | F-001] Inflação e Distorção de Horas no Painel Web
 - **Status:** **100% RESOLVIDO (Grau E5)**
-- **Evidência:** [`web/src/lib/aggregate.ts:14`](file:///c:/Users/pedrohpsantos/Documents/AILAB-FACIAL/web/src/lib/aggregate.ts#L14) e [`reports.ts:36`](file:///c:/Users/pedrohpsantos/Documents/AILAB-FACIAL/web/src/lib/reports.ts#L36). Sessões com `voidedAt != null` computam estritamente 0 segundos e são ignoradas na contagem de presenças e totais. Coberto por 5 testes unitários.
+- **Evidência:** [`web/src/lib/aggregate.ts:14`](../web/src/lib/aggregate.ts#L14) e [`reports.ts:36`](../web/src/lib/reports.ts#L36). Sessões com `voidedAt != null` computam estritamente 0 segundos e são ignoradas na contagem de presenças e totais. Coberto por 5 testes unitários.
 
 ### [R-02 | F-002] Injeção Digital Remota e Replay de Captura
 - **Status:** **100% RESOLVIDO (Grau E5)**
-- **Evidência:** [`challenge_service.py`](file:///c:/Users/pedrohpsantos/Documents/AILAB-FACIAL/backend/app/services/challenge_service.py), [`recognize.py:34-70`](file:///c:/Users/pedrohpsantos/Documents/AILAB-FACIAL/backend/app/routers/recognize.py#L34-L70) e [`mobile/lib/api.ts:119-147`](file:///c:/Users/pedrohpsantos/Documents/AILAB-FACIAL/mobile/lib/api.ts#L119-L147). Desafio HMAC-SHA256 efêmero exigido e invalidado em uso único atômico. Coberto por 12 testes no backend.
+- **Evidência:** [`challenge_service.py`](../backend/app/services/challenge_service.py), [`recognize.py:34-70`](../backend/app/routers/recognize.py#L34-L70) e [`mobile/lib/api.ts:119-147`](../mobile/lib/api.ts#L119-L147). Desafio HMAC-SHA256 efêmero exigido e invalidado em uso único atômico. Coberto por 12 testes no backend.
 
 ### [R-03 | F-006 / F-015] Exposição Histórica de Chaves no Git
 - **Status:** **RESOLVIDO NO CÓDIGO (Ação Operacional Externa Pendente)**
@@ -50,11 +50,11 @@ O deploy em produção está formalmente **AUTORIZADO**, condicionado apenas à 
 
 ### [R-04 | F-003] Inversão de Parâmetro e Divergência na RPC `match_face`
 - **Status:** **100% RESOLVIDO (Grau E5)**
-- **Evidência:** [`backend/schema.sql:185-215`](file:///c:/Users/pedrohpsantos/Documents/AILAB-FACIAL/backend/schema.sql#L185-L215) e [`backend/migrations/06_recalibrate_biometrics_hnsw.sql`](file:///c:/Users/pedrohpsantos/Documents/AILAB-FACIAL/backend/migrations/06_recalibrate_biometrics_hnsw.sql). Ambos sincronizados em distância cosseno com operador `<=>` e teto de $0.32$.
+- **Evidência:** [`backend/schema.sql:185-215`](../backend/schema.sql#L185-L215) e [`backend/migrations/06_recalibrate_biometrics_hnsw.sql`](../backend/migrations/06_recalibrate_biometrics_hnsw.sql). Ambos sincronizados em distância cosseno com operador `<=>` e teto de $0.32$.
 
 ### [R-05 | F-004] Autenticação Kiosk em `/sessions/stats/{profile_id}`
 - **Status:** **100% RESOLVIDO (Grau E5)**
-- **Evidência:** [`backend/app/routers/recognize.py:146`](file:///c:/Users/pedrohpsantos/Documents/AILAB-FACIAL/backend/app/routers/recognize.py#L146). Rota protegida com `verify_kiosk_key`, aceitando a chave dedicada de quiosque físico sem erro 401.
+- **Evidência:** [`backend/app/routers/recognize.py:146`](../backend/app/routers/recognize.py#L146). Rota protegida com `verify_kiosk_key`, aceitando a chave dedicada de quiosque físico sem erro 401.
 
 ---
 
