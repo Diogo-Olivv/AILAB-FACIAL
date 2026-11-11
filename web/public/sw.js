@@ -58,8 +58,10 @@ self.addEventListener("fetch", (event) => {
   // Requisições de navegação (HTML): Network-first com fallback para cache
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => {
-        return caches.match("./index.html") || caches.match("./");
+      fetch(request).catch(async () => {
+        // Promise é sempre truthy: é preciso aguardar cada match antes de decidir o fallback.
+        const shell = (await caches.match("./index.html")) || (await caches.match("./"));
+        return shell || new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
       })
     );
     return;
