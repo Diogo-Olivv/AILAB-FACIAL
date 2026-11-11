@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { provisionKiosk } from "@/lib/api";
+import { isKioskSession } from "@/lib/kioskAuth";
 import { kioskClient } from "@/lib/supabase";
 
 /**
@@ -11,10 +12,6 @@ import { kioskClient } from "@/lib/supabase";
  * Reinstalar o app apaga a sessão: o dispositivo precisa ser ativado de novo.
  */
 export type KioskIdentityStatus = "loading" | "provisioned" | "unprovisioned";
-
-function isKioskSession(session: { user?: { app_metadata?: Record<string, unknown> } } | null): boolean {
-  return session?.user?.app_metadata?.role === "kiosk" || Boolean(process.env.EXPO_PUBLIC_KIOSK_KEY);
-}
 
 /** Ativa este dispositivo usando a sessão temporária de um tutor. */
 export async function activateKiosk(label: string, tutorToken: string): Promise<void> {
