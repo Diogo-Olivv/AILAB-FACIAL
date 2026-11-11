@@ -3,3 +3,6 @@
 
 # Driver dos testes de banco (tests/test_db_migrations.py). Obrigatório com REQUIRE_DB_TESTS=1.
 psycopg[binary]==3.3.8
+
+# Parser oficial do PostgreSQL para o gate de sintaxe das migrations (tests/test_migration_syntax.py).
+pglast==8.7

@@ -20,7 +20,7 @@ CREATE POLICY tutor_select_profiles
   );
 
 CREATE POLICY tutor_write_profiles
-  ON public.profiles FOR INSERT, UPDATE, DELETE TO authenticated
+  ON public.profiles FOR ALL TO authenticated
   USING (
     ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor'
     OR ((select auth.jwt()) -> 'user_metadata' ->> 'role') = 'tutor'
@@ -38,7 +38,7 @@ CREATE POLICY tutor_select_sessions
   );
 
 CREATE POLICY tutor_write_sessions
-  ON public.sessions FOR INSERT, UPDATE, DELETE TO authenticated
+  ON public.sessions FOR ALL TO authenticated
   USING (
     ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'tutor'
     OR ((select auth.jwt()) -> 'user_metadata' ->> 'role') = 'tutor'
