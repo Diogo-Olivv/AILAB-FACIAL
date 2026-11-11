@@ -866,17 +866,13 @@ def test_list_enforces_range_limit_and_paginates_deterministically(admin):
 
 
 @pytest.mark.parametrize("table", ["profiles", "sessions", "face_logs", "face_embeddings", "sync_cursor"])
-def test_anon_has_no_write_or_truncate_on_data_tables(admin, table):
-    conn = as_role(_connect(), "anon")
-    for stmt in (
-        f"INSERT INTO public.{table} DEFAULT VALUES",
-        f"UPDATE public.{table} SET id = id",
-        f"DELETE FROM public.{table}",
-        f"TRUNCATE public.{table}",
-    ):
-        with pytest.raises(INSUFFICIENT):
-            conn.execute(stmt)
-        conn.rollback()
+@pytest.mark.parametrize("privilege", ["INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"])
+def test_anon_lacks_write_privileges_on_data_tables(admin, table, privilege):
+    # Verificação de catálogo: independe do esquema de cada tabela (ex.: sync_cursor não tem id).
+    granted = admin.execute(
+        "SELECT has_table_privilege('anon', %s, %s)", (f"public.{table}", privilege)
+    ).fetchone()[0]
+    assert granted is False, f"anon ainda tem {privilege} em public.{table}"
 
 
 def test_anon_cannot_execute_link_tutor_profile(admin):
