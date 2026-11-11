@@ -68,7 +68,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Run Expo Doctor (21 Quality & Compatibility Checks)
-        run: npx expo-doctor
+        run: npx --yes expo-doctor@1.20.5
 
       - name: Static Typecheck (TypeScript)
         run: npx tsc --noEmit
