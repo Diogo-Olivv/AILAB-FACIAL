@@ -12,6 +12,7 @@ O formato segue [Keep a Changelog 1.1.0](https://keepachangelog.com/pt-BR/1.1.0/
 
 ### Corrigido
 
+- Banco de produção: aplicadas as migrations 22 a 26 (funções de totem, registro de presença e anti-replay no banco, LGPD atômica; remove o login legado). Corrige o erro 503 "serviço de reconhecimento indisponível" ao escanear.
 - Backend: imagem e CI instalam de lock com hashes (`--require-hashes`), em Python 3.12 e com a imagem base fixada por digest. A imagem de produção deixa de usar as versões antigas (por exemplo fastapi 0.111 e pillow 10.3). O CI passa a construir a imagem Docker.
 - Backend: removidos os tokens mestres compartilhados (AF-01). Tutor e totem passam a ser aceitos apenas com JWT do Supabase Auth. Totens precisam estar ativados por conta própria.
 
