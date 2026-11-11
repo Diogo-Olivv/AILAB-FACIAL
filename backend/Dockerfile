@@ -1,5 +1,5 @@
 # ── Estágio 1: Builder (Compilação e Resolução de Dependências) ───────────────
-FROM python:3.11-slim AS builder
+FROM python:3.15-slim AS builder
 
 WORKDIR /build
 
@@ -33,7 +33,7 @@ RUN python scripts/download_models.py && chmod -R a+rX /build/.insightface
 
 
 # ── Estágio 2: Runner de Produção (Hardened & Sem Compiladores) ────────────────
-FROM python:3.11-slim AS runner
+FROM python:3.15-slim AS runner
 
 # Dependências estritamente dinâmicas em runtime (sem build-essential, gcc ou make)
 RUN apt-get update && apt-get install -y --no-install-recommends \
