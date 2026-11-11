@@ -6,7 +6,14 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/deploy-backend.yml"
+  # Disparo manual roda SÓ os testes por padrão. Para implantar, marque "deploy".
+  # (Antes, o disparo manual sempre implantava.)
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Implantar após os testes (false = só rodar os testes)"
+        type: boolean
+        default: false
 
 concurrency:
   group: cloud-run-backend
@@ -70,6 +77,11 @@ jobs:
     needs: [test]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Em disparo manual, só implanta se "deploy" estiver marcado.
+    # success() é obrigatório: com "if" próprio, o GitHub não aplica sozinho a
+    # exigência de que o job "test" tenha passado. Sem ele, um teste vermelho
+    # ainda implantaria.
+    if: ${{ success() && (github.event_name != 'workflow_dispatch' || inputs.deploy == true) }}
     # Environment permite aprovação manual e segredos com escopo, quando configurados no GitHub.
     environment: production
     permissions:
