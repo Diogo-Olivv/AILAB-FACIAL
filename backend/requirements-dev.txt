@@ -11,4 +11,4 @@ pglast==8.7
 
 # Análise estática do CI (ruff e bandit). Versões travadas por hash em requirements-dev.lock.
 ruff>=0.15
-bandit>=1.9
+bandit>=1.9.4
