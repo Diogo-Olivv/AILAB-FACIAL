@@ -13,7 +13,7 @@ Pillow>=13.0.0,<14
 numpy>=2.5.4,<3
 
 # Cloud Scheduler & GCP Auth
-google-auth>=2.62.1
+google-auth>=2.62.2
 
 # Client HTTP
 httpx>=0.28.1
